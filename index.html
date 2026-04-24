@@ -3238,6 +3238,7 @@ await Promise.race([
 
         function inBtn(btn, sx, sy) { return sx >= btn.x && sx <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h; }
         function getTouchZone(sx, sy) {
+            if (isMultiplayerGame && mpGameOver) return 'tap'; // leaderboard: all taps handled by menuAction
             if (state === STATE.PLAY && inBtn(btnLeft, sx, sy)) return 'left';
             if (state === STATE.PLAY && inBtn(btnRight, sx, sy)) return 'right';
             if (state === STATE.PLAY && inBtn(btnMenuBottom, sx, sy)) return 'menu';
@@ -3253,6 +3254,8 @@ await Promise.race([
                 const { sx, sy } = _xy(t.clientX, t.clientY);
                 const z = getTouchZone(sx, sy);
                 fingers[t.identifier] = { zone: z, sx, sy };
+                // Block left/right while leaderboard is showing
+                if (isMultiplayerGame && mpGameOver) continue;
                 if (z in touch) touch[z] = true;
             }
         }, { passive: false });
@@ -3266,7 +3269,7 @@ await Promise.race([
                 if (z in touch && !Object.values(fingers).map(fi => fi.zone).includes(z)) touch[z] = false;
                 // Fire action on release
                 if (tutorialPaused || tutorialComplete) { menuAction(sx, sy); continue; }
-                if (z === 'menu') { _pauseGame(); continue; }
+                if (z === 'menu' && !(isMultiplayerGame && mpGameOver)) { _pauseGame(); continue; }
                 else if (z === 'tap') menuAction(sx, sy);
             }
         }, { passive: false });
@@ -3380,8 +3383,9 @@ await Promise.race([
         let mpLastPosSend = 0;
         let mpInitialPowerups = []; // snapshot of powerup positions at game start for respawn
         let mpFinishTimes = {};     // {uid: timestamp} when each player reached the top
-        let mpPausedByHost = false; // host triggered a global pause
-        let mpHostLeft = false;     // host left mid-game → show leaderboard + "host left"
+        let mpPausedByHost = false;     // host triggered a global pause (STOP button)
+        let mpHostLeft = false;         // host left mid-game → show leaderboard + "host left"
+        let mpHostTransferring = false; // loading overlay while new host takes over
         let _afkLastActivity = Date.now();
         let _afkPromptActive = false;
         let _afkPromptShownAt = 0;
@@ -7670,6 +7674,7 @@ await Promise.race([
             mpFinishTimes = {};
             mpPausedByHost = false;
             mpHostLeft = false;
+            mpHostTransferring = false;
             _afkPromptActive = false;
             _afkLastActivity = Date.now();
             _worldRng = Math.random.bind(Math); // restore normal RNG for solo play
@@ -7799,6 +7804,26 @@ await Promise.race([
                         _startGameMusic();
                         state = STATE.PLAY;
                     }
+                }
+                // Host transfer — show loading overlay for all, new host takes over
+                if (d.transferringHost && d.newHostUid && isMultiplayerGame) {
+                    mpHostTransferring = true;
+                    mpPausedByHost = false;
+                    if (d.newHostUid === mpMyUid && !isRoomHost) {
+                        // I'm the new host!
+                        isRoomHost = true;
+                        setTimeout(() => {
+                            _fbDb.collection('rooms').doc(mpRoomId).update({
+                                hostUid: mpMyUid,
+                                transferringHost: firebase.firestore.FieldValue.delete(),
+                                newHostUid: firebase.firestore.FieldValue.delete(),
+                            }).catch(() => {});
+                            _startHostHeartbeat(mpRoomId);
+                        }, 1200); // short delay so loading screen is visible
+                    }
+                } else if (!d.transferringHost && mpHostTransferring) {
+                    mpHostTransferring = false;
+                    if (state === STATE.MENU) { state = STATE.PLAY; _startGameMusic(); }
                 }
             }, () => {});
         }
@@ -7939,26 +7964,42 @@ await Promise.race([
 
         // Guest leaves mid-game — removes their presence from the room, exits to main
         async function _mpGuestLeave() {
-            const rid = mpRoomId, uid = mpMyUid;
-            _mpCleanup();
-            if (rid && uid) {
-                _fbDb.collection('rooms').doc(rid).collection('pos').doc(uid).delete().catch(() => {});
+            const rid = mpRoomId;
+            // End the session for everyone via standard game-over mechanism
+            if (rid) {
+                const now = Date.now();
                 _fbDb.collection('rooms').doc(rid).update({
-                    [`players.${uid}`]: firebase.firestore.FieldValue.delete()
+                    gameWinner: 'Nobody',
+                    gameEndAt: now - 1, // in the past → triggers immediate leaderboard for all
                 }).catch(() => {});
             }
+            _mpCleanup();
             state = STATE.MAIN; hasActiveGame = false;
         }
 
-        // Host leaves mid-game — triggers leaderboard for all with "host left" banner, then exits
+        // Host leaves mid-game — transfers host to a random player, or ends game if alone
         function _mpHostLeave() {
-            const scores = _mpBuildFinalScores();
-            const winnerName = scores.length > 0 ? scores[0].name : 'Nobody';
-            mpEndTriggered = true; mpEndAt = Date.now(); mpWinnerName = winnerName;
-            mpGameOver = true; mpFinalScores = scores; mpHostLeft = true;
-            _fbDb.collection('rooms').doc(mpRoomId).update({
-                gameWinner: winnerName, gameEndAt: Date.now() - 1, hostLeft: true,
+            const otherUids = Object.keys(mpSlots).filter(uid => uid !== mpMyUid);
+            if (otherUids.length === 0) {
+                // Host is alone — just end the game
+                _mpCleanup();
+                state = STATE.MAIN;
+                hasActiveGame = false;
+                return;
+            }
+            // Pick a random player to become the new host
+            const newHostUid = otherUids[Math.floor(Math.random() * otherUids.length)];
+            const rid = mpRoomId;
+            // Notify everyone: show loading overlay and who's the new host
+            _fbDb.collection('rooms').doc(rid).update({
+                transferringHost: true,
+                newHostUid: newHostUid,
+                paused: false,
             }).catch(() => {});
+            // Old host leaves immediately
+            _mpCleanup();
+            state = STATE.MAIN;
+            hasActiveGame = false;
         }
 
         // Host-only "End Game" button in bottom-right corner during play
@@ -7974,11 +8015,43 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 11px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(mpPausedByHost ? 'RESUME' : 'PAUSE', bx + bw / 2, by + 19);
+            ctx.fillText(mpPausedByHost ? 'RESUME' : 'STOP', bx + bw / 2, by + 19);
             ctx.restore();
         }
 
-        // Host forces game over — immediately show results for everyone
+        // Host-only overlay shown when STOP is active — RESUME or CLOSE GAME
+        function _drawHostStopOverlay() {
+            if (!isRoomHost || !mpPausedByHost || mpGameOver) return;
+            const cx = BASE_W / 2;
+            ctx.fillStyle = 'rgba(4,10,32,0.88)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 28px "Segoe UI",Arial'; ctx.fillStyle = '#ffd700';
+            ctx.shadowColor = '#aa6600'; ctx.shadowBlur = 16;
+            ctx.fillText('⏸ GAME PAUSED', cx, BASE_H / 2 - 80);
+            ctx.shadowBlur = 0;
+            ctx.font = '13px "Segoe UI",Arial'; ctx.fillStyle = '#778';
+            ctx.fillText('Others are waiting…', cx, BASE_H / 2 - 46);
+
+            const bW = 210, bH = 50, bX = cx - bW / 2;
+
+            // ▶ RESUME
+            const resumeY = BASE_H / 2 - 20;
+            ctx.fillStyle = '#0d3020';
+            ctx.beginPath(); ctx.roundRect(bX, resumeY, bW, bH, 12); ctx.fill();
+            ctx.strokeStyle = '#58e88a'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.roundRect(bX, resumeY, bW, bH, 12); ctx.stroke();
+            ctx.font = 'bold 20px "Segoe UI",Arial'; ctx.fillStyle = '#58e88a';
+            ctx.fillText('▶  RESUME', cx, resumeY + bH / 2 + 7);
+
+            // ⏹ CLOSE GAME (sends everyone to leaderboard)
+            const closeY = resumeY + bH + 14;
+            ctx.fillStyle = '#3a0d0d';
+            ctx.beginPath(); ctx.roundRect(bX, closeY, bW, bH, 12); ctx.fill();
+            ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.roundRect(bX, closeY, bW, bH, 12); ctx.stroke();
+            ctx.font = 'bold 20px "Segoe UI",Arial'; ctx.fillStyle = '#ff6666';
+            ctx.fillText('⏹  CLOSE GAME', cx, closeY + bH / 2 + 7);
+        }
         function _mpHostForceEnd() {
             if (!isRoomHost || mpEndTriggered) return;
             const now = Date.now();
@@ -9291,8 +9364,8 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // ── Guest: host has paused the game ──
-            if (isMultiplayerGame && mpPausedByHost && !isRoomHost) {
+            // ── Guest: host has paused the game (STOP button only) ──
+            if (isMultiplayerGame && mpPausedByHost && !isRoomHost && !mpGameOver) {
                 ctx.fillStyle = 'rgba(4,10,32,0.92)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
                 ctx.textAlign = 'center';
                 ctx.font = 'bold 32px "Segoe UI",Arial'; ctx.fillStyle = '#ffd700';
@@ -9965,15 +10038,59 @@ function _drawMpHostEndBtn() {
             clearTimeout(_musicDelayTimer);
             _musicDelayTimer = setTimeout(() => { MUSIC.play('menu'); }, 280);
             state = STATE.MENU;
-            // Sync pause to all players in multiplayer
-            if (isMultiplayerGame && isRoomHost && mpRoomId) {
-                _fbDb.collection('rooms').doc(mpRoomId).update({ paused: true }).catch(() => {});
-            }
+            // ☰ hamburger = local pause only — others continue playing.
+            // Global pause is done via the STOP button (bottom-right).
         }
 
 function menuAction(sx, sy) {
+            // ── LEADERBOARD: block ALL taps except the leaderboard buttons ──
+            if (isMultiplayerGame && mpGameOver) {
+                if (!mpResultsReady) return;
+                const cx = BASE_W / 2;
+                const scores = mpFinalScores;
+                const listTop = 160, rowH = 38;
+                const btnY = Math.min(listTop + scores.length * rowH + 20, BASE_H - 140);
+                const canReturn = mpHostInLobby || isRoomHost;
+                if (canReturn && sx >= cx - 145 && sx <= cx + 145 && sy >= btnY && sy <= btnY + 52) {
+                    SFX.play('click');
+                    if (isRoomHost) { _mpReturnToLobby(); } else { _mpGuestReturnToLobby(); }
+                    return;
+                }
+                const exitBtnY = btnY + 52 + 12;
+                if (sx >= cx - 100 && sx <= cx + 100 && sy >= exitBtnY && sy <= exitBtnY + 42) {
+                    SFX.play('click'); _mpExit();
+                    return;
+                }
+                return; // block everything else
+            }
+
             // בדיקה אם המשתמש פתח את הגדרות הסאונד
             if (_settingsTap(sx, sy)) return;
+
+            // ── Host STOP overlay buttons (RESUME / CLOSE GAME) ──
+            if (isMultiplayerGame && isRoomHost && mpPausedByHost && !mpGameOver) {
+                const cx = BASE_W / 2;
+                const bW = 210, bH = 50, bX = cx - bW / 2;
+                const resumeY = BASE_H / 2 - 20;
+                const closeY  = resumeY + bH + 14;
+                // RESUME
+                if (sy >= resumeY && sy <= resumeY + bH && sx >= bX && sx <= bX + bW) {
+                    SFX.play('click');
+                    mpPausedByHost = false;
+                    if (mpRoomId) _fbDb.collection('rooms').doc(mpRoomId).update({ paused: false }).catch(() => {});
+                    _startGameMusic();
+                    return;
+                }
+                // CLOSE GAME → everyone sees leaderboard
+                if (sy >= closeY && sy <= closeY + bH && sx >= bX && sx <= bX + bW) {
+                    SFX.play('click');
+                    mpPausedByHost = false;
+                    if (mpRoomId) _fbDb.collection('rooms').doc(mpRoomId).update({ paused: false }).catch(() => {});
+                    _mpHostForceEnd();
+                    return;
+                }
+                return; // block all taps behind overlay
+            }
 
             // ── Multiplayer host PAUSE button (הכפתור בפינה הימנית למטה) ──
             if (isMultiplayerGame && isRoomHost && !mpEndTriggered && state === STATE.PLAY) {
@@ -9999,29 +10116,6 @@ function menuAction(sx, sy) {
                     }
                     return; // יוצא כדי שלא יקרו פעולות אחרות
                 }
-            }
-
-            // ── Multiplayer game-over screen buttons ──
-            if (isMultiplayerGame && mpGameOver) {
-                const scores = mpFinalScores;
-                const listTop = 160;
-                const rowH = 38;
-                const btnY = Math.min(listTop + scores.length * rowH + 20, BASE_H - 140);
-                // RETURN TO LOBBY button (top)
-                const canReturn = mpHostInLobby || isRoomHost;
-                if (canReturn && sx >= cx - 145 && sx <= cx + 145 && sy >= btnY && sy <= btnY + 52) {
-                    SFX.play('click');
-                    if (isRoomHost) { _mpReturnToLobby(); } else { _mpGuestReturnToLobby(); }
-                    return;
-                }
-                // EXIT button (below lobby button)
-                const exitBtnY = btnY + 52 + 12;
-                if (sx >= cx - 100 && sx <= cx + 100 && sy >= exitBtnY && sy <= exitBtnY + 42) {
-                    SFX.play('click');
-                    _mpExit();
-                    return;
-                }
-                return; // block all other taps while game-over screen is showing
             }
 
             // Settings panel — intercept all taps while open or on gear button
@@ -10415,8 +10509,7 @@ function menuAction(sx, sy) {
                     if (sy >= leaveY && sy <= leaveY + 44 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click');
                         if (isRoomHost) {
-                            state = STATE.PLAY; // let game-over screen render
-                            _mpHostLeave();
+                            _mpHostLeave(); // handles alone vs. transfer internally
                         } else {
                             _mpGuestLeave();
                         }
@@ -10499,7 +10592,7 @@ function menuAction(sx, sy) {
         canvas.addEventListener('pointerup', e => {
             if (e.pointerType === 'touch') return; // handled by touchend
             const { sx, sy } = _xy(e.clientX, e.clientY);
-            if (state === STATE.PLAY && inBtn(btnMenuBottom, sx, sy)) { _pauseGame(); return; }
+            if (state === STATE.PLAY && !(isMultiplayerGame && mpGameOver) && inBtn(btnMenuBottom, sx, sy)) { _pauseGame(); return; }
             menuAction(sx, sy);
         });
 
@@ -10930,6 +11023,7 @@ function gameUpdate() {
                 if (isMultiplayerGame && isRoomHost && !mpEndTriggered) _drawMpHostEndBtn();
                 if (isMultiplayerGame) _drawMpHeightBar();
                 if (isMultiplayerGame) _drawMpMyHeight();
+                if (isMultiplayerGame) _drawHostStopOverlay();
             }
 
             ctx.restore();
@@ -10937,6 +11031,19 @@ function gameUpdate() {
             if (isMultiplayerGame && mpGameOver) {
                 if (mpResultsReady) { _drawMpGameOver(); _drawMpMyHeight(); }
                 else _drawMpResultsLoading();
+            }
+            // Host transfer loading overlay — shown to ALL players while new host takes over
+            if (isMultiplayerGame && mpHostTransferring) {
+                const cx = BASE_W / 2;
+                ctx.fillStyle = 'rgba(4,10,32,0.92)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 26px "Segoe UI",Arial'; ctx.fillStyle = '#78c8ff';
+                ctx.shadowColor = '#004488'; ctx.shadowBlur = 18;
+                const dots = '.'.repeat(Math.floor(Date.now() / 400) % 4);
+                ctx.fillText('👑 Transferring Host' + dots, cx, BASE_H / 2 - 20);
+                ctx.shadowBlur = 0;
+                ctx.font = '13px "Segoe UI",Arial'; ctx.fillStyle = '#778';
+                ctx.fillText('Please wait…', cx, BASE_H / 2 + 16);
             }
             if (isMultiplayerGame) _drawAfkPrompt();
 
