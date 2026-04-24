@@ -1,5 +1,7 @@
 @echo off
-copy "C:\Users\blitv\icy-tower\desktop-link\index.html" "C:\Users\blitv\icy-tower\index.html" /Y
+pushd "%OneDriveConsumer%\שולחן העבודה"
+copy index.html "C:\Users\blitv\icy-tower\index.html" /Y
+popd
 cd C:\Users\blitv\icy-tower
 git add -A
 git commit -m "Update"
