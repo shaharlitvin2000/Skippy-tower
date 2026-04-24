@@ -1,7 +1,6 @@
 @echo off
-pushd "%OneDriveConsumer%\שולחן העבודה"
-copy index.html "C:\Users\blitv\icy-tower\index.html" /Y
-popd
+for /f "delims=" %%i in ('echo %OneDriveConsumer%') do set OD=%%i
+copy "%OD%\שולחן העבודה\index.html" "C:\Users\blitv\icy-tower\index.html" /Y
 cd C:\Users\blitv\icy-tower
 git add -A
 git commit -m "Update"
