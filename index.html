@@ -544,6 +544,37 @@
     </style>
 </head>
 <body>
+<div id="loadingScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Courier New',monospace;">
+  <div style="text-align:center;">
+    <div style="font-size:48px;margin-bottom:10px;">❄</div>
+    <div style="font-size:28px;font-weight:bold;color:#00cfff;letter-spacing:6px;text-shadow:0 0 20px #00cfff;margin-bottom:6px;">SKIPPY TOWER</div>
+    <div style="font-size:12px;color:#4488aa;letter-spacing:3px;margin-bottom:40px;">LOADING...</div>
+    <div style="width:220px;height:6px;background:#111133;border-radius:3px;overflow:hidden;margin:0 auto;">
+      <div id="loadingBar" style="width:0%;height:100%;background:linear-gradient(90deg,#0066ff,#00cfff);border-radius:3px;box-shadow:0 0 10px #00cfff;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var bar=document.getElementById('loadingBar');
+  var screen=document.getElementById('loadingScreen');
+  var progress=0;
+  var interval=setInterval(function(){
+    progress+=Math.random()*12;
+    if(progress>90)progress=90;
+    bar.style.width=progress+'%';
+  },150);
+  window.addEventListener('load',function(){
+    clearInterval(interval);
+    bar.style.width='100%';
+    setTimeout(function(){
+      screen.style.transition='opacity 0.6s ease';
+      screen.style.opacity='0';
+      setTimeout(function(){screen.style.display='none';},600);
+    },400);
+  });
+})();
+</script>
     <canvas id="c"></canvas>
 
     <!-- USER TAG + LOGOUT -->
