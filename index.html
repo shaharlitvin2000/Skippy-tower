@@ -7613,6 +7613,8 @@ await Promise.race([
                 gameWinner: '', gameEndAt: 0,
                 gameWinnerUid: null, gameWinnerFinishedAt: null,
                 hostInLobby: false,
+                gameStartAt: 0,   // clear any leftover startAt from previous game
+                finalScores: firebase.firestore.FieldValue.delete(),
             }).catch(() => {});
             _onlineLaunchGame();
         }
@@ -7865,7 +7867,8 @@ await Promise.race([
                     }
                 }
                 // Synchronized start: guests pick up gameStartAt written by HOST
-                if (!isRoomHost && d.gameStartAt && d.gameStartAt !== mpGameStartAt && mpGameStartAt === 0) {
+                // Only accept a fresh timestamp (in the future) to ignore stale values from previous games
+                if (!isRoomHost && d.gameStartAt && d.gameStartAt > Date.now() && mpGameStartAt === 0) {
                     mpGameStartAt = d.gameStartAt;
                     loadingMsg = 'Game starting!';
                 }
@@ -8114,7 +8117,9 @@ await Promise.race([
 
         // Host leaves mid-game — transfers host to a random player, or closes server if alone
         function _mpHostLeave() {
-            const otherUids = Object.keys(mpSlots).filter(uid => uid !== mpMyUid);
+            // Use remotePositions (currently active players) rather than mpSlots (initial list)
+            // so players who already left aren't included in the transfer candidate pool
+            const otherUids = Object.keys(remotePositions);
             if (otherUids.length === 0) {
                 // Host is alone — delete the room and go back to main
                 const rid = mpRoomId;
