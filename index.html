@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>The Icy Tower</title>
+    <title>Skippy Tower</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <!-- Firebase SDK (compat v10) — must load before any game scripts -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" onerror="window._fbLoadFailed=true"></script>
@@ -544,6 +544,37 @@
     </style>
 </head>
 <body>
+<div id="loadingScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Courier New',monospace;">
+  <div style="text-align:center;">
+    <div style="font-size:48px;margin-bottom:10px;">❄</div>
+    <div style="font-size:28px;font-weight:bold;color:#00cfff;letter-spacing:6px;text-shadow:0 0 20px #00cfff;margin-bottom:6px;">SKIPPY TOWER</div>
+    <div style="font-size:12px;color:#4488aa;letter-spacing:3px;margin-bottom:40px;">LOADING...</div>
+    <div style="width:220px;height:6px;background:#111133;border-radius:3px;overflow:hidden;margin:0 auto;">
+      <div id="loadingBar" style="width:0%;height:100%;background:linear-gradient(90deg,#0066ff,#00cfff);border-radius:3px;box-shadow:0 0 10px #00cfff;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var bar=document.getElementById('loadingBar');
+  var screen=document.getElementById('loadingScreen');
+  var progress=0;
+  var interval=setInterval(function(){
+    progress+=Math.random()*12;
+    if(progress>90)progress=90;
+    bar.style.width=progress+'%';
+  },150);
+  window.addEventListener('load',function(){
+    clearInterval(interval);
+    bar.style.width='100%';
+    setTimeout(function(){
+      screen.style.transition='opacity 0.6s ease';
+      screen.style.opacity='0';
+      setTimeout(function(){screen.style.display='none';},600);
+    },400);
+  });
+})();
+</script>
     <canvas id="c"></canvas>
 
     <!-- USER TAG + LOGOUT -->
@@ -570,7 +601,7 @@
     <!-- AUTH OVERLAY -->
     <div id="authOverlay">
         <div id="authBox">
-            <h1>❄ ICY TOWER</h1>
+            <h1>❄ SKIPPY TOWER</h1>
             <h2 id="authSubtitle">CREATE ACCOUNT</h2>
 
             <!-- SIGNUP FIELDS -->
@@ -2687,7 +2718,6 @@ await Promise.race([
                             if (this.vy > 7) this.landShake = Math.floor(this.vy * 1.2);
                             this.vy = 0; this.onGround = true;
                             if (!wasGround) { this.justLanded = true; this.landPause = 6; }
-                            // Track highest landed platform for camera anchor
                             if (plat.y < highestLandedPlatY) highestLandedPlatY = plat.y;
                             if (plat.moving) this.x += plat.dir * plat.speed;
                             // Gear push: rotating gear surface drifts the player sideways
@@ -3424,7 +3454,8 @@ await Promise.race([
         let particles, snowflakes, powerups, coins, floatTexts;
         let camY, camYVel, highestY, startY, jumpStartY, bestJumpStartY, difficulty;
         let cameraFloorY;
-        let highestLandedPlatY; // Y of the highest platform ever landed on (camera anchor)
+        let highestLandedPlatY; // Y of highest platform ever landed on
+        let cameraFloorY;
         let finishPlatRef = null;
         let fallPeakY = 0;
         let wasFalling = false;
@@ -3475,7 +3506,7 @@ await Promise.race([
             snowflakes = Array.from({ length: 65 }, () => new SnowFlake(true));
             camY = player.y - BASE_H + 200; camYVel = 0;
             highestY = player.y; startY = player.y; jumpStartY = player.y; bestJumpStartY = player.y; cameraFloorY = player.y; difficulty = 1;
-            highestLandedPlatY = player.y; // start anchored to spawn height
+            highestLandedPlatY = player.y;
             shakeX = 0; shakeY = 0;
             lastPointMilestone = 0; runPointsEarned = 0; pointsBeforeRun = lockerPoints;
             fallPeakY = 0; wasFalling = false;
@@ -3596,27 +3627,32 @@ await Promise.race([
         }
 
         function updateCamera() {
-            // Sling Kong-style camera: spring physics anchored to highest landed platform.
-            // Camera only travels UP — never follows the player down.
-            const PLATFORM_SCREEN_Y = BASE_H - 340; // platform sits ~340px from bottom when reached
-            const anchorTarget = highestLandedPlatY - PLATFORM_SCREEN_Y;
+            // Target: track player position normally (same feel as before)
+            const playerTarget = player.y - BASE_H * 0.60;
 
-            if (anchorTarget < camY) {
-                // Spring toward new high — strong pull, nice overshoot feel
-                const diff = anchorTarget - camY;
-                camYVel += diff * 0.12;       // spring stiffness
-                camYVel *= 0.72;              // damping (lower = more elastic/bouncy)
-                camY += camYVel;
+            // Hard ceiling: camera may never show lower than 30m below best platform
+            const camFloor = highestLandedPlatY + 300 - BASE_H; // 300px = 30m
+
+            // Desired target = player position, but clamped so we never go below the anchor
+            const target = Math.min(playerTarget, camFloor);
+
+            // Spring physics — fast when going up, slightly slower when going down
+            if (target < camY) {
+                camYVel += (target - camY) * 0.10; // going up: snappy
             } else {
-                // Player fell — camera stays, just decay velocity
-                camYVel *= 0.4;
+                camYVel += (target - camY) * 0.04; // going down: gentle lag
             }
+            camYVel *= 0.78;
+            camY += camYVel;
 
-            // Hard floor clamp
+            // Hard clamp — never exceed the 30m anchor
+            if (camY > camFloor) { camY = camFloor; camYVel = Math.min(camYVel, 0); }
+
+            // Absolute floor clamp (spawn level)
             const maxCamY = cameraFloorY + 300 - BASE_H;
             if (camY > maxCamY) { camY = maxCamY; camYVel = Math.min(camYVel, 0); }
 
-            // Landing shake
+            // Screen shake on landing
             if (player.landShake > 0) {
                 const I = Math.min(player.landShake, 8);
                 shakeX = rndInt(-I, I); shakeY = rndInt(-I / 2, I / 2);
@@ -9115,7 +9151,7 @@ function _drawMpHostEndBtn() {
             // Drop-shadow pass
             ctx.font = '900 46px Orbitron, monospace';
             ctx.fillStyle = 'rgba(0,8,40,0.95)';
-            ctx.fillText('THE ICY TOWER', cx + 3, 71);
+            ctx.fillText('THE SKIPPY TOWER', cx + 3, 71);
 
             // Shimmer gradient that slides across the title text
             const shimX = (cx - 155) + shimmer * 310;
@@ -9127,7 +9163,7 @@ function _drawMpHostEndBtn() {
             tg.addColorStop(1,   '#5ab4f0');
             ctx.fillStyle = tg;
             ctx.font = '900 46px Orbitron, monospace';
-            ctx.fillText('THE ICY TOWER', cx, 68);
+            ctx.fillText('THE SKIPPY TOWER', cx, 68);
 
             // Sparkle dots along title top edge
             ctx.save();
