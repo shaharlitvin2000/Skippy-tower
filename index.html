@@ -3644,12 +3644,15 @@ await Promise.race([
             camYVel *= 0.78;
             camY += camYVel;
 
-            // Hard clamp — never exceed the 30m anchor
-            if (camY > camFloor) { camY = camFloor; camYVel = Math.min(camYVel, 0); }
+            // Hard clamp — never exceed the 30m anchor, with tiny elastic bounce
+            if (camY > camFloor) {
+                camY = camFloor;
+                camYVel = Math.min(camYVel, 0) * -0.18; // tiny bounce back
+            }
 
             // Absolute floor clamp (spawn level)
             const maxCamY = cameraFloorY + 300 - BASE_H;
-            if (camY > maxCamY) { camY = maxCamY; camYVel = Math.min(camYVel, 0); }
+            if (camY > maxCamY) { camY = maxCamY; camYVel = Math.min(camYVel, 0) * -0.18; }
 
             // Screen shake on landing
             if (player.landShake > 0) {
@@ -10953,8 +10956,8 @@ function gameUpdate() {
                     player.jump();
                 }
 
-                // ── Fall 30m below lowest visited platform → death ──
-                if (!tutorialMode && player.y + player.H > cameraFloorY + 300) {
+                // ── Fall 30m below highest landed platform → death ──
+                if (!tutorialMode && player.y + player.H > highestLandedPlatY + 300) {
                     handleDeath();
                 }
 
