@@ -3369,7 +3369,11 @@ await Promise.race([
             if (state === STATE.PLAY) {
                 btn(btnLeft, '◀', touch.left);
                 btn(btnRight, '▶', touch.right);
-                btn(btnMenuBottom, '☰', false, 20);
+                if (isMultiplayerGame && !isRoomHost) {
+                    btn(btnMenuBottom, '⚙', false, 22);
+                } else {
+                    btn(btnMenuBottom, '☰', false, 20);
+                }
             }
         }
 
@@ -8019,23 +8023,24 @@ await Promise.race([
         // Guest leaves mid-game — removes their presence from the room, exits to main
         async function _mpGuestLeave() {
             const rid = mpRoomId;
-            // End the session for everyone via standard game-over mechanism
-            if (rid) {
-                const now = Date.now();
+            const uid = mpMyUid;
+            // Remove only this guest from the room — others continue playing
+            if (rid && uid) {
                 _fbDb.collection('rooms').doc(rid).update({
-                    gameWinner: 'Nobody',
-                    gameEndAt: now - 1, // in the past → triggers immediate leaderboard for all
+                    [`players.${uid}`]: firebase.firestore.FieldValue.delete()
                 }).catch(() => {});
             }
-            _mpCleanup();
+            _mpCleanup(); // also deletes own pos doc
             state = STATE.MAIN; hasActiveGame = false;
         }
 
-        // Host leaves mid-game — transfers host to a random player, or ends game if alone
+        // Host leaves mid-game — transfers host to a random player, or closes server if alone
         function _mpHostLeave() {
             const otherUids = Object.keys(mpSlots).filter(uid => uid !== mpMyUid);
             if (otherUids.length === 0) {
-                // Host is alone — just end the game
+                // Host is alone — delete the room and go back to main
+                const rid = mpRoomId;
+                if (rid) _fbDb.collection('rooms').doc(rid).delete().catch(() => {});
                 _mpCleanup();
                 state = STATE.MAIN;
                 hasActiveGame = false;
