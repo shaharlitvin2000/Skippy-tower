@@ -7455,7 +7455,7 @@ await Promise.race([
                 lobbyMapTheme = currentRoomData.mapTheme || 0;
                 // Notify guests when host changes settings
                 if (!isRoomHost) {
-                    const THEMES_LABELS = ['CLOCK','GROVE','DEPTHS','DYNASTY','MOONLIT','COSMOS'];
+                    const THEMES_LABELS = ['CLOCK','GROVE','DESERT','LAVA','MOONLIT','COSMOS'];
                     const HEIGHT_LABELS = ['INFINITE','500 m','1500 m','2500 m','3750 m','5000 m'];
                     if (lobbyMapTheme !== prevTheme) {
                         lobbySettingsNotif = '🗺 Map style → ' + (THEMES_LABELS[lobbyMapTheme] || lobbyMapTheme);
@@ -8839,8 +8839,8 @@ function _drawMpHostEndBtn() {
             const THEMES_DEF = [
                 { label:'CLOCK',   icon:'⚙',  color:'#d4901a' },
                 { label:'GROVE',   icon:'🌿', color:'#4ec96a' },
-                { label:'DEPTHS',  icon:'🌊', color:'#22aaff' },
-                { label:'DYNASTY', icon:'🐉', color:'#ff9922' },
+                { label:'DESERT',  icon:'🏜', color:'#c89030' },
+                { label:'LAVA',    icon:'🌋', color:'#ff5522' },
                 { label:'MOONLIT', icon:'🌙', color:'#bb77ff' },
                 { label:'COSMOS',  icon:'🚀', color:'#00ffcc' },
             ];
@@ -9160,9 +9160,12 @@ function _drawMpHostEndBtn() {
                     ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 10); ctx.stroke();
                     ctx.textAlign = 'left'; ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#88ccff';
                     ctx.fillText('👑 ' + (room.hostName || 'Unknown'), rowX + 12, ry + rowH / 2 - 10);
-                    const mapLabel = room.mapMode === 'infinite' ? '∞ INFINITE' : 'LV' + room.mapLevel;
+                    const _qmThemes = ['⚙CLOCK','🌿GROVE','🏜DESERT','🌋LAVA','🌙MOONLIT','🚀COSMOS'];
+                    const _qmHeights = ['∞','500m','1500m','2500m','3750m','5000m'];
+                    const themeTag = _qmThemes[room.mapTheme] || '⚙CLOCK';
+                    const heightTag = room.mapMode === 'infinite' ? '∞ INFINITE' : (_qmHeights[room.mapLevel] || '');
                     ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(130,165,210,0.7)';
-                    ctx.fillText(mapLabel + '  •  ' + pCount + '/8 players', rowX + 12, ry + rowH / 2 + 8);
+                    ctx.fillText(themeTag + '  •  ' + heightTag + '  •  ' + pCount + '/8', rowX + 12, ry + rowH / 2 + 8);
                     const jbW = 68, jbH = 30, jbX = rowX + rowW - jbW - 10, jbY = ry + rowH / 2 - jbH / 2;
                     ctx.fillStyle = 'rgba(0,38,18,0.9)';
                     ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 7); ctx.fill();
