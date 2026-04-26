@@ -1579,7 +1579,7 @@ await Promise.race([
                     ctx.strokeStyle = '#9a8878'; ctx.lineWidth = 1;
                     ctx.beginPath(); ctx.moveTo(this.x + 2, sy + 1); ctx.lineTo(this.x + this.w - 2, sy + 1); ctx.stroke();
                 } else {
-                const themeIdx = currentMode === 'level' ? currentLevel : 0;
+                const themeIdx = currentTheme;
                 const t = Date.now() / 1000;
                 const px = this.x, pw = this.w, ph = this.h;
 
@@ -5540,7 +5540,7 @@ await Promise.race([
             if (tutorialMode) { drawTutorialBackground(cam); return; }
 
             const t = Date.now() / 1000;
-            const themeIdx = currentMode === 'level' ? currentLevel : 0;
+            const themeIdx = currentTheme;
             const { si, ni, blend } = getSceneInfo(cam);
             const scenes = BG_SCENES[themeIdx];
 
