@@ -7466,6 +7466,12 @@ await Promise.race([
                         lobbySettingsNotifAt = Date.now();
                     }
                 }
+                // Detect HOST transfer in lobby — become new HOST if room now points to us
+                const myUid = _onlineUid();
+                if (!isRoomHost && currentRoomData.hostUid === myUid) {
+                    isRoomHost = true;
+                    _startHostHeartbeat(currentRoomId);
+                }
                 // Guests: pick up lobby countdown written by HOST
                 if (!isRoomHost && currentRoomData.lobbyStartAt && currentRoomData.lobbyStartAt > Date.now() && lobbyStartAt === 0) {
                     lobbyStartAt = currentRoomData.lobbyStartAt;
@@ -7505,8 +7511,22 @@ await Promise.race([
             const uid = _onlineUid();
             if (!silent && currentRoomId && uid) {
                 const ref = _fbDb.collection('rooms').doc(currentRoomId);
-                if (isRoomHost) ref.delete().catch(() => {});
-                else ref.update({ [`players.${uid}`]: firebase.firestore.FieldValue.delete() }).catch(() => {});
+                if (isRoomHost) {
+                    // If others are in the lobby, transfer HOST instead of deleting the room
+                    const others = Object.entries(roomPlayersMap).filter(([id]) => id !== uid);
+                    if (others.length > 0) {
+                        const [newHostUid, newHostData] = others[Math.floor(Math.random() * others.length)];
+                        ref.update({
+                            hostUid: newHostUid,
+                            hostName: newHostData.name || 'Player',
+                            [`players.${uid}`]: firebase.firestore.FieldValue.delete(),
+                        }).catch(() => {});
+                    } else {
+                        ref.delete().catch(() => {}); // alone → close room
+                    }
+                } else {
+                    ref.update({ [`players.${uid}`]: firebase.firestore.FieldValue.delete() }).catch(() => {});
+                }
             }
             currentRoomId = null; currentRoomData = null; isRoomHost = false;
             roomPlayersMap = {}; lobbyError = ''; lobbyCreating = false;
@@ -8397,10 +8417,8 @@ function _drawMpHostEndBtn() {
         function _drawMpMyHeight() {
             if (!isMultiplayerGame) return;
             const iFinished = !!(mpMyUid && mpFinishTimes[mpMyUid]);
-            const best = getBest();
             ctx.save();
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-            // Drawn below the ☰/⚙ button which ends at y≈63
             if (iFinished) {
                 ctx.font = 'bold 16px monospace';
                 ctx.fillStyle = '#ffd700';
@@ -8411,12 +8429,6 @@ function _drawMpHostEndBtn() {
                 ctx.fillText(`↑ ${lastRunHigh}m`, 10, 80);
             }
             ctx.shadowBlur = 0;
-            // Personal best below current height
-            if (best > 0) {
-                ctx.font = '11px monospace';
-                ctx.fillStyle = 'rgba(160,210,255,0.65)';
-                ctx.fillText(`best: ${best}m`, 10, 96);
-            }
             ctx.restore();
         }
 
