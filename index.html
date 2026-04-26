@@ -3437,6 +3437,7 @@ await Promise.race([
         let mpFinishersUnsub = null;  // subscription to finishers sub-collection
         let mpResultsReady = false;   // false = fetching final data, true = leaderboard ready to show
         let mpEndGameConfirm = false; // true = showing "are you sure?" before force-ending
+        let mpGameStartAt = 0;        // synchronized start timestamp (ms); 0 = not set
 
         // Tutorial
         let tutorialMode = false;
@@ -7577,14 +7578,25 @@ await Promise.race([
         }
 
         function _mpAwaitAllReady(expectedCount) {
-            const deadline = Date.now() + 8000; // 8 s timeout
+            const deadline = Date.now() + 8000; // 8s timeout for connections
             function tick() {
                 const connected = 1 + Object.keys(remotePositions).length;
                 loadingMsg = 'Connecting ' + connected + '\u2002/\u2002' + expectedCount;
                 if (connected >= expectedCount || Date.now() > deadline) {
-                    _startGameMusic();
-                    state = STATE.PLAY;
-                    onlineScreen = 'main';
+                    if (isRoomHost) {
+                        // HOST sets a synchronized start timestamp 3 seconds from now
+                        const startAt = Date.now() + 3000;
+                        mpGameStartAt = startAt;
+                        loadingMsg = 'Game starting!';
+                        if (mpRoomId) {
+                            _fbDb.collection('rooms').doc(mpRoomId)
+                                .update({ gameStartAt: startAt }).catch(() => {});
+                        }
+                    } else {
+                        // Guests wait for gameStartAt from room subscription
+                        loadingMsg = 'Ready! Waiting for start\u2026';
+                    }
+                    // No immediate state change \u2014 all clients start via mpGameStartAt
                 } else {
                     setTimeout(tick, 250);
                 }
@@ -7732,6 +7744,7 @@ await Promise.race([
             mpPausedByHost = false;
             mpHostLeft = false;
             mpHostTransferring = false;
+            mpGameStartAt = 0;
             _afkPromptActive = false;
             _afkLastActivity = Date.now();
             _worldRng = Math.random.bind(Math); // restore normal RNG for solo play
@@ -7851,6 +7864,11 @@ await Promise.race([
                         });
                     }
                 }
+                // Synchronized start: guests pick up gameStartAt written by HOST
+                if (!isRoomHost && d.gameStartAt && d.gameStartAt !== mpGameStartAt && mpGameStartAt === 0) {
+                    mpGameStartAt = d.gameStartAt;
+                    loadingMsg = 'Game starting!';
+                }
                 // Global pause sync (guests only — host drives this)
                 if (!isRoomHost && d.paused !== undefined) {
                     if (d.paused && !mpPausedByHost && state === STATE.PLAY) {
@@ -7886,32 +7904,92 @@ await Promise.race([
             }, () => {});
         }
 
-        // Fetch latest heights + finishers from Firestore, then reveal leaderboard
+        // Fetch latest heights + finishers from Firestore, then reveal leaderboard.
+        // HOST fetches all data, sorts, and writes canonical finalScores to room doc.
+        // Guests poll for finalScores written by host so everyone sees the same table.
         async function _mpFetchAndFinalize() {
             if (!mpRoomId) { mpResultsReady = true; return; }
-            try {
-                const [posSnap, finSnap] = await Promise.all([
-                    _fbDb.collection('rooms').doc(mpRoomId).collection('pos').get(),
-                    _fbDb.collection('rooms').doc(mpRoomId).collection('finishers').get(),
-                ]);
-                posSnap.forEach(doc => {
-                    const uid = doc.id;
-                    if (uid === mpMyUid) return;
-                    const d = doc.data();
-                    if (remotePositions[uid]) {
-                        remotePositions[uid].maxHeight = Math.max(remotePositions[uid].maxHeight || 0, d.maxHeight || 0);
-                        if (d.finishedAt) remotePositions[uid].finishedAt = d.finishedAt;
-                    }
-                });
-                finSnap.forEach(doc => {
-                    const d = doc.data();
-                    if (d.finishedAt) mpFinishTimes[doc.id] = d.finishedAt;
-                });
-            } catch(e) {
-                console.warn('[mpFetchAndFinalize]', e);
+
+            // Flush own final height to Firestore before anyone fetches
+            if (mpMyUid) {
+                await _fbDb.collection('rooms').doc(mpRoomId).collection('pos').doc(mpMyUid).set({
+                    maxHeight: lastRunHigh,
+                    name: (mpSlots[mpMyUid] && mpSlots[mpMyUid].name) || (UserSystem.currentUser && UserSystem.currentUser.username) || 'Me',
+                    finishedAt: mpFinishTimes[mpMyUid] || null,
+                }, { merge: true }).catch(() => {});
             }
-            mpFinalScores = _mpBuildFinalScores();
-            mpResultsReady = true;
+
+            if (isRoomHost) {
+                // Wait for all clients to flush their heights
+                await new Promise(r => setTimeout(r, 2000));
+                if (!mpRoomId) { mpResultsReady = true; return; }
+                try {
+                    const [posSnap, finSnap] = await Promise.all([
+                        _fbDb.collection('rooms').doc(mpRoomId).collection('pos').get(),
+                        _fbDb.collection('rooms').doc(mpRoomId).collection('finishers').get(),
+                    ]);
+                    const map = {};
+                    posSnap.forEach(doc => {
+                        const d = doc.data();
+                        map[doc.id] = { uid: doc.id, name: d.name || (mpSlots[doc.id] && mpSlots[doc.id].name) || '?', height: d.maxHeight || 0, finishedAt: d.finishedAt || null };
+                    });
+                    finSnap.forEach(doc => {
+                        const d = doc.data();
+                        if (d.finishedAt) {
+                            if (map[doc.id]) map[doc.id].finishedAt = d.finishedAt;
+                            mpFinishTimes[doc.id] = d.finishedAt;
+                        }
+                    });
+                    const scores = Object.values(map);
+                    const anyFinished = scores.some(s => s.finishedAt);
+                    scores.sort((a, b) => {
+                        if (anyFinished) {
+                            if (a.finishedAt && b.finishedAt) return a.finishedAt - b.finishedAt;
+                            if (a.finishedAt) return -1;
+                            if (b.finishedAt) return 1;
+                        }
+                        return b.height - a.height;
+                    });
+                    mpFinalScores = scores;
+                    // Publish canonical scores so all guests show the same leaderboard
+                    if (mpRoomId) _fbDb.collection('rooms').doc(mpRoomId).update({ finalScores: scores }).catch(() => {});
+                } catch(e) {
+                    console.warn('[mpFetchAndFinalize]', e);
+                    mpFinalScores = _mpBuildFinalScores();
+                }
+                mpResultsReady = true;
+            } else {
+                // Guests: poll room doc until HOST writes finalScores (up to 6s)
+                let waited = 0;
+                let resolved = false;
+                while (waited < 6000 && !resolved) {
+                    await new Promise(r => setTimeout(r, 400));
+                    waited += 400;
+                    if (!mpRoomId) break;
+                    try {
+                        const roomDoc = await _fbDb.collection('rooms').doc(mpRoomId).get();
+                        if (roomDoc.exists) {
+                            const fs = roomDoc.data().finalScores;
+                            if (fs && fs.length > 0) {
+                                const scores = [...fs];
+                                const anyFinished = scores.some(s => s.finishedAt);
+                                scores.sort((a, b) => {
+                                    if (anyFinished) {
+                                        if (a.finishedAt && b.finishedAt) return a.finishedAt - b.finishedAt;
+                                        if (a.finishedAt) return -1;
+                                        if (b.finishedAt) return 1;
+                                    }
+                                    return b.height - a.height;
+                                });
+                                mpFinalScores = scores;
+                                resolved = true;
+                            }
+                        }
+                    } catch(e) { break; }
+                }
+                if (!resolved) mpFinalScores = _mpBuildFinalScores();
+                mpResultsReady = true;
+            }
         }
 
         // Subscribe to finishers sub-collection so all clients know who completed
@@ -8492,6 +8570,23 @@ function _drawMpHostEndBtn() {
                     ctx.font = '12px monospace'; ctx.fillStyle = 'rgba(100,200,130,0.7)';
                     ctx.fillText('Please wait\u2026', cx, BASE_H / 2 + 46);
                 }
+            }
+
+            // Countdown overlay once gameStartAt is set
+            if (mpGameStartAt > 0) {
+                const msLeft = mpGameStartAt - Date.now();
+                const rem = Math.max(0, Math.ceil(msLeft / 1000));
+                const pulse2 = 0.7 + Math.sin(t * 6) * 0.3;
+                ctx.fillStyle = 'rgba(4,10,32,0.72)';
+                ctx.fillRect(0, BASE_H / 2 + 110, BASE_W, 100);
+                ctx.save();
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.shadowColor = rem <= 1 ? '#44ff88' : '#55aaff';
+                ctx.shadowBlur = 28 * pulse2;
+                ctx.font = 'bold 72px monospace';
+                ctx.fillStyle = rem <= 1 ? '#44ff88' : '#ffffff';
+                ctx.fillText(rem > 0 ? rem : 'GO!', cx, BASE_H / 2 + 160);
+                ctx.restore();
             }
         }
 
@@ -11020,6 +11115,14 @@ function gameUpdate() {
             if (_wantMusic !== _lastMusicState) {
                 MUSIC.play(_wantMusic);
                 _lastMusicState = _wantMusic;
+            }
+
+            // Synchronized multiplayer start — transition all clients at the same moment
+            if (isMultiplayerGame && mpGameStartAt > 0 && state === STATE.ONLINE && Date.now() >= mpGameStartAt) {
+                mpGameStartAt = 0;
+                _startGameMusic();
+                state = STATE.PLAY;
+                onlineScreen = 'main';
             }
 
             // On first login (new account) — auto-start tutorial
