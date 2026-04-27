@@ -3250,7 +3250,6 @@ await Promise.race([
                     if (onlineScreen === 'loading') { /* can't cancel loading */ }
                     else if (onlineScreen === 'main') { state = STATE.MAIN; }
                     else if (onlineScreen === 'hostOptions') { onlineScreen = 'main'; }
-                    else if (onlineScreen === 'hostBgSelect') { onlineScreen = 'hostOptions'; }
                     else if (onlineScreen === 'joinCode') { onlineScreen = 'main'; joinCodeError = ''; codeInputText = ''; }
                     else if (onlineScreen === 'quickMatch') { _onlineUnsubPublicRooms(); onlineScreen = 'main'; }
                     else if (onlineScreen === 'lobby') { _onlineLeaveRoom(false); }
@@ -7384,7 +7383,7 @@ await Promise.race([
         }
 
         async function _onlineCreateRoom(type) {
-            if (!UserSystem.currentUser) { lobbyError = 'Not logged in — please sign in first'; onlineScreen = 'hostBgSelect'; return; }
+            if (!UserSystem.currentUser) { lobbyError = 'Not logged in — please sign in first'; onlineScreen = 'hostOptions'; return; }
             loadingMsg = 'Creating room\u2026'; lobbyError = ''; lobbyCodeHidden = false; lobbyConfirm = null;
             currentRoomId = null; currentRoomData = null;
             isRoomHost = true; roomPlayersMap = {};
@@ -7396,7 +7395,7 @@ await Promise.race([
                 }
                 const uid = _onlineUid();
                 const name = UserSystem.currentUser.username || 'Player';
-                if (!uid) { loadingMsg = ''; lobbyError = 'Enable Anonymous Auth in Firebase console'; onlineScreen = 'hostBgSelect'; return; }
+                if (!uid) { loadingMsg = ''; lobbyError = 'Enable Anonymous Auth in Firebase console'; onlineScreen = 'hostOptions'; return; }
                 const code = _onlineGenCode();
                 await _fbDb.collection('rooms').doc(code).set({
                     type, hostUid: uid, hostName: name,
@@ -7422,7 +7421,7 @@ await Promise.race([
                     : isAuthErr
                     ? 'Auth error — enable Anonymous Auth in Firebase console'
                     : (e.code || 'Firebase error — check console (F12)');
-                loadingMsg = ''; lobbyError = msg; onlineScreen = 'hostBgSelect';
+                loadingMsg = ''; lobbyError = msg; onlineScreen = 'hostOptions';
             }
         }
         async function _onlineJoinRoom(code) {
@@ -8590,7 +8589,6 @@ function _drawMpHostEndBtn() {
         function drawOnline() {
             if (onlineScreen === 'loading')     _drawOnlineLoading();
             else if (onlineScreen === 'hostOptions') _drawOnlineHostOptions();
-            else if (onlineScreen === 'hostBgSelect') _drawOnlineHostBgSelect();
             else if (onlineScreen === 'lobby')  _drawOnlineLobby();
             else if (onlineScreen === 'joinCode') _drawOnlineJoinCode();
             else if (onlineScreen === 'quickMatch') _drawOnlineQuickMatch();
@@ -9223,44 +9221,73 @@ function _drawMpHostEndBtn() {
             ctx.textBaseline = 'alphabetic';
         }
 
+        function _drawThemeMini(idx, bx, by, bw, bh, tt) {
+            const _tm = [
+                function(bx,by,bw,bh,tt){ // 0 CLOCK/ICE
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                    sg.addColorStop(0,'#001830');sg.addColorStop(1,'#003a5a');
+                    ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    for(let s=0;s<40;s++){const sa=0.3+0.5*Math.abs(Math.sin(tt*1.8+s));ctx.globalAlpha=sa;ctx.fillStyle='#cceeff';ctx.beginPath();ctx.arc(bx+(s*73)%bw,by+(s*47)%(bh*0.6),1,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                    for(let p=0;p<5;p++){const py2=by+bh*0.2+p*(bh*0.18);const pw=bw*(0.4+p*0.06);const pg2=ctx.createLinearGradient(bx,py2,bx,py2+8);pg2.addColorStop(0,'#88ddff');pg2.addColorStop(1,'#2266aa');ctx.fillStyle=pg2;ctx.fillRect(bx+(bw-pw)/2,py2,pw,8);ctx.fillStyle='rgba(200,240,255,0.4)';ctx.fillRect(bx+(bw-pw)/2+2,py2,pw-4,3);}
+                    for(let s=0;s<20;s++){const spx=bx+((s*61+tt*20)%bw);const spy=by+(((s*41)+(tt*30*((s%3)+1)))%bh);ctx.globalAlpha=0.5;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(spx,spy,1.2,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                },
+                function(bx,by,bw,bh,tt){ // 1 GROVE
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                    sg.addColorStop(0,'#001a08');sg.addColorStop(1,'#004018');
+                    ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    for(let tr=0;tr<8;tr++){const tx2=bx+tr*(bw/7.5);ctx.fillStyle='#2a1500';ctx.fillRect(tx2-4,by+bh*0.15,8,bh*0.85);const fg=ctx.createRadialGradient(tx2,by+bh*0.25,0,tx2,by+bh*0.25,bw*0.1);fg.addColorStop(0,'rgba(40,180,70,0.9)');fg.addColorStop(1,'rgba(20,100,30,0)');ctx.fillStyle=fg;ctx.beginPath();ctx.arc(tx2,by+bh*0.25,bw*0.1,0,Math.PI*2);ctx.fill();}
+                    for(let p=0;p<5;p++){const py2=by+bh*0.22+p*(bh*0.17);const pw=bw*(0.5+p*0.04);ctx.fillStyle='#5a3010';ctx.fillRect(bx+(bw-pw)/2,py2,pw,8);ctx.fillStyle='rgba(255,200,100,0.3)';ctx.fillRect(bx+(bw-pw)/2+1,py2,pw-2,3);}
+                    for(let f=0;f<12;f++){const fa=0.4+0.6*Math.abs(Math.sin(tt*2.2+f*1.4));const fx=bx+((f*60+tt*18)%bw);const fy=by+((f*40+tt*8)%bh);ctx.globalAlpha=fa*0.8;ctx.fillStyle='#aaff44';ctx.beginPath();ctx.arc(fx,fy,1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                },
+                function(bx,by,bw,bh,tt){ // 2 DESERT
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                    sg.addColorStop(0,'#1a0800');sg.addColorStop(1,'#3a1e00');
+                    ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    const hg=ctx.createLinearGradient(bx,by+bh*0.5,bx,by+bh);hg.addColorStop(0,'rgba(200,120,0,0)');hg.addColorStop(1,'rgba(180,90,0,0.3)');ctx.fillStyle=hg;ctx.fillRect(bx,by,bw,bh);
+                    for(let p=0;p<5;p++){const py2=by+bh*0.2+p*(bh*0.17);const pw=bw*(0.45+p*0.05);const pg2=ctx.createLinearGradient(bx,py2,bx,py2+8);pg2.addColorStop(0,'#d4901a');pg2.addColorStop(1,'#8b5a00');ctx.fillStyle=pg2;ctx.fillRect(bx+(bw-pw)/2,py2,pw,8);ctx.fillStyle='rgba(255,220,140,0.35)';ctx.fillRect(bx+(bw-pw)/2+1,py2,pw-2,3);}
+                    for(let s=0;s<25;s++){ctx.globalAlpha=0.3;ctx.fillStyle='#d4a060';ctx.beginPath();ctx.arc(bx+((s*53+tt*35)%bw),by+((s*37+tt*12)%(bh*0.8)),1.2,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                },
+                function(bx,by,bw,bh,tt){ // 3 LAVA
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                    sg.addColorStop(0,'#1a0400');sg.addColorStop(1,'#400800');
+                    ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    const lg=ctx.createLinearGradient(bx,by+bh*0.6,bx,by+bh);lg.addColorStop(0,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(255,80,0,0.45)');ctx.fillStyle=lg;ctx.fillRect(bx,by,bw,bh);
+                    for(let p=0;p<5;p++){const py2=by+bh*0.2+p*(bh*0.17);const pw=bw*(0.45+p*0.05);const pg2=ctx.createLinearGradient(bx,py2,bx,py2+8);pg2.addColorStop(0,'#883300');pg2.addColorStop(1,'#440000');ctx.fillStyle=pg2;ctx.fillRect(bx+(bw-pw)/2,py2,pw,8);ctx.fillStyle='rgba(255,100,0,0.35)';ctx.fillRect(bx+(bw-pw)/2,py2,pw,3);}
+                    for(let e=0;e<25;e++){const ex=bx+((e*67+tt*30)%bw);const ey=by+bh-((e*43+tt*40*(1+e%3*0.4))%(bh*0.9));const ea=0.5+0.5*Math.abs(Math.sin(tt*3+e));ctx.globalAlpha=ea*0.75;ctx.fillStyle=e%2===0?'#ff6600':'#ffaa00';ctx.beginPath();ctx.arc(ex,ey,1.5,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                },
+                function(bx,by,bw,bh,tt){ // 4 MOONLIT
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                    sg.addColorStop(0,'#0a0020');sg.addColorStop(1,'#200060');
+                    ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    for(let s=0;s<50;s++){const sa=0.2+0.7*Math.abs(Math.sin(tt*1.5+s*0.9));ctx.globalAlpha=sa;ctx.fillStyle='#ddaaff';ctx.beginPath();ctx.arc(bx+(s*67)%bw,by+(s*43)%(bh*0.8),0.9,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                    const mg=ctx.createRadialGradient(bx+bw*0.75,by+bh*0.12,0,bx+bw*0.75,by+bh*0.12,bw*0.28);mg.addColorStop(0,'rgba(200,160,255,0.35)');mg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=mg;ctx.fillRect(bx,by,bw,bh);
+                    for(let p=0;p<5;p++){const py2=by+bh*0.2+p*(bh*0.17);const pw=bw*(0.45+p*0.05);const pg2=ctx.createLinearGradient(bx,py2,bx,py2+8);pg2.addColorStop(0,'#9944cc');pg2.addColorStop(1,'#440088');ctx.fillStyle=pg2;ctx.fillRect(bx+(bw-pw)/2,py2,pw,8);ctx.fillStyle='rgba(220,180,255,0.4)';ctx.fillRect(bx+(bw-pw)/2+1,py2,pw-2,3);}
+                    for(let m2=0;m2<16;m2++){const ma=0.4+0.5*Math.abs(Math.sin(tt*2.5+m2*0.8));ctx.globalAlpha=ma*0.8;ctx.fillStyle='#cc88ff';ctx.beginPath();ctx.arc(bx+((m2*59+tt*12)%bw),by+((m2*41+tt*8*(1+m2%3*0.5))%(bh*0.95)),1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                },
+                function(bx,by,bw,bh,tt){ // 5 COSMOS
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                    sg.addColorStop(0,'#000810');sg.addColorStop(1,'#001830');
+                    ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    for(let s=0;s<60;s++){const sa=0.2+0.7*Math.abs(Math.sin(tt*1.1+s*0.7));const sc=['#ffffff','#aaffee','#88ddff','#ffccff'][s%4];ctx.globalAlpha=sa;ctx.fillStyle=sc;ctx.beginPath();ctx.arc(bx+(s*61)%bw,by+(s*41)%(bh*0.9),0.7+0.6*(s%3),0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                    const ng=ctx.createRadialGradient(bx+bw*0.3,by+bh*0.4,0,bx+bw*0.3,by+bh*0.4,bw*0.5);ng.addColorStop(0,'rgba(0,255,200,0.13)');ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.fillRect(bx,by,bw,bh);
+                    for(let p=0;p<5;p++){const py2=by+bh*0.2+p*(bh*0.17);const pw=bw*(0.45+p*0.05);const pg2=ctx.createLinearGradient(bx,py2,bx,py2+8);pg2.addColorStop(0,'#008866');pg2.addColorStop(1,'#003322');ctx.fillStyle=pg2;ctx.fillRect(bx+(bw-pw)/2,py2,pw,8);ctx.fillStyle='rgba(0,255,200,0.4)';ctx.fillRect(bx+(bw-pw)/2+1,py2,pw-2,3);}
+                    for(let d=0;d<20;d++){const da=0.3+0.4*Math.abs(Math.sin(tt*1.8+d));ctx.globalAlpha=da*0.65;ctx.fillStyle='#00ffcc';ctx.beginPath();ctx.arc(bx+((d*71+tt*10)%bw),by+((d*53+tt*6*(1+d%3*0.3))%(bh*0.95)),1.2,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                },
+            ];
+            (_tm[idx] || _tm[0])(bx, by, bw, bh, tt);
+        }
+
         function _drawOnlineLobby() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            const _LBY_THEMES = [
-                { color:'#d4901a', dark:'#1a0e00', mid:'rgba(55,25,0,1)'   },
-                { color:'#4ec96a', dark:'#001a08', mid:'rgba(0,38,14,1)'   },
-                { color:'#c89030', dark:'#1a0e00', mid:'rgba(48,26,0,1)'   },
-                { color:'#ff5522', dark:'#200800', mid:'rgba(58,8,0,1)'    },
-                { color:'#bb77ff', dark:'#150030', mid:'rgba(38,4,68,1)'   },
-                { color:'#00ffcc', dark:'#002820', mid:'rgba(0,38,32,1)'   },
-            ];
-            const _lt = _LBY_THEMES[lobbyMapTheme] || _LBY_THEMES[0];
-            const [_lr, _lg, _lb] = hexToRgb(_lt.color);
-
-            // Theme-tinted background
-            const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            bgG.addColorStop(0, _lt.dark);
-            bgG.addColorStop(0.5, _lt.mid);
-            bgG.addColorStop(1, '#050010');
-            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
-
-            // Radial bloom
-            const lBloom = ctx.createRadialGradient(cx, BASE_H * 0.42, 0, cx, BASE_H * 0.42, BASE_H * 0.55);
-            lBloom.addColorStop(0, `rgba(${_lr},${_lg},${_lb},0.14)`);
-            lBloom.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = lBloom; ctx.fillRect(0, 0, BASE_W, BASE_H);
-
-            // Floating particles
+            // Blurred map background
             ctx.save();
-            for (let i = 0; i < 5; i++) {
-                const ox = cx + Math.cos(t * 0.28 + i * 1.26) * 160;
-                const oy = BASE_H / 2 + Math.sin(t * 0.22 + i * 0.9) * 220;
-                const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, 65);
-                og.addColorStop(0, `rgba(${_lr},${_lg},${_lb},0.10)`); og.addColorStop(1, 'transparent');
-                ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox, oy, 65, 0, Math.PI * 2); ctx.fill();
-            }
+            ctx.filter = 'blur(18px)';
+            _drawThemeMini(lobbyMapTheme, -30, -30, BASE_W + 60, BASE_H + 60, t);
             ctx.restore();
+            // Dark overlay so UI stays readable
+            ctx.fillStyle = 'rgba(0,0,8,0.55)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
@@ -11223,41 +11250,13 @@ function menuAction(sx, sy) {
                 if (onlineScreen === 'hostOptions') {
                     const btnW = 300, btnX = cx - btnW / 2;
                     if (sy >= 240 && sy <= 344 && sx >= btnX && sx <= btnX + btnW) {
-                        SFX.play('click'); hostRoomType = 'public'; hostPreviewTheme = 0; onlineScreen = 'hostBgSelect'; return;
+                        SFX.play('click'); _onlineCreateRoom('public'); return;
                     }
                     if (sy >= 362 && sy <= 466 && sx >= btnX && sx <= btnX + btnW) {
-                        SFX.play('click'); hostRoomType = 'private'; hostPreviewTheme = 0; onlineScreen = 'hostBgSelect'; return;
+                        SFX.play('click'); _onlineCreateRoom('private'); return;
                     }
                     if (sy >= 494 && sy <= 534 && sx >= cx - 80 && sx <= cx + 80) {
                         SFX.play('click'); onlineScreen = 'main'; return;
-                    }
-                    return;
-                }
-                // ── host background select ────────────────────────────────
-                if (onlineScreen === 'hostBgSelect') {
-                    const cols = 3, tileW = 138, tileH = 130, tileGap = 6;
-                    const gridW = cols * tileW + (cols - 1) * tileGap;
-                    const gridX = cx - gridW / 2;
-                    const gridY = 80;
-                    // tile clicks
-                    for (let i = 0; i < 6; i++) {
-                        const col = i % cols, row = Math.floor(i / cols);
-                        const tx = gridX + col * (tileW + tileGap);
-                        const ty = gridY + row * (tileH + tileGap);
-                        if (sx >= tx && sx <= tx + tileW && sy >= ty && sy <= ty + tileH) {
-                            SFX.play('click'); hostPreviewTheme = i; return;
-                        }
-                    }
-                    // confirm button: gridY + 2*(tileH+tileGap) + 14
-                    const confirmY = gridY + 2 * (tileH + tileGap) + 14;
-                    const confirmW = 300, confirmH = 58, confirmX = cx - confirmW / 2;
-                    if (sy >= confirmY && sy <= confirmY + confirmH && sx >= confirmX && sx <= confirmX + confirmW) {
-                        SFX.play('click'); _onlineCreateRoom(hostRoomType); return;
-                    }
-                    // back button
-                    const backY2 = confirmY + confirmH + 10;
-                    if (sy >= backY2 && sy <= backY2 + 38 && sx >= cx - 80 && sx <= cx + 80) {
-                        SFX.play('click'); onlineScreen = 'hostOptions'; return;
                     }
                     return;
                 }
