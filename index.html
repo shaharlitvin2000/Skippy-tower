@@ -9281,13 +9281,28 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Blurred map background
+            // Actual game background (blurred) — real drawBgXxx functions with animated cam
+            const _savedTheme = currentTheme, _savedMode = currentMode;
+            currentTheme = lobbyMapTheme; currentMode = 'infinite';
+            const _bgCam = (t * 30) % 2400;
             ctx.save();
-            ctx.filter = 'blur(18px)';
-            _drawThemeMini(lobbyMapTheme, -30, -30, BASE_W + 60, BASE_H + 60, t);
+            ctx.filter = 'blur(7px)';
+            const _sc = BG_SCENES[lobbyMapTheme] || BG_SCENES[0];
+            const _skyG = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            _skyG.addColorStop(0, _sc[0][0]); _skyG.addColorStop(1, _sc[0][1]);
+            ctx.fillStyle = _skyG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            switch (lobbyMapTheme) {
+                case 0: drawBgIce(_bgCam, t); break;
+                case 1: drawBgForest(_bgCam, t); break;
+                case 2: drawBgDesert(_bgCam, t); break;
+                case 3: drawBgLava(_bgCam, t); break;
+                case 4: drawBgMagic(_bgCam, t); break;
+                case 5: drawBgSpace(_bgCam, t); break;
+            }
             ctx.restore();
+            currentTheme = _savedTheme; currentMode = _savedMode;
             // Dark overlay so UI stays readable
-            ctx.fillStyle = 'rgba(0,0,8,0.55)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            ctx.fillStyle = 'rgba(0,0,6,0.48)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
