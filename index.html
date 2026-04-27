@@ -9695,13 +9695,17 @@ function _drawMpHostEndBtn() {
             // Trail name
             if (eqTrail) {
                 const trY = badgeY + badgeH + 16;
-                ctx.beginPath(); ctx.arc(cx - 34, trY, 5, 0, Math.PI * 2);
+                ctx.font = 'bold 11px monospace';
+                const tWidth = ctx.measureText(eqTrail.name).width;
+                const totalW = 10 + 6 + tWidth;
+                const startX = cx - totalW / 2;
+                ctx.beginPath(); ctx.arc(startX + 5, trY, 5, 0, Math.PI * 2);
                 ctx.fillStyle = eqTrail.color;
                 ctx.shadowColor = eqTrail.color; ctx.shadowBlur = 10;
                 ctx.fill(); ctx.shadowBlur = 0;
-                ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
                 ctx.fillStyle = eqTrail.unlocked ? 'rgba(220,180,255,0.9)' : 'rgba(130,100,160,0.5)';
-                ctx.fillText(eqTrail.name, cx - 24, trY + 1);
+                ctx.fillText(eqTrail.name, startX + 16, trY + 1);
                 ctx.textAlign = 'center';
             }
 
