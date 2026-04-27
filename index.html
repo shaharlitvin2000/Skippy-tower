@@ -578,11 +578,11 @@
     <canvas id="c"></canvas>
 
     <!-- USER TAG + LOGOUT -->
-    <div id="userTag" style="display:none; position:fixed; top:10px; left:10px; z-index:1000; align-items:center; gap:8px; pointer-events:auto;">
-        <div style="background:rgba(0,10,25,0.78); border:1px solid #1a5a8a; border-radius:20px; padding:5px 12px; font-family:'Courier New',monospace; font-size:13px; color:#55ccff; text-shadow:0 0 8px rgba(85,204,255,0.6); white-space:nowrap;">
+    <div id="userTag" style="display:none; position:fixed; top:10px; left:10px; z-index:1000; align-items:center; gap:6px; pointer-events:auto;">
+        <div style="background:rgba(30,0,55,0.88); border:1.5px solid rgba(180,80,255,0.6); border-radius:20px; padding:5px 13px; font-family:'Orbitron','Courier New',monospace; font-size:12px; color:#dd88ff; text-shadow:0 0 8px rgba(200,80,255,0.6); white-space:nowrap; box-shadow:0 0 12px rgba(160,40,255,0.25);">
             👤 <span id="userTagName"></span>
         </div>
-        <button id="logoutBtn" style="background:rgba(20,0,0,0.78); border:1px solid #5a1a1a; border-radius:20px; padding:5px 12px; font-family:'Courier New',monospace; font-size:11px; color:#ff7777; cursor:pointer; letter-spacing:1px; white-space:nowrap;">
+        <button id="logoutBtn" style="background:rgba(40,0,20,0.88); border:1.5px solid rgba(255,80,80,0.5); border-radius:20px; padding:5px 12px; font-family:'Orbitron','Courier New',monospace; font-size:10px; color:#ff8888; cursor:pointer; letter-spacing:1px; white-space:nowrap; box-shadow:0 0 8px rgba(255,60,60,0.2);">
             ✕ LOGOUT
         </button>
     </div>
@@ -8890,89 +8890,102 @@ function _drawMpHostEndBtn() {
         function _drawOnlineLobby() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            // background tinted by selected theme
-            const th = THEMES[lobbyMapTheme] || THEMES[0];
-            const grad = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            grad.addColorStop(0, th.BG_TOP); grad.addColorStop(1, th.BG_BOT);
-            ctx.fillStyle = grad; ctx.fillRect(0, 0, BASE_W, BASE_H);
-            // subtle wall tint on sides
-            const wallG = ctx.createLinearGradient(0, 0, WALL_W, 0);
-            wallG.addColorStop(0, th.WALL); wallG.addColorStop(1, 'transparent');
-            ctx.fillStyle = wallG; ctx.fillRect(0, 0, WALL_W, BASE_H);
-            const wallGR = ctx.createLinearGradient(BASE_W, 0, BASE_W - WALL_W, 0);
-            wallGR.addColorStop(0, th.WALL); wallGR.addColorStop(1, 'transparent');
-            ctx.fillStyle = wallGR; ctx.fillRect(BASE_W - WALL_W, 0, WALL_W, BASE_H);
-            // overlay to keep UI readable
-            ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
-            // stars
+
+            // Purple gradient background
+            const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
+            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            // Floating orbs
             ctx.save();
-            for (let i = 0; i < 22; i++) {
-                const bx = (Math.sin(i * 97.3) * 0.5 + 0.5) * BASE_W;
-                const by = (Math.cos(i * 63.7) * 0.5 + 0.5) * BASE_H;
-                const a = 0.06 + 0.1 * Math.abs(Math.sin(t * 0.6 + i));
-                ctx.fillStyle = `rgba(180,220,255,${a})`; ctx.beginPath();
-                ctx.arc(bx, by, 0.8, 0, Math.PI * 2); ctx.fill();
+            const oc = ['#aa44ff','#44aaff','#ff44aa','#44ffcc','#ffaa44'];
+            for (let i = 0; i < 5; i++) {
+                const ox = cx + Math.cos(t * 0.28 + i * 1.26) * 160;
+                const oy = BASE_H / 2 + Math.sin(t * 0.22 + i * 0.9) * 220;
+                const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, 65);
+                og.addColorStop(0, oc[i] + '1a'); og.addColorStop(1, 'transparent');
+                ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox, oy, 65, 0, Math.PI * 2); ctx.fill();
             }
             ctx.restore();
-            // header
+
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#3ca0ff';
-            ctx.fillText('WAITING ROOM', cx, 22);
+
+            // Header
+            const hdrG = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
+            hdrG.addColorStop(0, '#ff44aa'); hdrG.addColorStop(0.5, '#cc44ff'); hdrG.addColorStop(1, '#44aaff');
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.7)';
+            ctx.fillText('— MULTIPLAYER —', cx, 22);
+            ctx.save(); ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 18;
+            ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = hdrG;
+            ctx.fillText('WAITING ROOM', cx, 50);
+            ctx.restore();
+
+            // Rainbow separator
+            const sepG = ctx.createLinearGradient(cx - 160, 0, cx + 160, 0);
+            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.2, '#ff44aa');
+            sepG.addColorStop(0.5, '#aa44ff'); sepG.addColorStop(0.8, '#44aaff'); sepG.addColorStop(1, 'transparent');
+            ctx.strokeStyle = sepG; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
+            ctx.beginPath(); ctx.moveTo(cx - 160, 68); ctx.lineTo(cx + 160, 68); ctx.stroke();
+            ctx.globalAlpha = 1;
 
             if (lobbyCreating) {
-                // loading state
                 const dots = '.'.repeat(Math.floor(t * 2) % 4);
-                ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#88aacc';
-                ctx.fillText('Creating room' + dots, cx, 60);
-                ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(100,140,200,0.5)';
-                ctx.fillText('Please wait', cx, 82);
+                ctx.save(); ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 16;
+                ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#cc88ff';
+                ctx.fillText('Creating room' + dots, cx, BASE_H / 2);
+                ctx.restore();
+                ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,120,220,0.6)';
+                ctx.fillText('Please wait', cx, BASE_H / 2 + 30);
             } else {
-                // code box
-                const codeBoxW = 300, codeBoxH = 54, codeBoxX = cx - codeBoxW / 2, codeBoxY = 34;
-                ctx.fillStyle = 'rgba(0,20,50,0.7)';
-                ctx.beginPath(); ctx.roundRect(codeBoxX, codeBoxY, codeBoxW, codeBoxH, 10); ctx.fill();
-                ctx.save(); ctx.shadowColor = '#3ca0ff'; ctx.shadowBlur = 14;
-                ctx.strokeStyle = 'rgba(85,170,255,0.55)'; ctx.lineWidth = 1.8;
-                ctx.beginPath(); ctx.roundRect(codeBoxX, codeBoxY, codeBoxW, codeBoxH, 10); ctx.stroke();
-                ctx.shadowBlur = 0; ctx.restore();
-                ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(100,160,220,0.7)';
-                ctx.fillText('ROOM CODE', cx, codeBoxY + 12);
+                // Room code box
+                const codeBoxW = 300, codeBoxH = 62, codeBoxX = cx - codeBoxW / 2, codeBoxY = 78;
+                const codeBoxBg = ctx.createLinearGradient(codeBoxX, codeBoxY, codeBoxX, codeBoxY + codeBoxH);
+                codeBoxBg.addColorStop(0, 'rgba(40,0,80,0.9)'); codeBoxBg.addColorStop(1, 'rgba(20,0,50,0.9)');
+                ctx.fillStyle = codeBoxBg;
+                ctx.beginPath(); ctx.roundRect(codeBoxX, codeBoxY, codeBoxW, codeBoxH, 14); ctx.fill();
+                ctx.save(); ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 14;
+                ctx.strokeStyle = 'rgba(180,80,255,0.65)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(codeBoxX, codeBoxY, codeBoxW, codeBoxH, 14); ctx.stroke();
+                ctx.restore();
+                ctx.font = 'bold 9px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.7)';
+                ctx.fillText('ROOM CODE', cx, codeBoxY + 13);
                 const cg = ctx.createLinearGradient(cx - 80, 0, cx + 80, 0);
-                cg.addColorStop(0, '#55aaff'); cg.addColorStop(0.5, '#ffffff'); cg.addColorStop(1, '#55aaff');
-                ctx.font = 'bold 30px monospace'; ctx.fillStyle = cg;
+                cg.addColorStop(0, '#cc88ff'); cg.addColorStop(0.5, '#ffffff'); cg.addColorStop(1, '#cc88ff');
+                ctx.font = 'bold 28px Orbitron, monospace'; ctx.fillStyle = cg;
+                ctx.save(); ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 12;
                 const displayCode = currentRoomId
                     ? (lobbyCodeHidden ? '● ● ● ● ● ●' : currentRoomId)
                     : '------';
-                ctx.fillText(displayCode, cx, codeBoxY + 38);
-                // eye toggle button
-                const eyeX = codeBoxX + codeBoxW + 8, eyeY = codeBoxY + 10, eyeW = 32, eyeH = 34;
-                ctx.fillStyle = 'rgba(10,20,50,0.85)';
-                ctx.beginPath(); ctx.roundRect(eyeX, eyeY, eyeW, eyeH, 7); ctx.fill();
-                ctx.strokeStyle = 'rgba(85,150,220,0.45)'; ctx.lineWidth = 1.2;
-                ctx.beginPath(); ctx.roundRect(eyeX, eyeY, eyeW, eyeH, 7); ctx.stroke();
-                ctx.font = '18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#aaddff';
+                ctx.fillText(displayCode, cx, codeBoxY + 43);
+                ctx.restore();
+                // Eye toggle
+                const eyeX = codeBoxX + codeBoxW + 8, eyeY = codeBoxY + 14, eyeW = 32, eyeH = 34;
+                ctx.fillStyle = 'rgba(30,0,60,0.88)';
+                ctx.beginPath(); ctx.roundRect(eyeX, eyeY, eyeW, eyeH, 8); ctx.fill();
+                ctx.strokeStyle = 'rgba(160,80,255,0.45)'; ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.roundRect(eyeX, eyeY, eyeW, eyeH, 8); ctx.stroke();
+                ctx.font = '16px sans-serif';
                 ctx.fillText(lobbyCodeHidden ? '🙈' : '👁', eyeX + eyeW / 2, eyeY + eyeH / 2);
                 const isPublic = currentRoomData?.type === 'public';
-                ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+                ctx.font = 'bold 10px Orbitron, monospace';
                 ctx.fillStyle = isPublic ? '#44ee88' : '#cc88ff';
+                ctx.save(); if (isPublic) { ctx.shadowColor = '#44ee88'; ctx.shadowBlur = 8; }
                 ctx.fillText(isPublic ? '🌍 PUBLIC' : '🔒 PRIVATE', cx, codeBoxY + codeBoxH + 12);
-                ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(100,140,200,0.5)';
+                ctx.restore();
+                ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(160,120,220,0.45)';
                 ctx.fillText('Share this code with friends to invite them', cx, codeBoxY + codeBoxH + 24);
             }
-            ctx.strokeStyle = 'rgba(60,130,220,0.2)'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(30, 126); ctx.lineTo(BASE_W - 30, 126); ctx.stroke();
-            // platform area
-            const platAreaY = 130, platAreaH = 140;
-            const platW = 360, platH = 18, platX = cx - platW / 2;
-            const platY = platAreaY + platAreaH - 12;
-            ctx.save(); ctx.shadowColor = '#3ca0ff'; ctx.shadowBlur = 12;
+
+            // Player platform area
+            const platAreaY = 164, platAreaH = 110;
+            const platW = 360, platH = 16, platX = cx - platW / 2;
+            const platY = platAreaY + platAreaH - 10;
+            ctx.save(); ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 14;
             const pg = ctx.createLinearGradient(platX, platY, platX, platY + platH);
-            pg.addColorStop(0, '#4488dd'); pg.addColorStop(1, '#1a3366');
+            pg.addColorStop(0, '#7722cc'); pg.addColorStop(1, '#3a0077');
             ctx.fillStyle = pg; ctx.beginPath(); ctx.roundRect(platX, platY, platW, platH, 4); ctx.fill();
-            ctx.shadowBlur = 0; ctx.restore();
-            ctx.fillStyle = 'rgba(160,210,255,0.3)'; ctx.fillRect(platX + 4, platY, platW - 8, 3);
-            // players on platform
+            ctx.restore();
+            ctx.fillStyle = 'rgba(200,140,255,0.3)'; ctx.fillRect(platX + 4, platY, platW - 8, 3);
+
             const players = Object.entries(roomPlayersMap);
             const myUid = _onlineUid();
             const spacing = Math.min(58, (platW - 40) / Math.max(1, players.length));
@@ -8982,18 +8995,23 @@ function _drawMpHostEndBtn() {
                 const px = startPX + i * spacing, py = platY - 4;
                 const skinIdx = Math.max(0, Math.min((pd.skin || 0), SKINS.length - 1));
                 ctx.save(); SKINS[skinIdx].draw(px, py, 0.82); ctx.restore();
-                ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
                 const isHost = uid === currentRoomData?.hostUid;
                 const isMe = uid === myUid;
-                ctx.font = (isMe ? 'bold ' : '') + '9px monospace';
-                ctx.fillStyle = isMe ? '#88ddff' : 'rgba(180,210,255,0.85)';
-                ctx.fillText((isHost ? '👑' : '') + (pd.name || 'Player'), px, platY - 44); ctx.restore();
+                ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                ctx.font = (isMe ? 'bold ' : '') + '9px Orbitron, monospace';
+                ctx.fillStyle = isMe ? '#dd88ff' : 'rgba(200,160,255,0.85)';
+                ctx.fillText((isHost ? '👑' : '') + (pd.name || 'Player'), px, platY - 44);
+                ctx.restore();
             }
-            ctx.strokeStyle = 'rgba(60,130,220,0.18)'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(30, platAreaY + platAreaH + 4); ctx.lineTo(BASE_W - 30, platAreaY + platAreaH + 4); ctx.stroke();
-            ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(90,130,170,0.7)';
-            ctx.fillText(`${players.length}/8 players`, cx, platAreaY + platAreaH + 17);
-            // ── settings: THEME + HEIGHT selectors ──────────────────────
+
+            // Separator + player count
+            const sepY2 = platAreaY + platAreaH + 4;
+            ctx.strokeStyle = 'rgba(140,60,220,0.25)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(30, sepY2); ctx.lineTo(BASE_W - 30, sepY2); ctx.stroke();
+            ctx.font = '10px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.6)';
+            ctx.fillText(`${players.length}/8 players`, cx, sepY2 + 13);
+
+            // ── Settings: THEME + HEIGHT selectors ──────────────────────
             const THEMES_DEF = [
                 { label:'CLOCK',   icon:'⚙',  color:'#d4901a' },
                 { label:'GROVE',   icon:'🌿', color:'#4ec96a' },
@@ -9010,166 +9028,175 @@ function _drawMpHostEndBtn() {
                 { label:'3750 m',  icon:'🏔', mode:'level',    level:4, color:'#cc77ff' },
                 { label:'5000 m',  icon:'🏔', mode:'level',    level:5, color:'#00ffcc' },
             ];
-            const sW = 68, sH = 42, sGap = 3;
-            const sGridW = 6 * sW + 5 * sGap; // 423
+            const sW = 68, sH = 44, sGap = 3;
+            const sGridW = 6 * sW + 5 * sGap;
             const sGridX = cx - sGridW / 2;
             const settingsY = 298;
 
-            // THEME row label
-            ctx.font = 'bold 10px monospace'; ctx.fillStyle = isRoomHost ? '#8899bb' : 'rgba(80,100,140,0.5)';
+            // THEME label
+            ctx.font = 'bold 10px Orbitron, monospace';
+            ctx.fillStyle = isRoomHost ? 'rgba(200,150,255,0.85)' : 'rgba(140,100,180,0.5)';
             ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
             ctx.fillText('MAP STYLE', sGridX, settingsY + 8);
-            ctx.textAlign = 'right';
-            if (!isRoomHost) ctx.fillText('HOST ONLY', sGridX + sGridW, settingsY + 8);
+            if (!isRoomHost) { ctx.textAlign = 'right'; ctx.fillText('HOST ONLY', sGridX + sGridW, settingsY + 8); }
             ctx.textAlign = 'center';
 
-            const tY = settingsY + 18;
+            const tY = settingsY + 20;
             for (let i = 0; i < 6; i++) {
                 const m = THEMES_DEF[i];
                 const tx = sGridX + i * (sW + sGap);
                 const sel = i === lobbyMapTheme;
                 const [r2,g2,b2] = hexToRgb(m.color);
-                // selected cards always fully visible; non-selected dimmed only for guests
-                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.22)` : 'rgba(8,14,30,0.75)';
-                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.45;
-                ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 6); ctx.fill();
-                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 0.95 : 0.28})`; ctx.lineWidth = sel ? 2 : 1;
-                ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 6); ctx.stroke();
-                if (sel) { ctx.save(); ctx.shadowColor = m.color; ctx.shadowBlur = 10; ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 6); ctx.stroke(); ctx.restore(); }
+                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.4;
+                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.25)` : 'rgba(20,5,40,0.8)';
+                ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 8); ctx.fill();
+                if (sel) { ctx.save(); ctx.shadowColor = m.color; ctx.shadowBlur = 12; }
+                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 1 : 0.3})`; ctx.lineWidth = sel ? 2 : 1;
+                ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 8); ctx.stroke();
+                if (sel) ctx.restore();
                 ctx.globalAlpha = 1;
                 ctx.font = '14px sans-serif'; ctx.fillStyle = sel ? '#fff' : m.color;
-                ctx.fillText(m.icon, tx + sW / 2, tY + 14);
-                ctx.font = 'bold 8px monospace'; ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.85)`;
+                ctx.fillText(m.icon, tx + sW / 2, tY + 16);
+                ctx.font = 'bold 8px Orbitron, monospace'; ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.85)`;
                 ctx.fillText(m.label, tx + sW / 2, tY + sH - 8);
             }
             ctx.globalAlpha = 1;
 
-            // HEIGHT row label
+            // HEIGHT label
             const hLabelY = tY + sH + 10;
-            ctx.font = 'bold 10px monospace'; ctx.fillStyle = isRoomHost ? '#8899bb' : 'rgba(80,100,140,0.5)';
+            ctx.font = 'bold 10px Orbitron, monospace';
+            ctx.fillStyle = isRoomHost ? 'rgba(200,150,255,0.85)' : 'rgba(140,100,180,0.5)';
             ctx.textAlign = 'left'; ctx.fillText('HEIGHT', sGridX, hLabelY + 8);
             ctx.textAlign = 'center';
-            const hY = hLabelY + 18;
+            const hY = hLabelY + 20;
             for (let i = 0; i < 6; i++) {
                 const h = HEIGHTS_DEF[i];
                 const hx = sGridX + i * (sW + sGap);
                 const sel = h.mode === lobbyMapMode && (h.mode === 'infinite' || h.level === lobbyMapLevel);
                 const [r2,g2,b2] = hexToRgb(h.color);
-                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.22)` : 'rgba(8,14,30,0.75)';
-                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.45;
-                ctx.beginPath(); ctx.roundRect(hx, hY, sW, sH, 6); ctx.fill();
-                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 0.95 : 0.28})`; ctx.lineWidth = sel ? 2 : 1;
-                ctx.beginPath(); ctx.roundRect(hx, hY, sW, sH, 6); ctx.stroke();
-                if (sel) { ctx.save(); ctx.shadowColor = h.color; ctx.shadowBlur = 10; ctx.beginPath(); ctx.roundRect(hx, hY, sW, sH, 6); ctx.stroke(); ctx.restore(); }
+                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.4;
+                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.25)` : 'rgba(20,5,40,0.8)';
+                ctx.beginPath(); ctx.roundRect(hx, hY, sW, sH, 8); ctx.fill();
+                if (sel) { ctx.save(); ctx.shadowColor = h.color; ctx.shadowBlur = 12; }
+                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 1 : 0.3})`; ctx.lineWidth = sel ? 2 : 1;
+                ctx.beginPath(); ctx.roundRect(hx, hY, sW, sH, 8); ctx.stroke();
+                if (sel) ctx.restore();
                 ctx.globalAlpha = 1;
-                ctx.font = 'bold 10px monospace'; ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.85)`;
-                ctx.fillText(h.label, hx + sW / 2, hY + sH / 2 + 1);
+                ctx.font = 'bold 10px Orbitron, monospace'; ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.85)`;
+                ctx.fillText(h.label, hx + sW / 2, hY + sH / 2);
             }
             ctx.globalAlpha = 1;
-            // settings-change notification for guests (fades out over 2.5s)
+
+            // Settings-change notification for guests
             if (!isRoomHost && lobbySettingsNotif) {
                 const age = (Date.now() - lobbySettingsNotifAt) / 1000;
                 if (age < 2.5) {
                     const fade = age < 1.5 ? 1 : 1 - (age - 1.5) / 1.0;
-                    ctx.save();
-                    ctx.globalAlpha = fade;
+                    ctx.save(); ctx.globalAlpha = fade;
                     const nW = 280, nH = 34, nX = cx - nW / 2, nY = hY + sH + 10;
-                    ctx.fillStyle = 'rgba(10,30,70,0.92)';
-                    ctx.beginPath(); ctx.roundRect(nX, nY, nW, nH, 8); ctx.fill();
-                    ctx.strokeStyle = 'rgba(85,170,255,0.6)'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.roundRect(nX, nY, nW, nH, 8); ctx.stroke();
-                    ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#88ddff';
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = 'rgba(30,5,60,0.95)';
+                    ctx.beginPath(); ctx.roundRect(nX, nY, nW, nH, 10); ctx.fill();
+                    ctx.strokeStyle = 'rgba(160,80,255,0.6)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(nX, nY, nW, nH, 10); ctx.stroke();
+                    ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = '#cc88ff';
                     ctx.fillText(lobbySettingsNotif, cx, nY + nH / 2);
                     ctx.restore();
                 } else {
                     lobbySettingsNotif = '';
                 }
             }
-            // error (shown above start/waiting area)
+
+            // Error banner
             if (lobbyError) {
-                ctx.fillStyle = 'rgba(80,0,0,0.88)';
-                ctx.beginPath(); ctx.roundRect(20, 290, BASE_W - 40, 42, 8); ctx.fill();
+                ctx.fillStyle = 'rgba(60,0,0,0.92)';
+                ctx.beginPath(); ctx.roundRect(20, 290, BASE_W - 40, 40, 10); ctx.fill();
                 ctx.strokeStyle = 'rgba(255,80,60,0.65)'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.roundRect(20, 290, BASE_W - 40, 42, 8); ctx.stroke();
-                ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#ff8877';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(lobbyError, cx, 311);
+                ctx.beginPath(); ctx.roundRect(20, 290, BASE_W - 40, 40, 10); ctx.stroke();
+                ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = '#ff8877';
+                ctx.fillText(lobbyError, cx, 310);
             }
-            // start button (host) or waiting (non-host)
+
+            // Start button / countdown / waiting
             const startY = 660;
             if (lobbyStartAt > 0) {
-                // Synchronized countdown — shown to all players
                 const msLeft = lobbyStartAt - Date.now();
                 const rem = Math.max(0, Math.ceil(msLeft / 1000));
                 const pulse3 = 0.6 + Math.sin(t * 6) * 0.4;
                 ctx.save();
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.shadowColor = rem <= 1 ? '#44ff88' : '#55aaff';
-                ctx.shadowBlur = 22 * pulse3;
-                ctx.font = 'bold 52px monospace';
+                ctx.shadowColor = rem <= 1 ? '#44ff88' : `hsl(${(t*80)%360},100%,70%)`;
+                ctx.shadowBlur = 28 * pulse3;
+                ctx.font = 'bold 60px Orbitron, monospace';
                 ctx.fillStyle = rem <= 1 ? '#44ff88' : '#ffffff';
-                ctx.fillText(rem > 0 ? rem : 'GO!', cx, startY + 23);
+                ctx.fillText(rem > 0 ? rem : 'GO!', cx, startY + 30);
                 ctx.shadowBlur = 0;
-                ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(100,160,220,0.7)';
-                ctx.fillText('Game starting…', cx, startY + 54);
+                ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.7)';
+                ctx.fillText('Game starting…', cx, startY + 62);
                 ctx.restore();
             } else if (isRoomHost) {
                 const canStart = players.length >= 2;
-                const sBtnW = 224, sBtnH = 46, sBtnX = cx - sBtnW / 2;
-                ctx.fillStyle = canStart ? 'rgba(0,40,18,0.9)' : 'rgba(10,10,22,0.7)';
-                ctx.beginPath(); ctx.roundRect(sBtnX, startY, sBtnW, sBtnH, 12); ctx.fill();
-                ctx.strokeStyle = canStart ? 'rgba(50,255,120,0.75)' : 'rgba(55,75,100,0.4)'; ctx.lineWidth = canStart ? 2 : 1;
-                ctx.beginPath(); ctx.roundRect(sBtnX, startY, sBtnW, sBtnH, 12); ctx.stroke();
-                ctx.font = 'bold 18px monospace'; ctx.fillStyle = canStart ? '#44ff88' : 'rgba(70,95,120,0.6)';
-                ctx.fillText('▶  START GAME', cx, startY + sBtnH / 2 + 1);
-                if (!canStart) { ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(90,120,150,0.6)'; ctx.fillText('Need at least 2 players to start', cx, startY + sBtnH + 13); }
+                const sBtnW = 240, sBtnH = 52, sBtnX = cx - sBtnW / 2;
+                ctx.save();
+                if (canStart) { ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 16; }
+                ctx.fillStyle = canStart ? 'rgba(0,40,18,0.92)' : 'rgba(15,10,30,0.75)';
+                ctx.beginPath(); ctx.roundRect(sBtnX, startY, sBtnW, sBtnH, 14); ctx.fill();
+                ctx.strokeStyle = canStart ? 'rgba(68,255,136,0.85)' : 'rgba(80,60,120,0.4)'; ctx.lineWidth = canStart ? 2.5 : 1;
+                ctx.beginPath(); ctx.roundRect(sBtnX, startY, sBtnW, sBtnH, 14); ctx.stroke();
+                ctx.restore();
+                ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = canStart ? '#44ff88' : 'rgba(100,80,140,0.6)';
+                ctx.fillText('▶  START GAME', cx, startY + sBtnH / 2);
+                if (!canStart) { ctx.font = '10px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,120,200,0.55)'; ctx.fillText('Need at least 2 players to start', cx, startY + sBtnH + 14); }
             } else {
                 const dots = '.'.repeat(Math.floor(t * 2) % 4);
-                ctx.font = '13px monospace'; ctx.fillStyle = 'rgba(100,150,200,0.7)';
-                ctx.fillText('Waiting for host to start' + dots, cx, startY + 20);
+                ctx.font = '13px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.7)';
+                ctx.fillText('Waiting for host to start' + dots, cx, startY + 26);
             }
-            // leave button
-            const leaveY = isRoomHost ? 728 : 698;
-            const lBtnW = 164, lBtnX = cx - lBtnW / 2;
-            ctx.fillStyle = 'rgba(20,6,6,0.88)';
-            ctx.beginPath(); ctx.roundRect(lBtnX, leaveY, lBtnW, 38, 10); ctx.fill();
-            ctx.strokeStyle = 'rgba(200,75,75,0.4)'; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(lBtnX, leaveY, lBtnW, 38, 10); ctx.stroke();
-            ctx.font = 'bold 14px monospace'; ctx.fillStyle = 'rgba(220,110,90,0.9)';
-            ctx.fillText('⬅  LEAVE ROOM', cx, leaveY + 19);
 
-            // confirmation overlay
+            // Leave button
+            const leaveY = isRoomHost ? 730 : 700;
+            const lBtnW = 190, lBtnX = cx - lBtnW / 2;
+            ctx.fillStyle = 'rgba(30,5,5,0.9)';
+            ctx.beginPath(); ctx.roundRect(lBtnX, leaveY, lBtnW, 42, 12); ctx.fill();
+            ctx.strokeStyle = 'rgba(220,80,80,0.55)'; ctx.lineWidth = 1.8;
+            ctx.beginPath(); ctx.roundRect(lBtnX, leaveY, lBtnW, 42, 12); ctx.stroke();
+            ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = '#ff8888';
+            ctx.fillText('⬅  LEAVE ROOM', cx, leaveY + 21);
+
+            // Confirmation overlay
             if (lobbyConfirm) {
-                ctx.fillStyle = 'rgba(0,0,0,0.72)';
+                ctx.fillStyle = 'rgba(0,0,0,0.78)';
                 ctx.fillRect(0, 0, BASE_W, BASE_H);
-                const pW = 320, pH = 160, pX = cx - pW / 2, pY = BASE_H / 2 - pH / 2;
-                ctx.fillStyle = 'rgba(6,14,36,0.98)';
-                ctx.beginPath(); ctx.roundRect(pX, pY, pW, pH, 16); ctx.fill();
-                ctx.strokeStyle = 'rgba(85,150,255,0.6)'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.roundRect(pX, pY, pW, pH, 16); ctx.stroke();
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = 'bold 15px monospace'; ctx.fillStyle = '#ccddff';
+                const pW = 320, pH = 168, pX = cx - pW / 2, pY = BASE_H / 2 - pH / 2;
+                const confBg = ctx.createLinearGradient(pX, pY, pX, pY + pH);
+                confBg.addColorStop(0, 'rgba(30,5,60,0.99)'); confBg.addColorStop(1, 'rgba(15,2,35,0.99)');
+                ctx.fillStyle = confBg;
+                ctx.beginPath(); ctx.roundRect(pX, pY, pW, pH, 18); ctx.fill();
+                ctx.save(); ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 20;
+                ctx.strokeStyle = 'rgba(180,80,255,0.7)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(pX, pY, pW, pH, 18); ctx.stroke();
+                ctx.restore();
+                ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = '#dd99ff';
                 const confirmMsg = lobbyConfirm === 'start' ? 'Start the game now?' : 'Leave the room?';
                 ctx.fillText(confirmMsg, cx, pY + 44);
-                ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(130,160,210,0.7)';
-                ctx.fillText(lobbyConfirm === 'start' ? 'All players will be taken to the game.' : 'The room will be closed.' , cx, pY + 68);
-                // YES button
-                const yBtnW = 110, yBtnH = 40, yBtnX = cx - yBtnW - 10, yBtnY = pY + pH - 58;
-                ctx.fillStyle = lobbyConfirm === 'start' ? 'rgba(0,40,18,0.95)' : 'rgba(50,5,5,0.95)';
-                ctx.beginPath(); ctx.roundRect(yBtnX, yBtnY, yBtnW, yBtnH, 10); ctx.fill();
-                ctx.strokeStyle = lobbyConfirm === 'start' ? 'rgba(50,220,100,0.8)' : 'rgba(220,60,60,0.8)'; ctx.lineWidth = 1.8;
-                ctx.beginPath(); ctx.roundRect(yBtnX, yBtnY, yBtnW, yBtnH, 10); ctx.stroke();
-                ctx.font = 'bold 14px monospace'; ctx.fillStyle = lobbyConfirm === 'start' ? '#44ff88' : '#ff6655';
-                ctx.fillText('✔  YES', yBtnX + yBtnW / 2, yBtnY + yBtnH / 2 + 1);
-                // NO button
+                ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,220,0.65)';
+                ctx.fillText(lobbyConfirm === 'start' ? 'All players will be taken to the game.' : 'The room will be closed.', cx, pY + 70);
+                const yBtnW = 110, yBtnH = 42, yBtnX = cx - yBtnW - 10, yBtnY = pY + pH - 62;
+                ctx.save();
+                if (lobbyConfirm === 'start') { ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 12; }
+                else { ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 10; }
+                ctx.fillStyle = lobbyConfirm === 'start' ? 'rgba(0,40,18,0.96)' : 'rgba(50,5,5,0.96)';
+                ctx.beginPath(); ctx.roundRect(yBtnX, yBtnY, yBtnW, yBtnH, 12); ctx.fill();
+                ctx.strokeStyle = lobbyConfirm === 'start' ? 'rgba(68,255,136,0.9)' : 'rgba(255,60,60,0.9)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(yBtnX, yBtnY, yBtnW, yBtnH, 12); ctx.stroke();
+                ctx.restore();
+                ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = lobbyConfirm === 'start' ? '#44ff88' : '#ff6655';
+                ctx.fillText('✔  YES', yBtnX + yBtnW / 2, yBtnY + yBtnH / 2);
                 const nBtnX = cx + 10, nBtnY = yBtnY;
-                ctx.fillStyle = 'rgba(10,10,30,0.9)';
-                ctx.beginPath(); ctx.roundRect(nBtnX, nBtnY, yBtnW, yBtnH, 10); ctx.fill();
-                ctx.strokeStyle = 'rgba(80,100,160,0.55)'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.roundRect(nBtnX, nBtnY, yBtnW, yBtnH, 10); ctx.stroke();
-                ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#8899bb';
-                ctx.fillText('✖  NO', nBtnX + yBtnW / 2, nBtnY + yBtnH / 2 + 1);
+                ctx.fillStyle = 'rgba(15,5,35,0.92)';
+                ctx.beginPath(); ctx.roundRect(nBtnX, nBtnY, yBtnW, yBtnH, 12); ctx.fill();
+                ctx.strokeStyle = 'rgba(120,80,200,0.55)'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.roundRect(nBtnX, nBtnY, yBtnW, yBtnH, 12); ctx.stroke();
+                ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = '#9988cc';
+                ctx.fillText('✖  NO', nBtnX + yBtnW / 2, nBtnY + yBtnH / 2);
             }
 
             ctx.textBaseline = 'alphabetic';
@@ -9588,7 +9615,7 @@ function _drawMpHostEndBtn() {
             const charBob = Math.sin(t * 1.8) * 4;
 
             // Hero card background
-            const cardX = cx - 160, cardY = 125, cardW = 320, cardH = 270;
+            const cardX = cx - 160, cardY = 125, cardW = 320, cardH = 300;
             const cardBg = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
             cardBg.addColorStop(0, 'rgba(60,0,100,0.45)');
             cardBg.addColorStop(1, 'rgba(30,0,60,0.45)');
@@ -9680,7 +9707,7 @@ function _drawMpHostEndBtn() {
 
             // ── BUTTONS ──
             const btnW = 230, btnH = 64, btnX = cx - btnW / 2;
-            const btnY = 428;
+            const btnY = 442;
 
             // ▶ PLAY — big green, pulsing
             const btnGlow = 0.55 + Math.sin(t * 3.2) * 0.45;
@@ -10764,22 +10791,22 @@ function menuAction(sx, sy) {
             }
             if (state === STATE.MAIN) {
                 // Character card area → LOCKER
-                if (sy >= 125 && sy <= 400 && sx >= BASE_W/2 - 160 && sx <= BASE_W/2 + 160) {
+                if (sy >= 125 && sy <= 425 && sx >= BASE_W/2 - 160 && sx <= BASE_W/2 + 160) {
                     SFX.play('click'); showResetConfirm = false; state = STATE.LOCKER; return;
                 }
                 const btnW2 = 230, btnX2 = BASE_W/2 - btnW2/2;
-                // PLAY button: y 428–492
-                if (sy >= 428 && sy <= 492 && sx >= btnX2 && sx <= btnX2 + btnW2) {
+                // PLAY button: y 442–506
+                if (sy >= 442 && sy <= 506 && sx >= btnX2 && sx <= btnX2 + btnW2) {
                     SFX.play('click'); showResetConfirm = false; state = STATE.SELECT; return;
                 }
-                // ONLINE button: y 500–552
-                if (sy >= 500 && sy <= 552 && sx >= btnX2 && sx <= btnX2 + btnW2) {
+                // ONLINE button: y 514–566
+                if (sy >= 514 && sy <= 566 && sx >= btnX2 && sx <= btnX2 + btnW2) {
                     SFX.play('click'); state = STATE.ONLINE; _cleanupStaleRooms(); return;
                 }
-                // LOCKER + SHOP side: y 560–612
+                // LOCKER + SHOP side: y 574–626
                 const sideW2 = 108, sideGap2 = 12;
                 const leftX2 = BASE_W/2 - sideW2 - sideGap2/2, rightX2 = BASE_W/2 + sideGap2/2;
-                if (sy >= 560 && sy <= 612) {
+                if (sy >= 574 && sy <= 626) {
                     if (sx >= leftX2 && sx <= leftX2 + sideW2) { SFX.play('click'); showResetConfirm = false; state = STATE.LOCKER; return; }
                     if (sx >= rightX2 && sx <= rightX2 + sideW2) { SFX.play('click'); showResetConfirm = false; shopFrom = 'main'; state = STATE.SHOP; return; }
                 }
@@ -10823,8 +10850,8 @@ function menuAction(sx, sy) {
                 if (onlineScreen === 'lobby') {
                     // confirmation dialog — handle first, blocks everything else
                     if (lobbyConfirm) {
-                        const pW = 320, pH = 160, pX = cx - pW / 2, pY = BASE_H / 2 - pH / 2;
-                        const yBtnW = 110, yBtnH = 40, yBtnX = cx - yBtnW - 10, yBtnY = pY + pH - 58;
+                        const pW = 320, pH = 168, pX = cx - pW / 2, pY = BASE_H / 2 - pH / 2;
+                        const yBtnW = 110, yBtnH = 42, yBtnX = cx - yBtnW - 10, yBtnY = pY + pH - 62;
                         const nBtnX = cx + 10, nBtnY = yBtnY;
                         if (sx >= yBtnX && sx <= yBtnX + yBtnW && sy >= yBtnY && sy <= yBtnY + yBtnH) {
                             SFX.play('click');
@@ -10846,8 +10873,8 @@ function menuAction(sx, sy) {
                     }
                     // eye toggle
                     if (!lobbyCreating && currentRoomId) {
-                        const codeBoxW = 300, codeBoxX = cx - codeBoxW / 2, codeBoxY = 34;
-                        const eyeX = codeBoxX + codeBoxW + 8, eyeY = codeBoxY + 10, eyeW = 32, eyeH = 34;
+                        const codeBoxW = 300, codeBoxX = cx - codeBoxW / 2, codeBoxY = 78;
+                        const eyeX = codeBoxX + codeBoxW + 8, eyeY = codeBoxY + 14, eyeW = 32, eyeH = 34;
                         if (sx >= eyeX && sx <= eyeX + eyeW && sy >= eyeY && sy <= eyeY + eyeH) {
                             SFX.play('click'); lobbyCodeHidden = !lobbyCodeHidden; return;
                         }
@@ -10859,12 +10886,12 @@ function menuAction(sx, sy) {
                             { mode:'level', level:2 },    { mode:'level', level:3 },
                             { mode:'level', level:4 },    { mode:'level', level:5 },
                         ];
-                        const sW = 68, sH = 42, sGap = 3;
+                        const sW = 68, sH = 44, sGap = 3;
                         const sGridW = 6 * sW + 5 * sGap;
                         const sGridX = cx - sGridW / 2;
                         const settingsY = 298;
                         // theme row
-                        const tY = settingsY + 18;
+                        const tY = settingsY + 20;
                         for (let i = 0; i < 6; i++) {
                             const tx = sGridX + i * (sW + sGap);
                             if (sx >= tx && sx <= tx + sW && sy >= tY && sy <= tY + sH) {
@@ -10873,8 +10900,8 @@ function menuAction(sx, sy) {
                                 return;
                             }
                         }
-                        // height row
-                        const hY = tY + sH + 28;
+                        // height row: hLabelY = tY+sH+10, hY = hLabelY+20
+                        const hY = tY + sH + 30;
                         for (let i = 0; i < 6; i++) {
                             const hx = sGridX + i * (sW + sGap);
                             if (sx >= hx && sx <= hx + sW && sy >= hY && sy <= hY + sH) {
@@ -10884,16 +10911,16 @@ function menuAction(sx, sy) {
                             }
                         }
                         // start button → open confirm
-                        const sBtnW = 224, sBtnH = 46, sBtnX = cx - sBtnW / 2, sY = 660;
+                        const sBtnW = 240, sBtnH = 52, sBtnX = cx - sBtnW / 2, sY = 660;
                         if (sy >= sY && sy <= sY + sBtnH && sx >= sBtnX && sx <= sBtnX + sBtnW) {
                             if (Object.keys(roomPlayersMap).length < 2) { lobbyError = 'Need at least 2 players!'; return; }
                             SFX.play('click'); lobbyConfirm = 'start'; return;
                         }
                     }
                     // leave button → open confirm
-                    const leaveY = isRoomHost ? 728 : 698;
-                    const lBtnW = 164, lBtnX = cx - lBtnW / 2;
-                    if (sy >= leaveY && sy <= leaveY + 38 && sx >= lBtnX && sx <= lBtnX + lBtnW) {
+                    const leaveY = isRoomHost ? 730 : 700;
+                    const lBtnW = 190, lBtnX = cx - lBtnW / 2;
+                    if (sy >= leaveY && sy <= leaveY + 42 && sx >= lBtnX && sx <= lBtnX + lBtnW) {
                         SFX.play('click'); lobbyConfirm = 'leave'; return;
                     }
                     return;
