@@ -9286,7 +9286,7 @@ function _drawMpHostEndBtn() {
             currentTheme = lobbyMapTheme; currentMode = 'infinite';
             const _bgCam = (t * 30) % 2400;
             ctx.save();
-            ctx.filter = 'blur(7px)';
+            ctx.filter = 'none';
             const _sc = BG_SCENES[lobbyMapTheme] || BG_SCENES[0];
             const _skyG = ctx.createLinearGradient(0, 0, 0, BASE_H);
             _skyG.addColorStop(0, _sc[0][0]); _skyG.addColorStop(1, _sc[0][1]);
