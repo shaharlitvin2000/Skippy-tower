@@ -1092,6 +1092,7 @@ await Promise.race([
         const LEVEL_GOALS = [0, 500, 1500, 2500, 3750, 5000]; // index = level, 0 = infinite
         let currentMode = 'infinite'; // 'infinite' | 'level'
         let currentLevel = 0;
+        let selectHoverIdx = -1;
         let currentTheme = 0; // visual theme index (0-5), set before initWorld
         let levelGoal = 0;
 
@@ -3402,6 +3403,7 @@ await Promise.race([
         let lobbyMapMode = 'infinite';
         let lobbyMapLevel = 0;
         let lobbyMapTheme = 0; // visual theme 0-5, independent from mode/level
+        let hostPreviewTheme = 0; // theme selected before room creation
         let lobbyError = '';
         let lobbyCreating = false;
         let lobbyCodeHidden = false;
@@ -7396,14 +7398,14 @@ await Promise.race([
                 const code = _onlineGenCode();
                 await _fbDb.collection('rooms').doc(code).set({
                     type, hostUid: uid, hostName: name,
-                    mapMode: 'infinite', mapLevel: 0, mapTheme: 0, status: 'waiting',
+                    mapMode: 'infinite', mapLevel: 0, mapTheme: hostPreviewTheme, status: 'waiting',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedAt: Date.now(),
                     lastSeen: Date.now(),
                     players: { [uid]: { name, skin: equippedSkin, joinedAt: Date.now() } }
                 });
                 currentRoomId = code;
-                lobbyMapMode = 'infinite'; lobbyMapLevel = 0; lobbyMapTheme = 0;
+                lobbyMapMode = 'infinite'; lobbyMapLevel = 0; lobbyMapTheme = hostPreviewTheme;
                 loadingMsg = 'Room ready!';
                 _startHostHeartbeat(code);
                 _onlineSubRoom(code);
@@ -8803,87 +8805,159 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Purple gradient background
+            const _HO_THEMES = [
+                { label:'CLOCK',   icon:'⚙',  color:'#d4901a', dark:'#1a0e00', mid:'rgba(60,30,0,1)'  },
+                { label:'GROVE',   icon:'🌿', color:'#4ec96a', dark:'#001a08', mid:'rgba(0,40,15,1)'  },
+                { label:'DESERT',  icon:'🏜', color:'#c89030', dark:'#1a0e00', mid:'rgba(50,28,0,1)'  },
+                { label:'LAVA',    icon:'🌋', color:'#ff5522', dark:'#200800', mid:'rgba(60,10,0,1)'  },
+                { label:'MOONLIT', icon:'🌙', color:'#bb77ff', dark:'#150030', mid:'rgba(40,5,70,1)'  },
+                { label:'COSMOS',  icon:'🚀', color:'#00ffcc', dark:'#002820', mid:'rgba(0,40,35,1)'  },
+            ];
+            const _pt = _HO_THEMES[hostPreviewTheme];
+            const [_pr, _pg, _pb] = hexToRgb(_pt.color);
+
+            // Theme-tinted background
             const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
+            bgG.addColorStop(0, _pt.dark);
+            bgG.addColorStop(0.5, _pt.mid);
+            bgG.addColorStop(1, '#050010');
             ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Floating orbs
+            // Radial bloom in theme color
+            const bloom = ctx.createRadialGradient(cx, BASE_H * 0.4, 0, cx, BASE_H * 0.4, BASE_H * 0.55);
+            bloom.addColorStop(0, `rgba(${_pr},${_pg},${_pb},0.16)`);
+            bloom.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = bloom; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Floating particles in theme color
             ctx.save();
-            const oc = ['#44ffaa','#ff44aa','#aa44ff'];
-            for (let i = 0; i < 3; i++) {
-                const ox = cx + Math.cos(t * 0.4 + i * 2.1) * 140;
-                const oy = BASE_H / 2 + Math.sin(t * 0.3 + i * 1.4) * 180;
-                const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, 70);
-                og.addColorStop(0, oc[i] + '22'); og.addColorStop(1, 'transparent');
-                ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox, oy, 70, 0, Math.PI * 2); ctx.fill();
+            for (let i = 0; i < 14; i++) {
+                const px = (Math.sin(i * 2.317 + t * 0.2) * 0.44 + 0.5) * BASE_W;
+                const py = (Math.cos(i * 1.733 + t * 0.15) * 0.44 + 0.5) * BASE_H;
+                const pr = 1.1 + 1.2 * Math.abs(Math.sin(i * 1.1 + t * 0.8));
+                ctx.globalAlpha = 0.1 + 0.2 * Math.abs(Math.sin(t * 1.1 + i));
+                ctx.fillStyle = _pt.color;
+                ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
             }
-            ctx.restore();
+            ctx.globalAlpha = 1; ctx.restore();
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.save();
+
+            // Multiplayer label
             ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.75)';
-            ctx.fillText('— MULTIPLAYER —', cx, 148);
-            ctx.restore();
+            ctx.fillText('— MULTIPLAYER —', cx, 32);
 
             // Title
             ctx.save();
-            const ttG = ctx.createLinearGradient(cx - 130, 172, cx + 130, 196);
-            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, '#cc44ff'); ttG.addColorStop(1, '#44aaff');
-            ctx.shadowColor = '#9944ff'; ctx.shadowBlur = 22;
-            ctx.font = 'bold 30px Orbitron, monospace'; ctx.fillStyle = ttG;
-            ctx.fillText('CHOOSE ROOM TYPE', cx, 184);
+            const ttG = ctx.createLinearGradient(cx - 130, 0, cx + 130, 0);
+            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, _pt.color); ttG.addColorStop(1, '#44aaff');
+            ctx.shadowColor = _pt.color; ctx.shadowBlur = 22;
+            ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = ttG;
+            ctx.fillText('CHOOSE ROOM TYPE', cx, 60);
             ctx.restore();
 
+            // ── BACKGROUND PICKER ──
+            const sW = 62, sH = 52, sGap = 4;
+            const sGridW = 6 * sW + 5 * sGap;
+            const sGridX = cx - sGridW / 2;
+            const pickerY = 84;
+
+            ctx.font = 'bold 9px Orbitron, monospace';
+            ctx.fillStyle = `rgba(${_pr},${_pg},${_pb},0.9)`;
+            ctx.textAlign = 'left'; ctx.fillText('BACKGROUND', sGridX, pickerY + 7);
+            ctx.textAlign = 'center';
+
+            for (let i = 0; i < 6; i++) {
+                const m = _HO_THEMES[i];
+                const tx = sGridX + i * (sW + sGap);
+                const ty = pickerY + 14;
+                const sel = i === hostPreviewTheme;
+                const [r2, g2, b2] = hexToRgb(m.color);
+
+                // Card fill
+                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.30)` : 'rgba(10,0,22,0.82)';
+                ctx.beginPath(); ctx.roundRect(tx, ty, sW, sH, 9); ctx.fill();
+
+                // Inner bloom on selected
+                if (sel) {
+                    const ib = ctx.createRadialGradient(tx + sW/2, ty + sH*0.4, 0, tx + sW/2, ty + sH*0.4, sW*0.7);
+                    ib.addColorStop(0, `rgba(${r2},${g2},${b2},0.35)`); ib.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = ib; ctx.beginPath(); ctx.roundRect(tx, ty, sW, sH, 9); ctx.fill();
+                }
+
+                // Border
+                ctx.save();
+                if (sel) { ctx.shadowColor = m.color; ctx.shadowBlur = 16; }
+                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 1 : 0.28})`; ctx.lineWidth = sel ? 2.5 : 1;
+                ctx.beginPath(); ctx.roundRect(tx, ty, sW, sH, 9); ctx.stroke();
+                ctx.restore();
+
+                // Icon
+                ctx.font = '18px sans-serif'; ctx.fillStyle = sel ? '#fff' : m.color;
+                ctx.globalAlpha = sel ? 1 : 0.65;
+                ctx.fillText(m.icon, tx + sW / 2, ty + 20);
+                ctx.globalAlpha = 1;
+
+                // Label
+                ctx.font = 'bold 7px Orbitron, monospace';
+                ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.75)`;
+                ctx.fillText(m.label, tx + sW / 2, ty + sH - 7);
+            }
+
             // Sep
+            const sepY = pickerY + 14 + sH + 10;
             const sg = ctx.createLinearGradient(cx-140, 0, cx+140, 0);
-            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4,'#cc44ff'); sg.addColorStop(1,'transparent');
-            ctx.strokeStyle = sg; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.4;
-            ctx.beginPath(); ctx.moveTo(cx - 140, 208); ctx.lineTo(cx + 140, 208); ctx.stroke();
+            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4, _pt.color); sg.addColorStop(1,'transparent');
+            ctx.strokeStyle = sg; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.35;
+            ctx.beginPath(); ctx.moveTo(cx - 140, sepY); ctx.lineTo(cx + 140, sepY); ctx.stroke();
             ctx.globalAlpha = 1;
 
-            const btnW = 300, btnH = 104, btnX = cx - btnW / 2;
+            const btnY0 = sepY + 14;
+            const btnW = 300, btnH = 96, btnX = cx - btnW / 2;
 
             // PUBLIC card
             ctx.save();
             ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 14 + Math.sin(t * 2) * 5;
             ctx.fillStyle = 'rgba(0,30,16,0.92)';
-            ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(btnX, btnY0, btnW, btnH, 14); ctx.fill();
             ctx.strokeStyle = `rgba(68,255,136,${0.5 + Math.sin(t * 2) * 0.2})`; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(btnX, btnY0, btnW, btnH, 14); ctx.stroke();
             ctx.restore();
             ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#44ee88';
-            ctx.fillText('🌍  PUBLIC ROOM', cx, 278);
+            ctx.fillText('🌍  PUBLIC ROOM', cx, btnY0 + 36);
             ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(100,220,140,0.7)';
-            ctx.fillText('Visible to everyone in Quick Match', cx, 304);
-            ctx.fillText('Anyone with the code can also join', cx, 321);
+            ctx.fillText('Visible to everyone in Quick Match', cx, btnY0 + 62);
+            ctx.fillText('Anyone with the code can also join', cx, btnY0 + 79);
+
+            const btnY1 = btnY0 + btnH + 10;
 
             // PRIVATE card
             ctx.save();
             ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 14 + Math.sin(t * 2 + 1) * 5;
             ctx.fillStyle = 'rgba(20,8,40,0.92)';
-            ctx.beginPath(); ctx.roundRect(btnX, 362, btnW, btnH, 14); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(btnX, btnY1, btnW, btnH, 14); ctx.fill();
             ctx.strokeStyle = `rgba(180,80,255,${0.5 + Math.sin(t * 2 + 1) * 0.2})`; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.roundRect(btnX, 362, btnW, btnH, 14); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(btnX, btnY1, btnW, btnH, 14); ctx.stroke();
             ctx.restore();
             ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#cc88ff';
-            ctx.fillText('🔒  PRIVATE ROOM', cx, 400);
+            ctx.fillText('🔒  PRIVATE ROOM', cx, btnY1 + 36);
             ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,140,255,0.7)';
-            ctx.fillText('Hidden — invite only with room code', cx, 426);
-            ctx.fillText('Not visible in Quick Match', cx, 443);
+            ctx.fillText('Hidden — invite only with room code', cx, btnY1 + 62);
+            ctx.fillText('Not visible in Quick Match', cx, btnY1 + 79);
 
             if (lobbyError) {
                 ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = '#ff6655';
-                ctx.fillText('⚠ ' + lobbyError, cx, 478);
+                ctx.fillText('⚠ ' + lobbyError, cx, btnY1 + btnH + 14);
             }
 
             // BACK
+            const backY = btnY1 + btnH + (lobbyError ? 34 : 18);
             ctx.fillStyle = 'rgba(15,5,35,0.85)';
-            ctx.beginPath(); ctx.roundRect(cx - 80, 494, 160, 40, 10); ctx.fill();
-            ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(cx - 80, 494, 160, 40, 10); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(cx - 80, backY, 160, 40, 10); ctx.fill();
+            ctx.strokeStyle = `rgba(${_pr},${_pg},${_pb},0.35)`; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(cx - 80, backY, 160, 40, 10); ctx.stroke();
             ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.8)';
-            ctx.fillText('← BACK', cx, 514);
+            ctx.fillText('← BACK', cx, backY + 20);
             ctx.textBaseline = 'alphabetic';
         }
 
@@ -8891,18 +8965,37 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Purple gradient background
+            const _LBY_THEMES = [
+                { color:'#d4901a', dark:'#1a0e00', mid:'rgba(55,25,0,1)'   },
+                { color:'#4ec96a', dark:'#001a08', mid:'rgba(0,38,14,1)'   },
+                { color:'#c89030', dark:'#1a0e00', mid:'rgba(48,26,0,1)'   },
+                { color:'#ff5522', dark:'#200800', mid:'rgba(58,8,0,1)'    },
+                { color:'#bb77ff', dark:'#150030', mid:'rgba(38,4,68,1)'   },
+                { color:'#00ffcc', dark:'#002820', mid:'rgba(0,38,32,1)'   },
+            ];
+            const _lt = _LBY_THEMES[lobbyMapTheme] || _LBY_THEMES[0];
+            const [_lr, _lg, _lb] = hexToRgb(_lt.color);
+
+            // Theme-tinted background
             const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
+            bgG.addColorStop(0, _lt.dark);
+            bgG.addColorStop(0.5, _lt.mid);
+            bgG.addColorStop(1, '#050010');
             ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
-            // Floating orbs
+
+            // Radial bloom
+            const lBloom = ctx.createRadialGradient(cx, BASE_H * 0.42, 0, cx, BASE_H * 0.42, BASE_H * 0.55);
+            lBloom.addColorStop(0, `rgba(${_lr},${_lg},${_lb},0.14)`);
+            lBloom.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = lBloom; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Floating particles
             ctx.save();
-            const oc = ['#aa44ff','#44aaff','#ff44aa','#44ffcc','#ffaa44'];
             for (let i = 0; i < 5; i++) {
                 const ox = cx + Math.cos(t * 0.28 + i * 1.26) * 160;
                 const oy = BASE_H / 2 + Math.sin(t * 0.22 + i * 0.9) * 220;
                 const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, 65);
-                og.addColorStop(0, oc[i] + '1a'); og.addColorStop(1, 'transparent');
+                og.addColorStop(0, `rgba(${_lr},${_lg},${_lb},0.10)`); og.addColorStop(1, 'transparent');
                 ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox, oy, 65, 0, Math.PI * 2); ctx.fill();
             }
             ctx.restore();
@@ -10306,18 +10399,50 @@ function _drawMpHostEndBtn() {
             ctx.save();
             const t = Date.now() / 1000;
 
-            // Background — match main menu purple
+            const _selModes = [
+                { stroke:'#55ccff', dark:'#001830' },
+                { stroke:'#4ec96a', dark:'#001a08' },
+                { stroke:'#c89030', dark:'#1a0e00' },
+                { stroke:'#ff5522', dark:'#200800' },
+                { stroke:'#bb77ff', dark:'#150030' },
+                { stroke:'#00ffcc', dark:'#002820' },
+            ];
+            const _hIdx = selectHoverIdx >= 0 ? selectHoverIdx : 0;
+            const _hCol = _selModes[_hIdx];
+            const [_hr, _hg, _hb] = hexToRgb(_hCol.stroke);
+
+            // Background — tinted by hovered mode color
             const selBg = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            selBg.addColorStop(0, '#1a0040'); selBg.addColorStop(0.5, '#25006a'); selBg.addColorStop(1, '#0e0028');
+            selBg.addColorStop(0, _hCol.dark);
+            selBg.addColorStop(0.5, `rgba(${Math.round(_hr*0.18)},${Math.round(_hg*0.12)},${Math.round(_hb*0.22)},1)`);
+            selBg.addColorStop(1, '#050010');
             ctx.fillStyle = selBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
-            // Ambient orbs
-            for (let i = 0; i < 6; i++) {
-                const ox = (Math.sin(i*2.5)*0.4+0.5)*BASE_W;
-                const oy = (Math.cos(i*1.9)*0.4+0.5)*BASE_H + Math.sin(t*0.4+i)*18;
-                const og = ctx.createRadialGradient(ox,oy,0,ox,oy,55);
-                og.addColorStop(0,`hsla(${i*60},100%,70%,0.10)`); og.addColorStop(1,'rgba(0,0,0,0)');
-                ctx.fillStyle=og; ctx.beginPath(); ctx.arc(ox,oy,55,0,Math.PI*2); ctx.fill();
+
+            // Big radial bloom in the middle matching mode color
+            const centerBloom = ctx.createRadialGradient(BASE_W/2, BASE_H*0.5, 0, BASE_W/2, BASE_H*0.5, BASE_H*0.65);
+            centerBloom.addColorStop(0, `rgba(${_hr},${_hg},${_hb},0.13)`);
+            centerBloom.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = centerBloom; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Floating particles matching mode color
+            for (let i = 0; i < 18; i++) {
+                const px = (Math.sin(i * 2.317 + t * 0.18) * 0.44 + 0.5) * BASE_W;
+                const py = (Math.cos(i * 1.733 + t * 0.13) * 0.44 + 0.5) * BASE_H;
+                const pr = 1.2 + 1.4 * Math.abs(Math.sin(i * 1.1 + t * 0.9));
+                const pa = 0.15 + 0.25 * Math.abs(Math.sin(t * 1.2 + i));
+                ctx.globalAlpha = pa;
+                ctx.fillStyle = _hCol.stroke;
+                ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
             }
+            ctx.globalAlpha = 1;
+
+            // Subtle scanlines for depth
+            ctx.save();
+            for (let y = 0; y < BASE_H; y += 4) {
+                ctx.fillStyle = 'rgba(0,0,0,0.08)';
+                ctx.fillRect(0, y, BASE_W, 2);
+            }
+            ctx.restore();
 
             // Title
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -10347,12 +10472,16 @@ function _drawMpHostEndBtn() {
                 const icx = rowX + 48, icy = ry + rowH/2;
 
                 // Card base
-                ctx.fillStyle = `rgba(${Math.round(hr*0.12)},${Math.round(hg*0.06)},${Math.round(hb*0.18)},0.92)`;
+                const isHov = selectHoverIdx === i;
+                const cardAlpha = isHov ? 0.98 : 0.92;
+                const cardMult = isHov ? 0.22 : 0.12;
+                ctx.fillStyle = `rgba(${Math.round(hr*cardMult)},${Math.round(hg*cardMult*0.5)},${Math.round(hb*0.18)},${cardAlpha})`;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
 
                 // Radial color bloom inside card
+                const bloomStr = isHov ? 0.28 : 0.14;
                 const bloom = ctx.createRadialGradient(icx, icy, 0, icx, icy, rowW * 0.6);
-                bloom.addColorStop(0, `rgba(${hr},${hg},${hb},0.14)`);
+                bloom.addColorStop(0, `rgba(${hr},${hg},${hb},${bloomStr})`);
                 bloom.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = bloom;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
@@ -10361,10 +10490,10 @@ function _drawMpHostEndBtn() {
                 ctx.fillStyle = 'rgba(255,255,255,0.06)';
                 ctx.beginPath(); ctx.roundRect(rowX + 6, ry + 4, rowW - 12, rowH / 2 - 4, [12,12,0,0]); ctx.fill();
 
-                // Animated border — INFINITE pulses, others glow steadily
-                const bPulse = i === 0 ? 0.45 + 0.45 * Math.sin(t * 2.4) : 0.7;
-                ctx.save(); ctx.shadowColor = m.stroke; ctx.shadowBlur = 8 * bPulse;
-                ctx.strokeStyle = `rgba(${hr},${hg},${hb},${bPulse})`; ctx.lineWidth = 2;
+                // Animated border — hovered glows bright, INFINITE pulses, others steady
+                const bPulse = isHov ? 0.95 + 0.05 * Math.sin(t * 4) : (i === 0 ? 0.45 + 0.45 * Math.sin(t * 2.4) : 0.7);
+                ctx.save(); ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 22 : 8 * bPulse;
+                ctx.strokeStyle = `rgba(${hr},${hg},${hb},${bPulse})`; ctx.lineWidth = isHov ? 3 : 2;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.stroke();
                 ctx.restore();
 
@@ -10839,13 +10968,29 @@ function menuAction(sx, sy) {
                 // ── host options ──────────────────────────────────────────
                 if (onlineScreen === 'hostOptions') {
                     const btnW = 300, btnX = cx - btnW / 2;
-                    if (sy >= 240 && sy <= 344 && sx >= btnX && sx <= btnX + btnW) {
+                    // Background picker (6 tiles, pickerY=84, ty=98, sW=62, sH=52, sGap=4)
+                    const _sW = 62, _sH = 52, _sGap = 4;
+                    const _sGridW = 6 * _sW + 5 * _sGap;
+                    const _sGridX = cx - _sGridW / 2;
+                    const _pickerTy = 98;
+                    for (let i = 0; i < 6; i++) {
+                        const tx = _sGridX + i * (_sW + _sGap);
+                        if (sx >= tx && sx <= tx + _sW && sy >= _pickerTy && sy <= _pickerTy + _sH) {
+                            SFX.play('click'); hostPreviewTheme = i; return;
+                        }
+                    }
+                    // btnY0 = pickerY(84) + 14(label) + sH(52) + 10(sep) + 14 = 174
+                    const _btnY0 = 174, _btnH = 96;
+                    const _btnY1 = _btnY0 + _btnH + 10;
+                    if (sy >= _btnY0 && sy <= _btnY0 + _btnH && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); _onlineCreateRoom('public'); return;
                     }
-                    if (sy >= 362 && sy <= 466 && sx >= btnX && sx <= btnX + btnW) {
+                    if (sy >= _btnY1 && sy <= _btnY1 + _btnH && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); _onlineCreateRoom('private'); return;
                     }
-                    if (sy >= 494 && sy <= 534 && sx >= cx - 80 && sx <= cx + 80) {
+                    // back button y = btnY1+btnH+18 = 474
+                    const _backY = _btnY1 + _btnH + 18;
+                    if (sy >= _backY && sy <= _backY + 40 && sx >= cx - 80 && sx <= cx + 80) {
                         SFX.play('click'); onlineScreen = 'main'; return;
                     }
                     return;
@@ -11102,6 +11247,15 @@ function menuAction(sx, sy) {
         function onTap() { menuAction(BASE_W / 2, 455); }
 
         canvas.addEventListener('pointermove', e => {
+            if (e.pointerType !== 'touch' && state === STATE.SELECT) {
+                const { sx: smx, sy: smy } = _xy(e.clientX, e.clientY);
+                const rowH = 90, rowW = 436, rowX = BASE_W/2 - rowW/2, rowStart = 55;
+                selectHoverIdx = -1;
+                for (let i = 0; i < 6; i++) {
+                    const ry = rowStart + i*(rowH+6);
+                    if (smy >= ry && smy <= ry+rowH && smx >= rowX && smx <= rowX+rowW) { selectHoverIdx = i; break; }
+                }
+            }
             if (!showSettings || e.buttons === 0) return;
             if (e.pointerType === 'touch') return;
             const { sx, sy } = _xy(e.clientX, e.clientY);
