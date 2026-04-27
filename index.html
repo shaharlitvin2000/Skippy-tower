@@ -9281,18 +9281,19 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Real game background — drawBackground (sky + walls + elements) + 3 extra element layers for density
+            // Real game background — smooth oscillating scroll (no jump), sky + walls + bg elements x3 layers
             const _savedTheme = currentTheme, _savedMode = currentMode;
             const _savedC = Object.assign({}, C);
             currentTheme = lobbyMapTheme; currentMode = 'infinite';
             applyTheme(lobbyMapTheme);
-            const _bgCam = -(t * 16 % 1300); // stay in first scene to avoid offscreen-canvas blend path
+            // Smooth seamless oscillation: -200 ↔ -2600, no jump, ~270s period
+            const _bgCam = -1400 + Math.sin(t * 0.023) * 1200;
             drawBackground(_bgCam);
-            // Extra element passes at different heights so bg looks dense
+            // Two extra element passes at different heights for visual density
             ctx.save();
             ctx.beginPath(); ctx.rect(WALL_W, 0, BASE_W - WALL_W * 2, BASE_H); ctx.clip();
-            for (let _layer = 1; _layer <= 3; _layer++) {
-                const _c = _bgCam - _layer * 600;
+            for (let _layer = 1; _layer <= 2; _layer++) {
+                const _c = _bgCam - _layer * 700;
                 switch (lobbyMapTheme) {
                     case 0: drawBgIce(_c, t); break;
                     case 1: drawBgForest(_c, t); break;
@@ -9300,6 +9301,31 @@ function _drawMpHostEndBtn() {
                     case 3: drawBgLava(_c, t); break;
                     case 4: drawBgMagic(_c, t); break;
                     case 5: drawBgSpace(_c, t); break;
+                }
+            }
+            // Platform accents — consistent across ALL themes, scrolling with camera
+            {
+                const _pColors = ['#c8901a','#5a3010','#c87820','#883300','#9944cc','#008866'];
+                const _pGlow   = ['#ffcc44','#88ff44','#ffcc66','#ff6600','#cc88ff','#00ffcc'];
+                const _pc = _pColors[lobbyMapTheme], _pg = _pGlow[lobbyMapTheme];
+                const [_pr2,_pg2,_pb2] = hexToRgb(_pc);
+                const _spacing = 110;
+                const _camOff = ((-_bgCam) % _spacing + _spacing) % _spacing;
+                for (let _pi = -1; _pi < Math.ceil(BASE_H / _spacing) + 1; _pi++) {
+                    const _py = _pi * _spacing + _camOff;
+                    if (_py < -10 || _py > BASE_H + 10) continue;
+                    const _seed = Math.round((_bgCam + _py) / _spacing);
+                    const _rng = seededRandom(_seed * 3571 + lobbyMapTheme * 997);
+                    const _pw = 70 + _rng() * 130;
+                    const _px = WALL_W + _rng() * (BASE_W - WALL_W * 2 - _pw);
+                    const _alpha = 0.22 + _rng() * 0.14;
+                    ctx.save();
+                    ctx.shadowColor = _pg; ctx.shadowBlur = 6;
+                    ctx.fillStyle = `rgba(${_pr2},${_pg2},${_pb2},${_alpha})`;
+                    ctx.beginPath(); ctx.roundRect(_px, _py, _pw, 6, 3); ctx.fill();
+                    ctx.fillStyle = `rgba(255,255,255,0.18)`;
+                    ctx.fillRect(_px + 3, _py + 1, _pw - 6, 2);
+                    ctx.restore();
                 }
             }
             ctx.restore();
