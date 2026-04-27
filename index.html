@@ -9281,28 +9281,32 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Actual game background (blurred) — real drawBgXxx functions with animated cam
+            // Real game background — drawBackground (sky + walls + elements) + 3 extra element layers for density
             const _savedTheme = currentTheme, _savedMode = currentMode;
+            const _savedC = Object.assign({}, C);
             currentTheme = lobbyMapTheme; currentMode = 'infinite';
-            const _bgCam = (t * 30) % 2400;
+            applyTheme(lobbyMapTheme);
+            const _bgCam = -(t * 16 % 1300); // stay in first scene to avoid offscreen-canvas blend path
+            drawBackground(_bgCam);
+            // Extra element passes at different heights so bg looks dense
             ctx.save();
-            ctx.filter = 'none';
-            const _sc = BG_SCENES[lobbyMapTheme] || BG_SCENES[0];
-            const _skyG = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            _skyG.addColorStop(0, _sc[0][0]); _skyG.addColorStop(1, _sc[0][1]);
-            ctx.fillStyle = _skyG; ctx.fillRect(0, 0, BASE_W, BASE_H);
-            switch (lobbyMapTheme) {
-                case 0: drawBgIce(_bgCam, t); break;
-                case 1: drawBgForest(_bgCam, t); break;
-                case 2: drawBgDesert(_bgCam, t); break;
-                case 3: drawBgLava(_bgCam, t); break;
-                case 4: drawBgMagic(_bgCam, t); break;
-                case 5: drawBgSpace(_bgCam, t); break;
+            ctx.beginPath(); ctx.rect(WALL_W, 0, BASE_W - WALL_W * 2, BASE_H); ctx.clip();
+            for (let _layer = 1; _layer <= 3; _layer++) {
+                const _c = _bgCam - _layer * 600;
+                switch (lobbyMapTheme) {
+                    case 0: drawBgIce(_c, t); break;
+                    case 1: drawBgForest(_c, t); break;
+                    case 2: drawBgDesert(_c, t); break;
+                    case 3: drawBgLava(_c, t); break;
+                    case 4: drawBgMagic(_c, t); break;
+                    case 5: drawBgSpace(_c, t); break;
+                }
             }
             ctx.restore();
             currentTheme = _savedTheme; currentMode = _savedMode;
-            // Dark overlay so UI stays readable
-            ctx.fillStyle = 'rgba(0,0,6,0.48)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            Object.assign(C, _savedC);
+            // Subtle dark overlay so UI text stays readable
+            ctx.fillStyle = 'rgba(0,0,6,0.38)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
