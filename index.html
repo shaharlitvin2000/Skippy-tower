@@ -10745,30 +10745,28 @@ function _drawMpHostEndBtn() {
             const _hCol = _selModes[_hIdx];
             const [_hr, _hg, _hb] = hexToRgb(_hCol.stroke);
 
-            // Background — tinted by hovered mode color
-            const selBg = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            selBg.addColorStop(0, _hCol.dark);
-            selBg.addColorStop(0.5, `rgba(${Math.round(_hr*0.18)},${Math.round(_hg*0.12)},${Math.round(_hb*0.22)},1)`);
-            selBg.addColorStop(1, '#050010');
-            ctx.fillStyle = selBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
-
-            // Big radial bloom in the middle matching mode color
-            const centerBloom = ctx.createRadialGradient(BASE_W/2, BASE_H*0.5, 0, BASE_W/2, BASE_H*0.5, BASE_H*0.65);
-            centerBloom.addColorStop(0, `rgba(${_hr},${_hg},${_hb},0.13)`);
-            centerBloom.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = centerBloom; ctx.fillRect(0, 0, BASE_W, BASE_H);
-
-            // Floating particles matching mode color
-            for (let i = 0; i < 18; i++) {
-                const px = (Math.sin(i * 2.317 + t * 0.18) * 0.44 + 0.5) * BASE_W;
-                const py = (Math.cos(i * 1.733 + t * 0.13) * 0.44 + 0.5) * BASE_H;
-                const pr = 1.2 + 1.4 * Math.abs(Math.sin(i * 1.1 + t * 0.9));
-                const pa = 0.15 + 0.25 * Math.abs(Math.sin(t * 1.2 + i));
-                ctx.globalAlpha = pa;
-                ctx.fillStyle = _hCol.stroke;
-                ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+            // Background — actual game background of hovered mode
+            {
+                const _sv = currentTheme, _sm = currentMode, _sC = Object.assign({}, C);
+                currentTheme = _hIdx; currentMode = 'infinite';
+                applyTheme(_hIdx);
+                const _bc = -1400 + Math.sin(t * 0.023) * 1200;
+                drawBackground(_bc);
+                ctx.save();
+                ctx.beginPath(); ctx.rect(WALL_W, 0, BASE_W - WALL_W * 2, BASE_H); ctx.clip();
+                switch (_hIdx) {
+                    case 0: drawBgIce(_bc - 700, t); break;
+                    case 1: drawBgForest(_bc - 700, t); break;
+                    case 2: drawBgDesert(_bc - 700, t); break;
+                    case 3: drawBgLava(_bc - 700, t); break;
+                    case 4: drawBgMagic(_bc - 700, t); break;
+                    case 5: drawBgSpace(_bc - 700, t); break;
+                }
+                ctx.restore();
+                currentTheme = _sv; currentMode = _sm; Object.assign(C, _sC);
             }
-            ctx.globalAlpha = 1;
+            // Dark overlay so cards are readable
+            ctx.fillStyle = 'rgba(0,0,8,0.52)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
             // Title
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -10795,59 +10793,78 @@ function _drawMpHostEndBtn() {
                 const ry = rowStart + i * (rowH + 6);
                 const best = allTimeBests[m.idx];
                 const [hr,hg,hb] = hexToRgb(m.stroke);
-                const icx = rowX + 48, icy = ry + rowH/2;
+                const icy = ry + rowH/2;
 
                 // Card base
                 const isHov = selectHoverIdx === i;
+                const thumbW = 88;
                 ctx.fillStyle = isHov
-                    ? `rgba(${Math.round(hr*0.30)},${Math.round(hg*0.18)},${Math.round(hb*0.28)},0.98)`
-                    : `rgba(${Math.round(hr*0.18)},${Math.round(hg*0.11)},${Math.round(hb*0.22)},0.94)`;
+                    ? `rgba(${Math.round(hr*0.28)},${Math.round(hg*0.16)},${Math.round(hb*0.26)},0.97)`
+                    : `rgba(${Math.round(hr*0.14)},${Math.round(hg*0.08)},${Math.round(hb*0.18)},0.92)`;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
 
-                // Radial color bloom inside card
-                const bloomStr = isHov ? 0.36 : 0.22;
-                const bloom = ctx.createRadialGradient(icx, icy, 0, icx, icy, rowW * 0.6);
+                // ── Thumbnail: actual mini-game-background on left ──
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(rowX, ry, thumbW, rowH, [16,0,0,16]); ctx.clip();
+                _drawThemeMini(i, rowX, ry, thumbW, rowH, t);
+                // Fade right edge into card
+                const thumbFade = ctx.createLinearGradient(rowX + thumbW * 0.45, 0, rowX + thumbW, 0);
+                thumbFade.addColorStop(0, 'rgba(0,0,0,0)');
+                thumbFade.addColorStop(1, isHov
+                    ? `rgba(${Math.round(hr*0.28)},${Math.round(hg*0.16)},${Math.round(hb*0.26)},1)`
+                    : `rgba(${Math.round(hr*0.14)},${Math.round(hg*0.08)},${Math.round(hb*0.18)},1)`);
+                ctx.fillStyle = thumbFade; ctx.fillRect(rowX, ry, thumbW, rowH);
+                ctx.restore();
+
+                // Divider line between thumbnail and text area
+                ctx.strokeStyle = `rgba(${hr},${hg},${hb},0.25)`; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(rowX + thumbW, ry + 8); ctx.lineTo(rowX + thumbW, ry + rowH - 8); ctx.stroke();
+
+                // Radial bloom (right side of card)
+                const bloomStr = isHov ? 0.28 : 0.14;
+                const bloom = ctx.createRadialGradient(rowX + thumbW + 80, icy, 0, rowX + thumbW + 80, icy, rowW * 0.55);
                 bloom.addColorStop(0, `rgba(${hr},${hg},${hb},${bloomStr})`);
                 bloom.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = bloom;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
 
                 // Top shine
-                ctx.fillStyle = 'rgba(255,255,255,0.09)';
-                ctx.beginPath(); ctx.roundRect(rowX + 6, ry + 4, rowW - 12, rowH / 2 - 4, [12,12,0,0]); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.07)';
+                ctx.beginPath(); ctx.roundRect(rowX + thumbW + 2, ry + 4, rowW - thumbW - 10, rowH / 2 - 6, [0,10,0,0]); ctx.fill();
 
                 // Animated border — hovered glows bright, INFINITE pulses, others steady
-                const bPulse = isHov ? 0.95 + 0.05 * Math.sin(t * 4) : (i === 0 ? 0.45 + 0.45 * Math.sin(t * 2.4) : 0.7);
-                ctx.save(); ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 22 : 8 * bPulse;
-                ctx.strokeStyle = `rgba(${hr},${hg},${hb},${bPulse})`; ctx.lineWidth = isHov ? 3 : 2;
+                const bPulse = isHov ? 0.95 + 0.05 * Math.sin(t * 4) : (i === 0 ? 0.45 + 0.45 * Math.sin(t * 2.4) : 0.65);
+                ctx.save(); ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 24 : 7 * bPulse;
+                ctx.strokeStyle = `rgba(${hr},${hg},${hb},${bPulse})`; ctx.lineWidth = isHov ? 3 : 1.5;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.stroke();
                 ctx.restore();
 
-                // Icon circle (left)
-                ctx.save();
-                ctx.shadowColor = m.stroke; ctx.shadowBlur = 14;
-                ctx.fillStyle = `rgba(${hr},${hg},${hb},0.22)`;
-                ctx.beginPath(); ctx.arc(icx, icy, 28, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = m.stroke; ctx.lineWidth = 1.8;
-                ctx.beginPath(); ctx.arc(icx, icy, 28, 0, Math.PI*2); ctx.stroke();
-                ctx.fillStyle = '#fff'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(m.icon, icx, icy + 1);
-                ctx.restore();
-
                 // Emoji — right side floating
-                ctx.font = '32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.globalAlpha = 0.85 + 0.15 * Math.sin(t * 1.5 + i);
-                ctx.fillText(m.emoji, rowX + rowW - 42, icy);
+                ctx.font = isHov ? '34px sans-serif' : '28px sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.globalAlpha = 0.9 + 0.1 * Math.sin(t * 1.5 + i);
+                ctx.fillText(m.emoji, rowX + rowW - 38, icy);
                 ctx.globalAlpha = 1;
 
-                // Labels
+                // Labels — text area starts after thumbnail
+                const txtX = rowX + thumbW + 10;
                 ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-                ctx.fillStyle = '#fff'; ctx.font = '700 17px Orbitron, monospace';
-                ctx.shadowColor = m.stroke; ctx.shadowBlur = 6;
-                ctx.fillText(m.label, rowX + 84, ry + 38);
+                // Mode label (big)
+                ctx.fillStyle = '#fff'; ctx.font = `${isHov ? 700 : 600} ${isHov ? 18 : 16}px Orbitron, monospace`;
+                ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 10 : 5;
+                ctx.fillText(m.label, txtX, ry + 32);
                 ctx.shadowBlur = 0;
-                ctx.fillStyle = `rgba(${hr},${hg},${hb},0.8)`; ctx.font = '11px monospace';
-                ctx.fillText(m.name + (m.goal ? '  •  goal: ' + m.goal : ''), rowX + 84, ry + 58);
+                // World name (secondary)
+                ctx.fillStyle = `rgba(${hr},${hg},${hb},${isHov ? 1 : 0.8})`; ctx.font = `${isHov ? 'bold ' : ''}12px monospace`;
+                ctx.fillText(m.name, txtX, ry + 52);
+                // Goal
+                if (m.goal) {
+                    ctx.fillStyle = `rgba(${hr},${hg},${hb},0.6)`; ctx.font = '10px monospace';
+                    ctx.fillText(`reach ${m.goal}`, txtX, ry + 68);
+                } else {
+                    ctx.fillStyle = `rgba(${hr},${hg},${hb},0.55)`; ctx.font = '10px monospace';
+                    ctx.fillText('no height limit', txtX, ry + 68);
+                }
 
                 // Best score / win badge
                 const won = i > 0 && levelWins[m.idx];
