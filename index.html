@@ -3250,6 +3250,7 @@ await Promise.race([
                     if (onlineScreen === 'loading') { /* can't cancel loading */ }
                     else if (onlineScreen === 'main') { state = STATE.MAIN; }
                     else if (onlineScreen === 'hostOptions') { onlineScreen = 'main'; }
+                    else if (onlineScreen === 'hostBgSelect') { onlineScreen = 'hostOptions'; }
                     else if (onlineScreen === 'joinCode') { onlineScreen = 'main'; joinCodeError = ''; codeInputText = ''; }
                     else if (onlineScreen === 'quickMatch') { _onlineUnsubPublicRooms(); onlineScreen = 'main'; }
                     else if (onlineScreen === 'lobby') { _onlineLeaveRoom(false); }
@@ -3404,6 +3405,7 @@ await Promise.race([
         let lobbyMapLevel = 0;
         let lobbyMapTheme = 0; // visual theme 0-5, independent from mode/level
         let hostPreviewTheme = 0; // theme selected before room creation
+        let hostRoomType = 'public'; // 'public' | 'private', set when entering bg select
         let lobbyError = '';
         let lobbyCreating = false;
         let lobbyCodeHidden = false;
@@ -7382,7 +7384,7 @@ await Promise.race([
         }
 
         async function _onlineCreateRoom(type) {
-            if (!UserSystem.currentUser) { lobbyError = 'Not logged in — please sign in first'; onlineScreen = 'hostOptions'; return; }
+            if (!UserSystem.currentUser) { lobbyError = 'Not logged in — please sign in first'; onlineScreen = 'hostBgSelect'; return; }
             loadingMsg = 'Creating room\u2026'; lobbyError = ''; lobbyCodeHidden = false; lobbyConfirm = null;
             currentRoomId = null; currentRoomData = null;
             isRoomHost = true; roomPlayersMap = {};
@@ -7394,7 +7396,7 @@ await Promise.race([
                 }
                 const uid = _onlineUid();
                 const name = UserSystem.currentUser.username || 'Player';
-                if (!uid) { loadingMsg = ''; lobbyError = 'Enable Anonymous Auth in Firebase console'; onlineScreen = 'hostOptions'; return; }
+                if (!uid) { loadingMsg = ''; lobbyError = 'Enable Anonymous Auth in Firebase console'; onlineScreen = 'hostBgSelect'; return; }
                 const code = _onlineGenCode();
                 await _fbDb.collection('rooms').doc(code).set({
                     type, hostUid: uid, hostName: name,
@@ -7420,7 +7422,7 @@ await Promise.race([
                     : isAuthErr
                     ? 'Auth error — enable Anonymous Auth in Firebase console'
                     : (e.code || 'Firebase error — check console (F12)');
-                loadingMsg = ''; lobbyError = msg; onlineScreen = 'hostOptions';
+                loadingMsg = ''; lobbyError = msg; onlineScreen = 'hostBgSelect';
             }
         }
         async function _onlineJoinRoom(code) {
@@ -8588,6 +8590,7 @@ function _drawMpHostEndBtn() {
         function drawOnline() {
             if (onlineScreen === 'loading')     _drawOnlineLoading();
             else if (onlineScreen === 'hostOptions') _drawOnlineHostOptions();
+            else if (onlineScreen === 'hostBgSelect') _drawOnlineHostBgSelect();
             else if (onlineScreen === 'lobby')  _drawOnlineLobby();
             else if (onlineScreen === 'joinCode') _drawOnlineJoinCode();
             else if (onlineScreen === 'quickMatch') _drawOnlineQuickMatch();
@@ -8805,159 +8808,418 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            const _HO_THEMES = [
-                { label:'CLOCK',   icon:'⚙',  color:'#d4901a', dark:'#1a0e00', mid:'rgba(60,30,0,1)'  },
-                { label:'GROVE',   icon:'🌿', color:'#4ec96a', dark:'#001a08', mid:'rgba(0,40,15,1)'  },
-                { label:'DESERT',  icon:'🏜', color:'#c89030', dark:'#1a0e00', mid:'rgba(50,28,0,1)'  },
-                { label:'LAVA',    icon:'🌋', color:'#ff5522', dark:'#200800', mid:'rgba(60,10,0,1)'  },
-                { label:'MOONLIT', icon:'🌙', color:'#bb77ff', dark:'#150030', mid:'rgba(40,5,70,1)'  },
-                { label:'COSMOS',  icon:'🚀', color:'#00ffcc', dark:'#002820', mid:'rgba(0,40,35,1)'  },
-            ];
-            const _pt = _HO_THEMES[hostPreviewTheme];
-            const [_pr, _pg, _pb] = hexToRgb(_pt.color);
-
-            // Theme-tinted background
+            // Purple gradient background (original)
             const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            bgG.addColorStop(0, _pt.dark);
-            bgG.addColorStop(0.5, _pt.mid);
-            bgG.addColorStop(1, '#050010');
+            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
             ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Radial bloom in theme color
-            const bloom = ctx.createRadialGradient(cx, BASE_H * 0.4, 0, cx, BASE_H * 0.4, BASE_H * 0.55);
-            bloom.addColorStop(0, `rgba(${_pr},${_pg},${_pb},0.16)`);
-            bloom.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = bloom; ctx.fillRect(0, 0, BASE_W, BASE_H);
-
-            // Floating particles in theme color
+            // Floating orbs
             ctx.save();
-            for (let i = 0; i < 14; i++) {
-                const px = (Math.sin(i * 2.317 + t * 0.2) * 0.44 + 0.5) * BASE_W;
-                const py = (Math.cos(i * 1.733 + t * 0.15) * 0.44 + 0.5) * BASE_H;
-                const pr = 1.1 + 1.2 * Math.abs(Math.sin(i * 1.1 + t * 0.8));
-                ctx.globalAlpha = 0.1 + 0.2 * Math.abs(Math.sin(t * 1.1 + i));
-                ctx.fillStyle = _pt.color;
-                ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+            const oc = ['#44ffaa','#ff44aa','#aa44ff'];
+            for (let i = 0; i < 3; i++) {
+                const ox = cx + Math.cos(t * 0.4 + i * 2.1) * 140;
+                const oy = BASE_H / 2 + Math.sin(t * 0.3 + i * 1.4) * 180;
+                const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, 70);
+                og.addColorStop(0, oc[i] + '22'); og.addColorStop(1, 'transparent');
+                ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox, oy, 70, 0, Math.PI * 2); ctx.fill();
             }
-            ctx.globalAlpha = 1; ctx.restore();
+            ctx.restore();
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-
-            // Multiplayer label
+            ctx.save();
             ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.75)';
-            ctx.fillText('— MULTIPLAYER —', cx, 32);
+            ctx.fillText('— MULTIPLAYER —', cx, 148);
+            ctx.restore();
 
             // Title
             ctx.save();
-            const ttG = ctx.createLinearGradient(cx - 130, 0, cx + 130, 0);
-            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, _pt.color); ttG.addColorStop(1, '#44aaff');
-            ctx.shadowColor = _pt.color; ctx.shadowBlur = 22;
-            ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = ttG;
-            ctx.fillText('CHOOSE ROOM TYPE', cx, 60);
+            const ttG = ctx.createLinearGradient(cx - 130, 172, cx + 130, 196);
+            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, '#cc44ff'); ttG.addColorStop(1, '#44aaff');
+            ctx.shadowColor = '#9944ff'; ctx.shadowBlur = 22;
+            ctx.font = 'bold 30px Orbitron, monospace'; ctx.fillStyle = ttG;
+            ctx.fillText('CHOOSE ROOM TYPE', cx, 184);
             ctx.restore();
 
-            // ── BACKGROUND PICKER ──
-            const sW = 62, sH = 52, sGap = 4;
-            const sGridW = 6 * sW + 5 * sGap;
-            const sGridX = cx - sGridW / 2;
-            const pickerY = 84;
-
-            ctx.font = 'bold 9px Orbitron, monospace';
-            ctx.fillStyle = `rgba(${_pr},${_pg},${_pb},0.9)`;
-            ctx.textAlign = 'left'; ctx.fillText('BACKGROUND', sGridX, pickerY + 7);
-            ctx.textAlign = 'center';
-
-            for (let i = 0; i < 6; i++) {
-                const m = _HO_THEMES[i];
-                const tx = sGridX + i * (sW + sGap);
-                const ty = pickerY + 14;
-                const sel = i === hostPreviewTheme;
-                const [r2, g2, b2] = hexToRgb(m.color);
-
-                // Card fill
-                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.30)` : 'rgba(10,0,22,0.82)';
-                ctx.beginPath(); ctx.roundRect(tx, ty, sW, sH, 9); ctx.fill();
-
-                // Inner bloom on selected
-                if (sel) {
-                    const ib = ctx.createRadialGradient(tx + sW/2, ty + sH*0.4, 0, tx + sW/2, ty + sH*0.4, sW*0.7);
-                    ib.addColorStop(0, `rgba(${r2},${g2},${b2},0.35)`); ib.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = ib; ctx.beginPath(); ctx.roundRect(tx, ty, sW, sH, 9); ctx.fill();
-                }
-
-                // Border
-                ctx.save();
-                if (sel) { ctx.shadowColor = m.color; ctx.shadowBlur = 16; }
-                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 1 : 0.28})`; ctx.lineWidth = sel ? 2.5 : 1;
-                ctx.beginPath(); ctx.roundRect(tx, ty, sW, sH, 9); ctx.stroke();
-                ctx.restore();
-
-                // Icon
-                ctx.font = '18px sans-serif'; ctx.fillStyle = sel ? '#fff' : m.color;
-                ctx.globalAlpha = sel ? 1 : 0.65;
-                ctx.fillText(m.icon, tx + sW / 2, ty + 20);
-                ctx.globalAlpha = 1;
-
-                // Label
-                ctx.font = 'bold 7px Orbitron, monospace';
-                ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.75)`;
-                ctx.fillText(m.label, tx + sW / 2, ty + sH - 7);
-            }
-
             // Sep
-            const sepY = pickerY + 14 + sH + 10;
             const sg = ctx.createLinearGradient(cx-140, 0, cx+140, 0);
-            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4, _pt.color); sg.addColorStop(1,'transparent');
-            ctx.strokeStyle = sg; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.35;
-            ctx.beginPath(); ctx.moveTo(cx - 140, sepY); ctx.lineTo(cx + 140, sepY); ctx.stroke();
+            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4,'#cc44ff'); sg.addColorStop(1,'transparent');
+            ctx.strokeStyle = sg; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.4;
+            ctx.beginPath(); ctx.moveTo(cx - 140, 208); ctx.lineTo(cx + 140, 208); ctx.stroke();
             ctx.globalAlpha = 1;
 
-            const btnY0 = sepY + 14;
-            const btnW = 300, btnH = 96, btnX = cx - btnW / 2;
+            const btnW = 300, btnH = 104, btnX = cx - btnW / 2;
 
             // PUBLIC card
             ctx.save();
             ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 14 + Math.sin(t * 2) * 5;
             ctx.fillStyle = 'rgba(0,30,16,0.92)';
-            ctx.beginPath(); ctx.roundRect(btnX, btnY0, btnW, btnH, 14); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.fill();
             ctx.strokeStyle = `rgba(68,255,136,${0.5 + Math.sin(t * 2) * 0.2})`; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.roundRect(btnX, btnY0, btnW, btnH, 14); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.stroke();
             ctx.restore();
             ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#44ee88';
-            ctx.fillText('🌍  PUBLIC ROOM', cx, btnY0 + 36);
+            ctx.fillText('🌍  PUBLIC ROOM', cx, 278);
             ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(100,220,140,0.7)';
-            ctx.fillText('Visible to everyone in Quick Match', cx, btnY0 + 62);
-            ctx.fillText('Anyone with the code can also join', cx, btnY0 + 79);
-
-            const btnY1 = btnY0 + btnH + 10;
+            ctx.fillText('Visible to everyone in Quick Match', cx, 304);
+            ctx.fillText('Anyone with the code can also join', cx, 321);
 
             // PRIVATE card
             ctx.save();
             ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 14 + Math.sin(t * 2 + 1) * 5;
             ctx.fillStyle = 'rgba(20,8,40,0.92)';
-            ctx.beginPath(); ctx.roundRect(btnX, btnY1, btnW, btnH, 14); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(btnX, 362, btnW, btnH, 14); ctx.fill();
             ctx.strokeStyle = `rgba(180,80,255,${0.5 + Math.sin(t * 2 + 1) * 0.2})`; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.roundRect(btnX, btnY1, btnW, btnH, 14); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(btnX, 362, btnW, btnH, 14); ctx.stroke();
             ctx.restore();
             ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#cc88ff';
-            ctx.fillText('🔒  PRIVATE ROOM', cx, btnY1 + 36);
+            ctx.fillText('🔒  PRIVATE ROOM', cx, 400);
             ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,140,255,0.7)';
-            ctx.fillText('Hidden — invite only with room code', cx, btnY1 + 62);
-            ctx.fillText('Not visible in Quick Match', cx, btnY1 + 79);
+            ctx.fillText('Hidden — invite only with room code', cx, 426);
+            ctx.fillText('Not visible in Quick Match', cx, 443);
 
             if (lobbyError) {
                 ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = '#ff6655';
-                ctx.fillText('⚠ ' + lobbyError, cx, btnY1 + btnH + 14);
+                ctx.fillText('⚠ ' + lobbyError, cx, 478);
             }
 
             // BACK
-            const backY = btnY1 + btnH + (lobbyError ? 34 : 18);
             ctx.fillStyle = 'rgba(15,5,35,0.85)';
-            ctx.beginPath(); ctx.roundRect(cx - 80, backY, 160, 40, 10); ctx.fill();
-            ctx.strokeStyle = `rgba(${_pr},${_pg},${_pb},0.35)`; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(cx - 80, backY, 160, 40, 10); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(cx - 80, 494, 160, 40, 10); ctx.fill();
+            ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(cx - 80, 494, 160, 40, 10); ctx.stroke();
             ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.8)';
-            ctx.fillText('← BACK', cx, backY + 20);
+            ctx.fillText('← BACK', cx, 514);
+            ctx.textBaseline = 'alphabetic';
+        }
+
+        function _drawOnlineHostBgSelect() {
+            const t = Date.now() / 1000;
+            const cx = BASE_W / 2;
+
+            const _BGS = [
+                {
+                    label:'CLOCK TOWER', sub:'Classic icy world',
+                    color:'#88ddff', dark:'#001828', mid:'#002a40',
+                    drawBg(bx,by,bw,bh,tt) {
+                        // sky gradient
+                        const sg = ctx.createLinearGradient(bx,by,bx,by+bh);
+                        sg.addColorStop(0,'#001830'); sg.addColorStop(1,'#003050');
+                        ctx.fillStyle=sg; ctx.fillRect(bx,by,bw,bh);
+                        // stars
+                        for(let s=0;s<18;s++){
+                            const sx2=bx+((s*73)%bw), sy2=by+((s*47)%bh*0.6);
+                            const sa=0.3+0.5*Math.abs(Math.sin(tt*1.8+s));
+                            ctx.globalAlpha=sa; ctx.fillStyle='#cceeff';
+                            ctx.beginPath(); ctx.arc(sx2,sy2,0.8,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                        // platforms (icy blue)
+                        for(let p=0;p<3;p++){
+                            const py2=by+bh*0.35+p*bh*0.22;
+                            const pw=bw*0.55+p*bw*0.05;
+                            const pg2=ctx.createLinearGradient(bx,py2,bx,py2+6);
+                            pg2.addColorStop(0,'#88ddff'); pg2.addColorStop(1,'#2266aa');
+                            ctx.fillStyle=pg2; ctx.fillRect(bx+bw/2-pw/2,py2,pw,6);
+                            ctx.fillStyle='rgba(200,240,255,0.4)'; ctx.fillRect(bx+bw/2-pw/2+2,py2,pw-4,2);
+                        }
+                        // snow particles
+                        for(let s=0;s<8;s++){
+                            const spx=bx+((s*61+tt*8)%bw);
+                            const spy=by+(((s*41)+(tt*15*((s%3)+1)))%bh);
+                            ctx.globalAlpha=0.5; ctx.fillStyle='#fff';
+                            ctx.beginPath(); ctx.arc(spx,spy,1,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                    }
+                },
+                {
+                    label:'GROVE', sub:'Lush forest world',
+                    color:'#4ec96a', dark:'#001a08', mid:'#003310',
+                    drawBg(bx,by,bw,bh,tt) {
+                        const sg = ctx.createLinearGradient(bx,by,bx,by+bh);
+                        sg.addColorStop(0,'#001a08'); sg.addColorStop(1,'#003818');
+                        ctx.fillStyle=sg; ctx.fillRect(bx,by,bw,bh);
+                        // tree trunks
+                        for(let tr=0;tr<4;tr++){
+                            const tx2=bx+bw*0.1+tr*(bw*0.28);
+                            ctx.fillStyle='#2a1500';
+                            ctx.fillRect(tx2-3,by+bh*0.2,6,bh*0.8);
+                            // foliage
+                            const fg=ctx.createRadialGradient(tx2,by+bh*0.28,0,tx2,by+bh*0.28,bw*0.13);
+                            fg.addColorStop(0,'rgba(40,180,70,0.9)'); fg.addColorStop(1,'rgba(20,100,30,0)');
+                            ctx.fillStyle=fg; ctx.beginPath(); ctx.arc(tx2,by+bh*0.28,bw*0.13,0,Math.PI*2); ctx.fill();
+                        }
+                        // platforms (wood)
+                        for(let p=0;p<3;p++){
+                            const py2=by+bh*0.35+p*bh*0.22;
+                            const pw=bw*0.6-p*bw*0.05;
+                            ctx.fillStyle='#5a3010'; ctx.fillRect(bx+bw/2-pw/2,py2,pw,6);
+                            ctx.fillStyle='rgba(255,200,100,0.3)'; ctx.fillRect(bx+bw/2-pw/2+1,py2,pw-2,2);
+                        }
+                        // fireflies
+                        for(let f=0;f<6;f++){
+                            const fa=0.4+0.6*Math.abs(Math.sin(tt*2.2+f*1.4));
+                            const fx=bx+bw*0.1+((f*60+tt*10)%(bw*0.8));
+                            const fy=by+bh*0.15+((f*40)%(bh*0.6));
+                            ctx.globalAlpha=fa; ctx.fillStyle='#aaff44';
+                            ctx.beginPath(); ctx.arc(fx,fy,1.5,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                    }
+                },
+                {
+                    label:'DESERT', sub:'Scorching canyon world',
+                    color:'#c89030', dark:'#1a0e00', mid:'#2e1a00',
+                    drawBg(bx,by,bw,bh,tt) {
+                        const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                        sg.addColorStop(0,'#1a0800'); sg.addColorStop(1,'#301800');
+                        ctx.fillStyle=sg; ctx.fillRect(bx,by,bw,bh);
+                        // heat shimmer stars (far away lights)
+                        for(let s=0;s<10;s++){
+                            const sa=0.15+0.2*Math.abs(Math.sin(tt*1.3+s));
+                            ctx.globalAlpha=sa; ctx.fillStyle='#ffcc88';
+                            ctx.beginPath(); ctx.arc(bx+(s*71)%bw, by+(s*43)%(bh*0.4),0.8,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                        // platforms (sandstone)
+                        for(let p=0;p<3;p++){
+                            const py2=by+bh*0.35+p*bh*0.22;
+                            const pw=bw*0.55+p*bw*0.04;
+                            const pg2=ctx.createLinearGradient(bx,py2,bx,py2+7);
+                            pg2.addColorStop(0,'#d4901a'); pg2.addColorStop(1,'#8b5a00');
+                            ctx.fillStyle=pg2; ctx.fillRect(bx+bw/2-pw/2,py2,pw,7);
+                            ctx.fillStyle='rgba(255,220,140,0.35)'; ctx.fillRect(bx+bw/2-pw/2+1,py2,pw-2,2);
+                        }
+                        // sand particles
+                        for(let s=0;s<10;s++){
+                            const spx=bx+((s*53+tt*20)%bw);
+                            const spy=by+((s*37)%(bh*0.7));
+                            ctx.globalAlpha=0.35; ctx.fillStyle='#d4a060';
+                            ctx.beginPath(); ctx.arc(spx,spy,1,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                    }
+                },
+                {
+                    label:'LAVA', sub:'Volcanic fire world',
+                    color:'#ff5522', dark:'#200800', mid:'#3a0800',
+                    drawBg(bx,by,bw,bh,tt) {
+                        const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                        sg.addColorStop(0,'#1a0400'); sg.addColorStop(1,'#380800');
+                        ctx.fillStyle=sg; ctx.fillRect(bx,by,bw,bh);
+                        // lava glow at bottom
+                        const lg=ctx.createLinearGradient(bx,by+bh*0.7,bx,by+bh);
+                        lg.addColorStop(0,'rgba(0,0,0,0)'); lg.addColorStop(1,'rgba(255,80,0,0.35)');
+                        ctx.fillStyle=lg; ctx.fillRect(bx,by,bw,bh);
+                        // embers
+                        for(let e=0;e<12;e++){
+                            const ex=bx+((e*67+tt*18)%bw);
+                            const ey=by+bh-(((e*43+tt*25*(1+e%3*0.4))%(bh*0.85)));
+                            const ea=0.5+0.5*Math.abs(Math.sin(tt*3+e));
+                            ctx.globalAlpha=ea*0.7; ctx.fillStyle=e%2===0?'#ff6600':'#ffaa00';
+                            ctx.beginPath(); ctx.arc(ex,ey,1.2,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                        // platforms (dark rock)
+                        for(let p=0;p<3;p++){
+                            const py2=by+bh*0.35+p*bh*0.22;
+                            const pw=bw*0.55+p*bw*0.04;
+                            const pg2=ctx.createLinearGradient(bx,py2,bx,py2+7);
+                            pg2.addColorStop(0,'#883300'); pg2.addColorStop(1,'#440000');
+                            ctx.fillStyle=pg2; ctx.fillRect(bx+bw/2-pw/2,py2,pw,7);
+                            ctx.fillStyle='rgba(255,100,0,0.3)'; ctx.fillRect(bx+bw/2-pw/2,py2,pw,3);
+                        }
+                    }
+                },
+                {
+                    label:'MOONLIT', sub:'Mystical magic world',
+                    color:'#bb77ff', dark:'#0a0020', mid:'#180040',
+                    drawBg(bx,by,bw,bh,tt) {
+                        const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                        sg.addColorStop(0,'#0a0020'); sg.addColorStop(1,'#1a0050');
+                        ctx.fillStyle=sg; ctx.fillRect(bx,by,bw,bh);
+                        // magic stars
+                        for(let s=0;s<20;s++){
+                            const sa=0.2+0.7*Math.abs(Math.sin(tt*1.5+s*0.9));
+                            ctx.globalAlpha=sa; ctx.fillStyle='#ddaaff';
+                            ctx.beginPath(); ctx.arc(bx+(s*67)%bw, by+(s*43)%(bh*0.75), 0.9,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                        // moon glow
+                        const mg=ctx.createRadialGradient(bx+bw*0.75,by+bh*0.15,0,bx+bw*0.75,by+bh*0.15,bw*0.22);
+                        mg.addColorStop(0,'rgba(200,160,255,0.25)'); mg.addColorStop(1,'rgba(0,0,0,0)');
+                        ctx.fillStyle=mg; ctx.fillRect(bx,by,bw,bh);
+                        // platforms (crystal)
+                        for(let p=0;p<3;p++){
+                            const py2=by+bh*0.35+p*bh*0.22;
+                            const pw=bw*0.55+p*bw*0.04;
+                            const pg2=ctx.createLinearGradient(bx,py2,bx,py2+7);
+                            pg2.addColorStop(0,'#9944cc'); pg2.addColorStop(1,'#440088');
+                            ctx.fillStyle=pg2; ctx.fillRect(bx+bw/2-pw/2,py2,pw,7);
+                            ctx.fillStyle='rgba(220,180,255,0.4)'; ctx.fillRect(bx+bw/2-pw/2+1,py2,pw-2,2);
+                        }
+                        // magic particles
+                        for(let m2=0;m2<8;m2++){
+                            const ma=0.4+0.5*Math.abs(Math.sin(tt*2.5+m2*0.8));
+                            const mx=bx+((m2*59+tt*8)%bw);
+                            const my2=by+((m2*41+tt*5*(1+m2%3*0.5))%(bh*0.9));
+                            ctx.globalAlpha=ma*0.8; ctx.fillStyle='#cc88ff';
+                            ctx.beginPath(); ctx.arc(mx,my2,1.5,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                    }
+                },
+                {
+                    label:'COSMOS', sub:'Deep space world',
+                    color:'#00ffcc', dark:'#000818', mid:'#001428',
+                    drawBg(bx,by,bw,bh,tt) {
+                        const sg=ctx.createLinearGradient(bx,by,bx,by+bh);
+                        sg.addColorStop(0,'#000810'); sg.addColorStop(1,'#001428');
+                        ctx.fillStyle=sg; ctx.fillRect(bx,by,bw,bh);
+                        // stars
+                        for(let s=0;s<30;s++){
+                            const sa=0.2+0.7*Math.abs(Math.sin(tt*1.1+s*0.7));
+                            const sc=['#ffffff','#aaffee','#88ddff','#ffccff'][s%4];
+                            ctx.globalAlpha=sa; ctx.fillStyle=sc;
+                            ctx.beginPath(); ctx.arc(bx+(s*61)%bw, by+(s*41)%(bh*0.85), 0.7+0.6*(s%3),0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                        // nebula glow
+                        const ng=ctx.createRadialGradient(bx+bw*0.3,by+bh*0.4,0,bx+bw*0.3,by+bh*0.4,bw*0.4);
+                        ng.addColorStop(0,'rgba(0,255,200,0.10)'); ng.addColorStop(1,'rgba(0,0,0,0)');
+                        ctx.fillStyle=ng; ctx.fillRect(bx,by,bw,bh);
+                        // platforms (metallic)
+                        for(let p=0;p<3;p++){
+                            const py2=by+bh*0.35+p*bh*0.22;
+                            const pw=bw*0.55+p*bw*0.04;
+                            const pg2=ctx.createLinearGradient(bx,py2,bx,py2+7);
+                            pg2.addColorStop(0,'#008866'); pg2.addColorStop(1,'#003322');
+                            ctx.fillStyle=pg2; ctx.fillRect(bx+bw/2-pw/2,py2,pw,7);
+                            ctx.fillStyle='rgba(0,255,200,0.4)'; ctx.fillRect(bx+bw/2-pw/2+1,py2,pw-2,2);
+                        }
+                        // cosmic dust
+                        for(let d=0;d<10;d++){
+                            const da=0.3+0.4*Math.abs(Math.sin(tt*1.8+d));
+                            const dx=bx+((d*71+tt*6)%bw);
+                            const dy2=by+((d*53+tt*4*(1+d%3*0.3))%(bh*0.9));
+                            ctx.globalAlpha=da*0.6; ctx.fillStyle='#00ffcc';
+                            ctx.beginPath(); ctx.arc(dx,dy2,1,0,Math.PI*2); ctx.fill();
+                        }
+                        ctx.globalAlpha=1;
+                    }
+                },
+            ];
+
+            const sel = _BGS[hostPreviewTheme];
+            const [_sr, _sg2, _sb] = hexToRgb(sel.color);
+
+            // ── Full-screen background = selected theme preview ──
+            sel.drawBg(0, 0, BASE_W, BASE_H, t);
+
+            // Dark overlay so UI is readable
+            ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0,0,BASE_W,BASE_H);
+
+            // Title
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(220,200,255,0.7)';
+            ctx.fillText('— MULTIPLAYER —', cx, 28);
+            const tg = ctx.createLinearGradient(cx-120,0,cx+120,0);
+            tg.addColorStop(0,'#ff44aa'); tg.addColorStop(0.5, sel.color); tg.addColorStop(1,'#44aaff');
+            ctx.shadowColor = sel.color; ctx.shadowBlur = 20;
+            ctx.font = 'bold 24px Orbitron, monospace'; ctx.fillStyle = tg;
+            ctx.fillText('CHOOSE BACKGROUND', cx, 54);
+            ctx.restore();
+
+            // ── 3×2 GRID of background tiles ──
+            const cols = 3, rows = 2;
+            const tileW = 138, tileH = 130, tileGap = 6;
+            const gridW = cols * tileW + (cols - 1) * tileGap;
+            const gridX = cx - gridW / 2;
+            const gridY = 80;
+
+            for (let i = 0; i < 6; i++) {
+                const col = i % cols, row = Math.floor(i / cols);
+                const tx = gridX + col * (tileW + tileGap);
+                const ty = gridY + row * (tileH + tileGap);
+                const bg = _BGS[i];
+                const isSel = i === hostPreviewTheme;
+                const [r2,g2,b2] = hexToRgb(bg.color);
+
+                // Clip to tile
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(tx, ty, tileW, tileH, 12); ctx.clip();
+
+                // Draw actual mini-background
+                bg.drawBg(tx, ty, tileW, tileH, t);
+
+                // Overlay: darken unselected slightly
+                if (!isSel) { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(tx,ty,tileW,tileH); }
+
+                ctx.restore();
+
+                // Selected: bright glowing border
+                ctx.save();
+                if (isSel) {
+                    ctx.shadowColor = bg.color; ctx.shadowBlur = 22;
+                    ctx.strokeStyle = bg.color; ctx.lineWidth = 3;
+                } else {
+                    ctx.strokeStyle = `rgba(${r2},${g2},${b2},0.40)`; ctx.lineWidth = 1.5;
+                }
+                ctx.beginPath(); ctx.roundRect(tx, ty, tileW, tileH, 12); ctx.stroke();
+                ctx.restore();
+
+                // Selected tick
+                if (isSel) {
+                    ctx.save();
+                    ctx.shadowColor = bg.color; ctx.shadowBlur = 10;
+                    ctx.fillStyle = bg.color;
+                    ctx.beginPath(); ctx.arc(tx + tileW - 14, ty + 14, 10, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.font = 'bold 12px monospace';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText('✓', tx + tileW - 14, ty + 14);
+                    ctx.restore();
+                }
+
+                // Label at bottom of tile
+                ctx.save();
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                ctx.beginPath(); ctx.roundRect(tx + 4, ty + tileH - 34, tileW - 8, 30, [0,0,8,8]); ctx.fill();
+                ctx.font = `bold ${isSel ? 11 : 10}px Orbitron, monospace`;
+                ctx.fillStyle = isSel ? bg.color : '#fff';
+                if (isSel) { ctx.shadowColor = bg.color; ctx.shadowBlur = 8; }
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(bg.label, tx + tileW / 2, ty + tileH - 20);
+                ctx.shadowBlur = 0;
+                ctx.font = '8px monospace'; ctx.fillStyle = 'rgba(200,200,200,0.7)';
+                ctx.fillText(bg.sub, tx + tileW / 2, ty + tileH - 8);
+                ctx.restore();
+            }
+
+            // ── CONFIRM button ──
+            const confirmY = gridY + rows * (tileH + tileGap) + 14;
+            const confirmW = 300, confirmH = 58, confirmX = cx - confirmW / 2;
+            ctx.save();
+            ctx.shadowColor = sel.color; ctx.shadowBlur = 18 + 8 * Math.sin(t * 2.5);
+            ctx.fillStyle = `rgba(${_sr},${_sg2},${_sb},0.18)`;
+            ctx.beginPath(); ctx.roundRect(confirmX, confirmY, confirmW, confirmH, 16); ctx.fill();
+            ctx.strokeStyle = sel.color; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.roundRect(confirmX, confirmY, confirmW, confirmH, 16); ctx.stroke();
+            ctx.restore();
+            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = sel.color;
+            ctx.shadowColor = sel.color; ctx.shadowBlur = 10;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(`CREATE ${hostRoomType.toUpperCase()} ROOM`, cx, confirmY + confirmH / 2);
+            ctx.shadowBlur = 0;
+
+            // ── BACK button ──
+            const backY2 = confirmY + confirmH + 10;
+            ctx.fillStyle = 'rgba(10,0,25,0.7)';
+            ctx.beginPath(); ctx.roundRect(cx - 80, backY2, 160, 38, 10); ctx.fill();
+            ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(cx - 80, backY2, 160, 38, 10); ctx.stroke();
+            ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,160,255,0.85)';
+            ctx.fillText('← BACK', cx, backY2 + 19);
             ctx.textBaseline = 'alphabetic';
         }
 
@@ -10436,14 +10698,6 @@ function _drawMpHostEndBtn() {
             }
             ctx.globalAlpha = 1;
 
-            // Subtle scanlines for depth
-            ctx.save();
-            for (let y = 0; y < BASE_H; y += 4) {
-                ctx.fillStyle = 'rgba(0,0,0,0.08)';
-                ctx.fillRect(0, y, BASE_W, 2);
-            }
-            ctx.restore();
-
             // Title
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             const selTg = ctx.createLinearGradient(BASE_W/2-160,0,BASE_W/2+160,0);
@@ -10473,13 +10727,13 @@ function _drawMpHostEndBtn() {
 
                 // Card base
                 const isHov = selectHoverIdx === i;
-                const cardAlpha = isHov ? 0.98 : 0.92;
-                const cardMult = isHov ? 0.22 : 0.12;
-                ctx.fillStyle = `rgba(${Math.round(hr*cardMult)},${Math.round(hg*cardMult*0.5)},${Math.round(hb*0.18)},${cardAlpha})`;
+                ctx.fillStyle = isHov
+                    ? `rgba(${Math.round(hr*0.30)},${Math.round(hg*0.18)},${Math.round(hb*0.28)},0.98)`
+                    : `rgba(${Math.round(hr*0.18)},${Math.round(hg*0.11)},${Math.round(hb*0.22)},0.94)`;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
 
                 // Radial color bloom inside card
-                const bloomStr = isHov ? 0.28 : 0.14;
+                const bloomStr = isHov ? 0.36 : 0.22;
                 const bloom = ctx.createRadialGradient(icx, icy, 0, icx, icy, rowW * 0.6);
                 bloom.addColorStop(0, `rgba(${hr},${hg},${hb},${bloomStr})`);
                 bloom.addColorStop(1, 'rgba(0,0,0,0)');
@@ -10487,7 +10741,7 @@ function _drawMpHostEndBtn() {
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
 
                 // Top shine
-                ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                ctx.fillStyle = 'rgba(255,255,255,0.09)';
                 ctx.beginPath(); ctx.roundRect(rowX + 6, ry + 4, rowW - 12, rowH / 2 - 4, [12,12,0,0]); ctx.fill();
 
                 // Animated border — hovered glows bright, INFINITE pulses, others steady
@@ -10968,30 +11222,42 @@ function menuAction(sx, sy) {
                 // ── host options ──────────────────────────────────────────
                 if (onlineScreen === 'hostOptions') {
                     const btnW = 300, btnX = cx - btnW / 2;
-                    // Background picker (6 tiles, pickerY=84, ty=98, sW=62, sH=52, sGap=4)
-                    const _sW = 62, _sH = 52, _sGap = 4;
-                    const _sGridW = 6 * _sW + 5 * _sGap;
-                    const _sGridX = cx - _sGridW / 2;
-                    const _pickerTy = 98;
+                    if (sy >= 240 && sy <= 344 && sx >= btnX && sx <= btnX + btnW) {
+                        SFX.play('click'); hostRoomType = 'public'; hostPreviewTheme = 0; onlineScreen = 'hostBgSelect'; return;
+                    }
+                    if (sy >= 362 && sy <= 466 && sx >= btnX && sx <= btnX + btnW) {
+                        SFX.play('click'); hostRoomType = 'private'; hostPreviewTheme = 0; onlineScreen = 'hostBgSelect'; return;
+                    }
+                    if (sy >= 494 && sy <= 534 && sx >= cx - 80 && sx <= cx + 80) {
+                        SFX.play('click'); onlineScreen = 'main'; return;
+                    }
+                    return;
+                }
+                // ── host background select ────────────────────────────────
+                if (onlineScreen === 'hostBgSelect') {
+                    const cols = 3, tileW = 138, tileH = 130, tileGap = 6;
+                    const gridW = cols * tileW + (cols - 1) * tileGap;
+                    const gridX = cx - gridW / 2;
+                    const gridY = 80;
+                    // tile clicks
                     for (let i = 0; i < 6; i++) {
-                        const tx = _sGridX + i * (_sW + _sGap);
-                        if (sx >= tx && sx <= tx + _sW && sy >= _pickerTy && sy <= _pickerTy + _sH) {
+                        const col = i % cols, row = Math.floor(i / cols);
+                        const tx = gridX + col * (tileW + tileGap);
+                        const ty = gridY + row * (tileH + tileGap);
+                        if (sx >= tx && sx <= tx + tileW && sy >= ty && sy <= ty + tileH) {
                             SFX.play('click'); hostPreviewTheme = i; return;
                         }
                     }
-                    // btnY0 = pickerY(84) + 14(label) + sH(52) + 10(sep) + 14 = 174
-                    const _btnY0 = 174, _btnH = 96;
-                    const _btnY1 = _btnY0 + _btnH + 10;
-                    if (sy >= _btnY0 && sy <= _btnY0 + _btnH && sx >= btnX && sx <= btnX + btnW) {
-                        SFX.play('click'); _onlineCreateRoom('public'); return;
+                    // confirm button: gridY + 2*(tileH+tileGap) + 14
+                    const confirmY = gridY + 2 * (tileH + tileGap) + 14;
+                    const confirmW = 300, confirmH = 58, confirmX = cx - confirmW / 2;
+                    if (sy >= confirmY && sy <= confirmY + confirmH && sx >= confirmX && sx <= confirmX + confirmW) {
+                        SFX.play('click'); _onlineCreateRoom(hostRoomType); return;
                     }
-                    if (sy >= _btnY1 && sy <= _btnY1 + _btnH && sx >= btnX && sx <= btnX + btnW) {
-                        SFX.play('click'); _onlineCreateRoom('private'); return;
-                    }
-                    // back button y = btnY1+btnH+18 = 474
-                    const _backY = _btnY1 + _btnH + 18;
-                    if (sy >= _backY && sy <= _backY + 40 && sx >= cx - 80 && sx <= cx + 80) {
-                        SFX.play('click'); onlineScreen = 'main'; return;
+                    // back button
+                    const backY2 = confirmY + confirmH + 10;
+                    if (sy >= backY2 && sy <= backY2 + 38 && sx >= cx - 80 && sx <= cx + 80) {
+                        SFX.play('click'); onlineScreen = 'hostOptions'; return;
                     }
                     return;
                 }
