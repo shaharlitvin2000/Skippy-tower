@@ -10794,77 +10794,71 @@ function _drawMpHostEndBtn() {
                 const best = allTimeBests[m.idx];
                 const [hr,hg,hb] = hexToRgb(m.stroke);
                 const icy = ry + rowH/2;
-
-                // Card base
                 const isHov = selectHoverIdx === i;
-                const thumbW = 88;
-                ctx.fillStyle = isHov
-                    ? `rgba(${Math.round(hr*0.28)},${Math.round(hg*0.16)},${Math.round(hb*0.26)},0.97)`
-                    : `rgba(${Math.round(hr*0.14)},${Math.round(hg*0.08)},${Math.round(hb*0.18)},0.92)`;
-                ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
 
-                // ── Thumbnail: actual mini-game-background on left ──
+                // ── Full-card theme background ──
                 ctx.save();
-                ctx.beginPath(); ctx.roundRect(rowX, ry, thumbW, rowH, [16,0,0,16]); ctx.clip();
-                _drawThemeMini(i, rowX, ry, thumbW, rowH, t);
-                // Fade right edge into card
-                const thumbFade = ctx.createLinearGradient(rowX + thumbW * 0.45, 0, rowX + thumbW, 0);
-                thumbFade.addColorStop(0, 'rgba(0,0,0,0)');
-                thumbFade.addColorStop(1, isHov
-                    ? `rgba(${Math.round(hr*0.28)},${Math.round(hg*0.16)},${Math.round(hb*0.26)},1)`
-                    : `rgba(${Math.round(hr*0.14)},${Math.round(hg*0.08)},${Math.round(hb*0.18)},1)`);
-                ctx.fillStyle = thumbFade; ctx.fillRect(rowX, ry, thumbW, rowH);
+                ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.clip();
+                _drawThemeMini(i, rowX, ry, rowW, rowH, t);
+                // Dark overlay — lighter on hover so background shows through more
+                ctx.fillStyle = isHov ? 'rgba(0,0,0,0.44)' : 'rgba(0,0,0,0.62)';
+                ctx.fillRect(rowX, ry, rowW, rowH);
+                // Subtle color tint so theme hue bleeds through
+                ctx.fillStyle = `rgba(${hr},${hg},${hb},${isHov ? 0.12 : 0.06})`;
+                ctx.fillRect(rowX, ry, rowW, rowH);
                 ctx.restore();
 
-                // Divider line between thumbnail and text area
-                ctx.strokeStyle = `rgba(${hr},${hg},${hb},0.25)`; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(rowX + thumbW, ry + 8); ctx.lineTo(rowX + thumbW, ry + rowH - 8); ctx.stroke();
-
-                // Radial bloom (right side of card)
-                const bloomStr = isHov ? 0.28 : 0.14;
-                const bloom = ctx.createRadialGradient(rowX + thumbW + 80, icy, 0, rowX + thumbW + 80, icy, rowW * 0.55);
-                bloom.addColorStop(0, `rgba(${hr},${hg},${hb},${bloomStr})`);
-                bloom.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = bloom;
-                ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.fill();
-
                 // Top shine
-                ctx.fillStyle = 'rgba(255,255,255,0.07)';
-                ctx.beginPath(); ctx.roundRect(rowX + thumbW + 2, ry + 4, rowW - thumbW - 10, rowH / 2 - 6, [0,10,0,0]); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                ctx.beginPath(); ctx.roundRect(rowX + 4, ry + 3, rowW - 8, rowH * 0.38, [14,14,0,0]); ctx.fill();
 
-                // Animated border — hovered glows bright, INFINITE pulses, others steady
-                const bPulse = isHov ? 0.95 + 0.05 * Math.sin(t * 4) : (i === 0 ? 0.45 + 0.45 * Math.sin(t * 2.4) : 0.65);
-                ctx.save(); ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 24 : 7 * bPulse;
+                // Animated border
+                const bPulse = isHov ? 0.95 + 0.05 * Math.sin(t * 4) : (i === 0 ? 0.45 + 0.45 * Math.sin(t * 2.4) : 0.6);
+                ctx.save(); ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 26 : 8 * bPulse;
                 ctx.strokeStyle = `rgba(${hr},${hg},${hb},${bPulse})`; ctx.lineWidth = isHov ? 3 : 1.5;
                 ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 16); ctx.stroke();
                 ctx.restore();
 
-                // Emoji — right side floating
-                ctx.font = isHov ? '34px sans-serif' : '28px sans-serif';
+                // ── Number badge (left) ──
+                const badgeR = 26;
+                const badgeX = rowX + 18 + badgeR;
+                ctx.save();
+                ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 18 : 8;
+                ctx.fillStyle = `rgba(${hr},${hg},${hb},${isHov ? 0.28 : 0.18})`;
+                ctx.beginPath(); ctx.arc(badgeX, icy, badgeR, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = `rgba(${hr},${hg},${hb},${isHov ? 0.95 : 0.65})`; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(badgeX, icy, badgeR, 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${m.icon === '∞' ? 30 : 20}px Orbitron, monospace`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.globalAlpha = 0.9 + 0.1 * Math.sin(t * 1.5 + i);
-                ctx.fillText(m.emoji, rowX + rowW - 38, icy);
+                ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 14 : 6;
+                ctx.fillText(m.icon, badgeX, icy + (m.icon === '∞' ? 2 : 0));
+                ctx.shadowBlur = 0;
+
+                // ── Big emoji (right side, clearly visible) ──
+                const emojiX = rowX + rowW - 44;
+                const emojiSz = isHov ? 42 : 34;
+                ctx.font = `${emojiSz}px sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.globalAlpha = isHov ? 1 : 0.82 + 0.12 * Math.sin(t * 1.4 + i);
+                ctx.fillText(m.emoji, emojiX, icy);
                 ctx.globalAlpha = 1;
 
-                // Labels — text area starts after thumbnail
-                const txtX = rowX + thumbW + 10;
+                // ── Text labels (left of emoji, right of badge) ──
+                const txtX = badgeX + badgeR + 14;
                 ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-                // Mode label (big)
+                // Mode label
                 ctx.fillStyle = '#fff'; ctx.font = `${isHov ? 700 : 600} ${isHov ? 18 : 16}px Orbitron, monospace`;
-                ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 10 : 5;
-                ctx.fillText(m.label, txtX, ry + 32);
+                ctx.shadowColor = m.stroke; ctx.shadowBlur = isHov ? 10 : 4;
+                ctx.fillText(m.label, txtX, ry + 33);
                 ctx.shadowBlur = 0;
-                // World name (secondary)
-                ctx.fillStyle = `rgba(${hr},${hg},${hb},${isHov ? 1 : 0.8})`; ctx.font = `${isHov ? 'bold ' : ''}12px monospace`;
-                ctx.fillText(m.name, txtX, ry + 52);
-                // Goal
-                if (m.goal) {
-                    ctx.fillStyle = `rgba(${hr},${hg},${hb},0.6)`; ctx.font = '10px monospace';
-                    ctx.fillText(`reach ${m.goal}`, txtX, ry + 68);
-                } else {
-                    ctx.fillStyle = `rgba(${hr},${hg},${hb},0.55)`; ctx.font = '10px monospace';
-                    ctx.fillText('no height limit', txtX, ry + 68);
-                }
+                // World name
+                ctx.fillStyle = `rgba(${hr},${hg},${hb},${isHov ? 1 : 0.85})`; ctx.font = `${isHov ? 'bold ' : ''}12px monospace`;
+                ctx.fillText(m.name, txtX, ry + 53);
+                // Goal / limit
+                ctx.fillStyle = `rgba(${hr},${hg},${hb},0.65)`; ctx.font = '10px monospace';
+                ctx.fillText(m.goal ? `reach ${m.goal}` : 'no height limit', txtX, ry + 69);
 
                 // Best score / win badge
                 const won = i > 0 && levelWins[m.idx];
@@ -10872,20 +10866,17 @@ function _drawMpHostEndBtn() {
                 if (won) {
                     ctx.fillStyle = '#ffe033'; ctx.font = 'bold 12px monospace';
                     ctx.shadowColor = '#ffe033'; ctx.shadowBlur = 8;
-                    ctx.fillText('✓ DONE', rowX + rowW - 56, icy - 6);
+                    ctx.fillText('✓ DONE', emojiX - 30, icy - 6);
                     ctx.shadowBlur = 0;
                     ctx.fillStyle = 'rgba(255,220,80,0.6)'; ctx.font = '10px monospace';
-                    ctx.fillText(`${best}m`, rowX + rowW - 56, icy + 10);
+                    ctx.fillText(`${best}m`, emojiX - 30, icy + 10);
                 } else if (best > 0) {
-                    ctx.fillStyle = m.stroke; ctx.font = 'bold 16px monospace';
+                    ctx.fillStyle = m.stroke; ctx.font = 'bold 15px monospace';
                     ctx.shadowColor = m.stroke; ctx.shadowBlur = 6;
-                    ctx.fillText(`${best}m`, rowX + rowW - 56, icy + 2);
+                    ctx.fillText(`${best}m`, emojiX - 30, icy + 2);
                     ctx.shadowBlur = 0;
                     ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '9px monospace';
-                    ctx.fillText('BEST', rowX + rowW - 56, icy - 11);
-                } else {
-                    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '10px monospace';
-                    ctx.fillText('No record', rowX + rowW - 56, icy);
+                    ctx.fillText('BEST', emojiX - 30, icy - 11);
                 }
                 ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
             }
