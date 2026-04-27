@@ -8785,7 +8785,7 @@ function _drawMpHostEndBtn() {
                 ctx.beginPath(); ctx.roundRect(btnX, b.y, btnW, btnH, 14); ctx.stroke();
                 ctx.restore();
                 ctx.font = 'bold 19px Orbitron, monospace'; ctx.fillStyle = b.color;
-                ctx.fillText(b.icon + '  ' + b.label, cx, b.y + btnH / 2 + 1);
+                ctx.fillText(b.icon + '  ' + b.label, cx, b.y + btnH / 2);
             });
 
             // BACK button
@@ -8795,49 +8795,95 @@ function _drawMpHostEndBtn() {
             ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(btnX + 50, backY, btnW - 100, 40, 10); ctx.stroke();
             ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.8)';
-            ctx.fillText('← BACK', cx, backY + 21);
+            ctx.fillText('← BACK', cx, backY + 20);
             ctx.textBaseline = 'alphabetic';
         }
 
         function _drawOnlineHostOptions() {
+            const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            ctx.fillStyle = 'rgba(4,10,32,0.97)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Purple gradient background
+            const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
+            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Floating orbs
+            ctx.save();
+            const oc = ['#44ffaa','#ff44aa','#aa44ff'];
+            for (let i = 0; i < 3; i++) {
+                const ox = cx + Math.cos(t * 0.4 + i * 2.1) * 140;
+                const oy = BASE_H / 2 + Math.sin(t * 0.3 + i * 1.4) * 180;
+                const og = ctx.createRadialGradient(ox, oy, 0, ox, oy, 70);
+                og.addColorStop(0, oc[i] + '22'); og.addColorStop(1, 'transparent');
+                ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ox, oy, 70, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#3ca0ff'; ctx.fillText('HOST GAME', cx, 148);
-            ctx.font = 'bold 28px monospace'; ctx.fillStyle = '#ffffff'; ctx.fillText('CHOOSE ROOM TYPE', cx, 182);
+            ctx.save();
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.75)';
+            ctx.fillText('— MULTIPLAYER —', cx, 148);
+            ctx.restore();
+
+            // Title
+            ctx.save();
+            const ttG = ctx.createLinearGradient(cx - 130, 172, cx + 130, 196);
+            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, '#cc44ff'); ttG.addColorStop(1, '#44aaff');
+            ctx.shadowColor = '#9944ff'; ctx.shadowBlur = 22;
+            ctx.font = 'bold 30px Orbitron, monospace'; ctx.fillStyle = ttG;
+            ctx.fillText('CHOOSE ROOM TYPE', cx, 184);
+            ctx.restore();
+
+            // Sep
+            const sg = ctx.createLinearGradient(cx-140, 0, cx+140, 0);
+            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4,'#cc44ff'); sg.addColorStop(1,'transparent');
+            ctx.strokeStyle = sg; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.4;
+            ctx.beginPath(); ctx.moveTo(cx - 140, 208); ctx.lineTo(cx + 140, 208); ctx.stroke();
+            ctx.globalAlpha = 1;
+
             const btnW = 300, btnH = 104, btnX = cx - btnW / 2;
-            // PUBLIC
-            ctx.fillStyle = 'rgba(0,25,15,0.9)';
+
+            // PUBLIC card
+            ctx.save();
+            ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 14 + Math.sin(t * 2) * 5;
+            ctx.fillStyle = 'rgba(0,30,16,0.92)';
             ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.fill();
-            ctx.strokeStyle = 'rgba(50,220,130,0.6)'; ctx.lineWidth = 2;
+            ctx.strokeStyle = `rgba(68,255,136,${0.5 + Math.sin(t * 2) * 0.2})`; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.stroke();
-            ctx.font = 'bold 22px monospace'; ctx.fillStyle = '#44ee88';
-            ctx.fillText('🌍  PUBLIC ROOM', cx, 282);
-            ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(100,220,140,0.65)';
-            ctx.fillText('Visible to everyone in Quick Match', cx, 308);
-            ctx.fillText('Anyone with the code can also join', cx, 325);
-            // PRIVATE
-            ctx.fillStyle = 'rgba(18,8,36,0.9)';
+            ctx.restore();
+            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#44ee88';
+            ctx.fillText('🌍  PUBLIC ROOM', cx, 278);
+            ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(100,220,140,0.7)';
+            ctx.fillText('Visible to everyone in Quick Match', cx, 304);
+            ctx.fillText('Anyone with the code can also join', cx, 321);
+
+            // PRIVATE card
+            ctx.save();
+            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 14 + Math.sin(t * 2 + 1) * 5;
+            ctx.fillStyle = 'rgba(20,8,40,0.92)';
             ctx.beginPath(); ctx.roundRect(btnX, 362, btnW, btnH, 14); ctx.fill();
-            ctx.strokeStyle = 'rgba(180,80,255,0.6)'; ctx.lineWidth = 2;
+            ctx.strokeStyle = `rgba(180,80,255,${0.5 + Math.sin(t * 2 + 1) * 0.2})`; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX, 362, btnW, btnH, 14); ctx.stroke();
-            ctx.font = 'bold 22px monospace'; ctx.fillStyle = '#cc88ff';
-            ctx.fillText('🔒  PRIVATE ROOM', cx, 404);
-            ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(200,140,255,0.65)';
-            ctx.fillText('Hidden — invite only with room code', cx, 430);
-            ctx.fillText('Not visible in Quick Match', cx, 447);
-            // Error display
+            ctx.restore();
+            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#cc88ff';
+            ctx.fillText('🔒  PRIVATE ROOM', cx, 400);
+            ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,140,255,0.7)';
+            ctx.fillText('Hidden — invite only with room code', cx, 426);
+            ctx.fillText('Not visible in Quick Match', cx, 443);
+
             if (lobbyError) {
-                ctx.font = '12px monospace'; ctx.fillStyle = '#ff6666';
+                ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = '#ff6655';
                 ctx.fillText('⚠ ' + lobbyError, cx, 478);
             }
+
             // BACK
-            ctx.fillStyle = 'rgba(5,5,20,0.85)';
+            ctx.fillStyle = 'rgba(15,5,35,0.85)';
             ctx.beginPath(); ctx.roundRect(cx - 80, 494, 160, 40, 10); ctx.fill();
-            ctx.strokeStyle = 'rgba(100,130,200,0.4)'; ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(cx - 80, 494, 160, 40, 10); ctx.stroke();
-            ctx.font = 'bold 16px monospace'; ctx.fillStyle = 'rgba(150,170,220,0.75)';
-            ctx.fillText('← BACK', cx, 494 + 20);
+            ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.8)';
+            ctx.fillText('← BACK', cx, 514);
             ctx.textBaseline = 'alphabetic';
         }
 
@@ -9147,10 +9193,22 @@ function _drawMpHostEndBtn() {
         function _drawOnlineJoinCode() {
             const t = Date.now() / 1000;
             const { kW, kH, kGap, kGridW, kX, startY, boxY, kY, botY, backY, delW, joinW, cx } = _jcLayout();
-            ctx.fillStyle = 'rgba(4,10,32,0.97)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Purple gradient background
+            const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
+            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#3ca0ff';
+
+            // Title with rainbow gradient
+            ctx.save();
+            const ttG2 = ctx.createLinearGradient(cx - 110, 0, cx + 110, 0);
+            ttG2.addColorStop(0, '#ff44aa'); ttG2.addColorStop(0.5, '#cc44ff'); ttG2.addColorStop(1, '#44aaff');
+            ctx.shadowColor = '#9944ff'; ctx.shadowBlur = 18;
+            ctx.font = 'bold 22px Orbitron, monospace'; ctx.fillStyle = ttG2;
             ctx.fillText('JOIN WITH CODE', cx, startY + 10);
+            ctx.restore();
 
             // 6 character boxes
             const boxW = 52, boxGap = 6;
@@ -9158,30 +9216,36 @@ function _drawMpHostEndBtn() {
             for (let i = 0; i < 6; i++) {
                 const bx = boxStartX + i * (boxW + boxGap), ch = codeInputText[i] || '';
                 const isActive = i === codeInputText.length && codeInputText.length < 6;
-                ctx.fillStyle = 'rgba(5,15,42,0.95)';
-                ctx.beginPath(); ctx.roundRect(bx, boxY, boxW, 58, 8); ctx.fill();
-                ctx.strokeStyle = isActive
-                    ? (Math.floor(t * 2) % 2 === 0 ? 'rgba(85,170,255,0.9)' : 'rgba(85,170,255,0.35)')
-                    : (ch ? 'rgba(85,170,255,0.5)' : 'rgba(50,80,140,0.3)');
-                ctx.lineWidth = isActive ? 2 : 1.5;
-                ctx.beginPath(); ctx.roundRect(bx, boxY, boxW, 58, 8); ctx.stroke();
-                if (ch) { ctx.font = 'bold 26px monospace'; ctx.fillStyle = '#ffffff'; ctx.fillText(ch, bx + boxW/2, boxY + 31); }
-                else if (isActive) { ctx.font = 'bold 22px monospace'; ctx.fillStyle = 'rgba(85,170,255,0.6)'; ctx.fillText('_', bx + boxW/2, boxY + 31); }
+                const boxHue = (i * 50 + t * 30) % 360;
+                ctx.fillStyle = 'rgba(12,5,35,0.95)';
+                ctx.beginPath(); ctx.roundRect(bx, boxY, boxW, 58, 10); ctx.fill();
+                ctx.save();
+                if (isActive) {
+                    ctx.shadowColor = `hsl(${boxHue},100%,65%)`; ctx.shadowBlur = 10;
+                    ctx.strokeStyle = `hsla(${boxHue},100%,65%,${0.5 + 0.5 * Math.sin(t * 4)})`;
+                } else {
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = ch ? `hsl(${i*50},80%,65%)` : 'rgba(80,50,130,0.35)';
+                }
+                ctx.lineWidth = isActive ? 2.5 : 1.5;
+                ctx.beginPath(); ctx.roundRect(bx, boxY, boxW, 58, 10); ctx.stroke();
+                ctx.restore();
+                if (ch) { ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = '#ffffff'; ctx.fillText(ch, bx + boxW/2, boxY + 31); }
+                else if (isActive) { ctx.font = 'bold 22px monospace'; ctx.fillStyle = `hsla(${boxHue},100%,65%,0.7)`; ctx.fillText('_', bx + boxW/2, boxY + 31); }
             }
 
-            // progress hint when no error
+            // progress hint / error
             if (!joinCodeError && codeInputText.length < 6) {
-                ctx.font = '11px monospace';
-                ctx.fillStyle = 'rgba(100,150,220,0.55)';
-                ctx.fillText('Type the 6-letter room code', cx, boxY + 58 + 13);
+                ctx.font = '11px Orbitron, monospace';
+                ctx.fillStyle = 'rgba(160,120,220,0.6)';
+                ctx.fillText('Type the 6-letter room code', cx, boxY + 58 + 14);
             }
-            // error / status
             if (joinCodeError) {
-                ctx.font = 'bold 12px monospace';
+                ctx.font = 'bold 12px Orbitron, monospace';
                 ctx.fillStyle = joinCodeError.startsWith('Joining') ? '#88ccff' : '#ff6655';
                 ctx.shadowColor = joinCodeError.startsWith('Joining') ? 'transparent' : 'rgba(255,0,0,0.4)';
                 ctx.shadowBlur = 6;
-                ctx.fillText(joinCodeError, cx, boxY + 58 + 13);
+                ctx.fillText(joinCodeError, cx, boxY + 58 + 14);
                 ctx.shadowBlur = 0;
             }
 
@@ -9202,42 +9266,46 @@ function _drawMpHostEndBtn() {
                     const kbx = rowStartX + c * (kW + kGap), kby = kY + r * (kH + kGap);
                     const isNum = r === 0;
                     const isDis = KB_DISABLED.has(key);
-                    ctx.fillStyle = isDis ? 'rgba(6,10,24,0.55)' : (isNum ? 'rgba(8,18,48,0.92)' : 'rgba(12,22,50,0.92)');
+                    const kHue = (c * 20 + r * 60) % 360;
+                    ctx.fillStyle = isDis ? 'rgba(8,4,18,0.55)' : (isNum ? 'rgba(15,5,40,0.92)' : 'rgba(12,5,32,0.92)');
                     ctx.beginPath(); ctx.roundRect(kbx, kby, kW, kH, 7); ctx.fill();
-                    ctx.strokeStyle = isDis ? 'rgba(40,55,90,0.3)' : (isNum ? 'rgba(80,130,220,0.45)' : 'rgba(60,110,200,0.38)');
+                    ctx.strokeStyle = isDis ? 'rgba(50,30,80,0.25)' : (isNum ? `hsla(${kHue},80%,60%,0.5)` : `hsla(${kHue},60%,55%,0.38)`);
                     ctx.lineWidth = 1.2;
                     ctx.beginPath(); ctx.roundRect(kbx, kby, kW, kH, 7); ctx.stroke();
-                    ctx.font = 'bold 15px monospace';
-                    ctx.fillStyle = isDis ? 'rgba(70,85,120,0.4)' : (isNum ? '#ccddff' : '#aaccff');
+                    ctx.font = 'bold 15px Orbitron, monospace';
+                    ctx.fillStyle = isDis ? 'rgba(80,60,110,0.35)' : (isNum ? '#ddccff' : '#bbaaff');
                     ctx.fillText(key, kbx + kW / 2, kby + kH / 2 + 1);
                 }
             }
 
             // ⌫ key
-            ctx.fillStyle = 'rgba(30,10,10,0.92)';
-            ctx.beginPath(); ctx.roundRect(kX, botY, delW, kH, 7); ctx.fill();
-            ctx.strokeStyle = 'rgba(200,80,80,0.45)'; ctx.lineWidth = 1.4;
-            ctx.beginPath(); ctx.roundRect(kX, botY, delW, kH, 7); ctx.stroke();
-            ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#ff8888';
-            ctx.fillText('⌫', kX + delW/2, botY + kH/2 + 1);
+            ctx.fillStyle = 'rgba(30,8,8,0.92)';
+            ctx.beginPath(); ctx.roundRect(kX, botY, delW, kH, 8); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,80,80,0.5)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(kX, botY, delW, kH, 8); ctx.stroke();
+            ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#ff9999';
+            ctx.fillText('⌫', kX + delW/2, botY + kH/2);
 
             // JOIN key
             const canJoin = codeInputText.length === 6;
             const jbX = kX + delW + kGap;
-            ctx.fillStyle = canJoin ? 'rgba(0,40,18,0.95)' : 'rgba(10,10,22,0.7)';
-            ctx.beginPath(); ctx.roundRect(jbX, botY, joinW, kH, 7); ctx.fill();
-            ctx.strokeStyle = canJoin ? 'rgba(50,255,120,0.75)' : 'rgba(55,75,100,0.35)';
-            ctx.lineWidth = canJoin ? 1.8 : 1;
-            ctx.beginPath(); ctx.roundRect(jbX, botY, joinW, kH, 7); ctx.stroke();
-            ctx.font = 'bold 16px monospace'; ctx.fillStyle = canJoin ? '#44ff88' : 'rgba(70,95,120,0.5)';
-            ctx.fillText('JOIN ▶', jbX + joinW/2, botY + kH/2 + 1);
+            ctx.save();
+            if (canJoin) { ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 12; }
+            ctx.fillStyle = canJoin ? 'rgba(0,40,18,0.95)' : 'rgba(12,5,28,0.7)';
+            ctx.beginPath(); ctx.roundRect(jbX, botY, joinW, kH, 8); ctx.fill();
+            ctx.strokeStyle = canJoin ? 'rgba(68,255,136,0.85)' : 'rgba(60,40,100,0.35)';
+            ctx.lineWidth = canJoin ? 2 : 1;
+            ctx.beginPath(); ctx.roundRect(jbX, botY, joinW, kH, 8); ctx.stroke();
+            ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = canJoin ? '#44ff88' : 'rgba(80,60,120,0.5)';
+            ctx.fillText('JOIN ▶', jbX + joinW/2, botY + kH/2);
+            ctx.restore();
 
             // BACK
-            ctx.fillStyle = 'rgba(5,5,20,0.85)';
+            ctx.fillStyle = 'rgba(15,5,35,0.85)';
             ctx.beginPath(); ctx.roundRect(cx - 80, backY, 160, 38, 10); ctx.fill();
-            ctx.strokeStyle = 'rgba(100,130,200,0.4)'; ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(cx - 80, backY, 160, 38, 10); ctx.stroke();
-            ctx.font = 'bold 15px monospace'; ctx.fillStyle = 'rgba(150,170,220,0.75)';
+            ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.8)';
             ctx.fillText('← BACK', cx, backY + 19);
             ctx.textBaseline = 'alphabetic';
         }
@@ -9245,126 +9313,158 @@ function _drawMpHostEndBtn() {
         function _drawOnlineQuickMatch() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            ctx.fillStyle = 'rgba(4,10,32,0.97)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Purple gradient background
+            const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
+            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#3ca0ff'; ctx.fillText('QUICK MATCH', cx, 38);
-            ctx.font = 'bold 24px monospace'; ctx.fillStyle = '#ffffff'; ctx.fillText('PUBLIC ROOMS', cx, 68);
-            ctx.strokeStyle = 'rgba(60,130,220,0.22)'; ctx.lineWidth = 1;
+
+            // Title
+            ctx.save();
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.7)';
+            ctx.fillText('— MULTIPLAYER —', cx, 32);
+            const ttG = ctx.createLinearGradient(cx - 110, 52, cx + 110, 76);
+            ttG.addColorStop(0, '#ffaa44'); ttG.addColorStop(0.5, '#ff44aa'); ttG.addColorStop(1, '#cc44ff');
+            ctx.shadowColor = '#ff44aa'; ctx.shadowBlur = 18;
+            ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = ttG;
+            ctx.fillText('🎲  PUBLIC ROOMS', cx, 64);
+            ctx.restore();
+
+            // Rainbow separator
+            const sg = ctx.createLinearGradient(30, 0, BASE_W - 30, 0);
+            sg.addColorStop(0, 'transparent'); sg.addColorStop(0.3, '#ff44aa');
+            sg.addColorStop(0.7, '#cc44ff'); sg.addColorStop(1, 'transparent');
+            ctx.strokeStyle = sg; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(30, 82); ctx.lineTo(BASE_W - 30, 82); ctx.stroke();
-            const listY = 92, rowH = 76, rowW = BASE_W - 60, rowX = 30;
-            const maxVis = Math.floor((690 - listY) / (rowH + 5));
+            ctx.globalAlpha = 1;
+
+            const listY = 92, rowH = 78, rowW = BASE_W - 52, rowX = 26;
+            const maxVis = Math.floor((700 - listY) / (rowH + 6));
             const shown = publicRoomsData.slice(0, maxVis);
+
             if (shown.length === 0) {
                 const dots = '.'.repeat(Math.floor(t * 2) % 4);
-                ctx.font = '14px monospace'; ctx.fillStyle = 'rgba(100,140,200,0.6)';
+                ctx.font = '14px Orbitron, monospace'; ctx.fillStyle = `hsl(${(t*50)%360},80%,70%)`;
                 ctx.fillText('Looking for rooms' + dots, cx, 300);
-                ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(70,100,150,0.45)';
-                ctx.fillText('No public rooms open right now.', cx, 326);
-                ctx.fillText('Host one and be the first!', cx, 344);
+                ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,120,220,0.55)';
+                ctx.fillText('No public rooms open right now.', cx, 330);
+                ctx.fillText('Host one and be the first!', cx, 350);
             } else {
                 for (let i = 0; i < shown.length; i++) {
                     const room = shown[i];
-                    const ry = listY + i * (rowH + 5);
+                    const ry = listY + i * (rowH + 6);
                     const pCount = Object.keys(room.players || {}).length;
-                    ctx.fillStyle = 'rgba(5,14,34,0.88)';
-                    ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 10); ctx.fill();
-                    ctx.strokeStyle = 'rgba(60,130,220,0.3)'; ctx.lineWidth = 1.2;
-                    ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 10); ctx.stroke();
-                    ctx.textAlign = 'left'; ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#88ccff';
-                    ctx.fillText('👑 ' + (room.hostName || 'Unknown'), rowX + 12, ry + rowH / 2 - 10);
+                    const cardHue = (i * 55 + t * 20) % 360;
+                    ctx.fillStyle = 'rgba(15,5,40,0.88)';
+                    ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 12); ctx.fill();
+                    ctx.strokeStyle = `hsla(${cardHue},70%,60%,0.35)`; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 12); ctx.stroke();
+                    ctx.textAlign = 'left';
+                    ctx.font = 'bold 13px Orbitron, monospace'; ctx.fillStyle = `hsl(${cardHue},90%,75%)`;
+                    ctx.fillText('👑 ' + (room.hostName || 'Unknown'), rowX + 12, ry + rowH / 2 - 12);
                     const _qmThemes = ['⚙CLOCK','🌿GROVE','🏜DESERT','🌋LAVA','🌙MOONLIT','🚀COSMOS'];
                     const _qmHeights = ['∞','500m','1500m','2500m','3750m','5000m'];
                     const themeTag = _qmThemes[room.mapTheme] || '⚙CLOCK';
                     const heightTag = room.mapMode === 'infinite' ? '∞ INFINITE' : (_qmHeights[room.mapLevel] || '');
-                    ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(130,165,210,0.7)';
-                    ctx.fillText(themeTag + '  •  ' + heightTag + '  •  ' + pCount + '/8', rowX + 12, ry + rowH / 2 + 8);
-                    const jbW = 68, jbH = 30, jbX = rowX + rowW - jbW - 10, jbY = ry + rowH / 2 - jbH / 2;
-                    ctx.fillStyle = 'rgba(0,38,18,0.9)';
-                    ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 7); ctx.fill();
-                    ctx.strokeStyle = 'rgba(50,220,110,0.6)'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 7); ctx.stroke();
-                    ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#44ee88';
-                    ctx.fillText('JOIN', jbX + jbW / 2, jbY + jbH / 2 + 1);
+                    ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,150,240,0.75)';
+                    ctx.fillText(themeTag + '  •  ' + heightTag + '  •  ' + pCount + '/8', rowX + 12, ry + rowH / 2 + 10);
+                    const jbW = 64, jbH = 32, jbX = rowX + rowW - jbW - 10, jbY = ry + rowH / 2 - jbH / 2;
+                    ctx.save();
+                    ctx.shadowColor = '#44ee88'; ctx.shadowBlur = 8;
+                    ctx.fillStyle = 'rgba(0,38,18,0.92)';
+                    ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 8); ctx.fill();
+                    ctx.strokeStyle = 'rgba(68,238,136,0.7)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 8); ctx.stroke();
+                    ctx.textAlign = 'center'; ctx.font = 'bold 12px Orbitron, monospace'; ctx.fillStyle = '#44ff88';
+                    ctx.fillText('JOIN', jbX + jbW / 2, jbY + jbH / 2);
+                    ctx.restore();
                 }
             }
-            // back button
+
+            // BACK button
             ctx.textAlign = 'center';
-            ctx.fillStyle = 'rgba(5,5,20,0.85)';
+            ctx.fillStyle = 'rgba(15,5,35,0.85)';
             ctx.beginPath(); ctx.roundRect(cx - 80, 726, 160, 40, 10); ctx.fill();
-            ctx.strokeStyle = 'rgba(100,130,200,0.4)'; ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(160,100,255,0.4)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(cx - 80, 726, 160, 40, 10); ctx.stroke();
-            ctx.font = 'bold 16px monospace'; ctx.fillStyle = 'rgba(150,170,220,0.75)';
+            ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.8)';
             ctx.fillText('← BACK', cx, 746);
             ctx.textBaseline = 'alphabetic';
         }
 
         function drawSettingsPanel() {
+            const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            const panW = 290, panH = 210;
+            const panW = 300, panH = 220;
             const panX = cx - panW / 2, panY = BASE_H / 2 - panH / 2 - 20;
 
             // Backdrop
-            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillStyle = 'rgba(8,0,20,0.7)';
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Panel bg
+            // Panel bg with purple glow
             ctx.save();
-            ctx.shadowColor = '#44aaff'; ctx.shadowBlur = 22;
-            ctx.fillStyle = 'rgba(6,14,42,0.97)';
-            ctx.beginPath(); ctx.roundRect(panX, panY, panW, panH, 16); ctx.fill();
+            ctx.shadowColor = `hsl(${(t * 60) % 360},100%,65%)`; ctx.shadowBlur = 28;
+            ctx.fillStyle = 'rgba(10,4,30,0.97)';
+            ctx.beginPath(); ctx.roundRect(panX, panY, panW, panH, 18); ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = '#3366cc'; ctx.lineWidth = 1.8;
-            ctx.beginPath(); ctx.roundRect(panX, panY, panW, panH, 16); ctx.stroke();
+            ctx.strokeStyle = `hsl(${(t * 60) % 360},100%,65%)`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.roundRect(panX, panY, panW, panH, 18); ctx.stroke();
             ctx.restore();
 
             // Title
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#78c8ff';
-            ctx.fillText('⚙  SETTINGS', cx, panY + 26);
+            const ttG = ctx.createLinearGradient(cx - 80, 0, cx + 80, 0);
+            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, '#cc44ff'); ttG.addColorStop(1, '#44aaff');
+            ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = ttG;
+            ctx.fillText('⚙  SETTINGS', cx, panY + 28);
 
             // Divider
-            ctx.strokeStyle = 'rgba(100,160,255,0.25)'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(panX + 18, panY + 46); ctx.lineTo(panX + panW - 18, panY + 46); ctx.stroke();
+            const dg = ctx.createLinearGradient(panX + 18, 0, panX + panW - 18, 0);
+            dg.addColorStop(0, 'transparent'); dg.addColorStop(0.5, 'rgba(200,100,255,0.3)'); dg.addColorStop(1, 'transparent');
+            ctx.strokeStyle = dg; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(panX + 18, panY + 50); ctx.lineTo(panX + panW - 18, panY + 50); ctx.stroke();
 
             // Slider helper
             const sliderX = panX + 22, sliderW = panW - 44, sliderH = 10, thumbR = 9;
-            function drawSlider(label, val, yCenter) {
+            function drawSlider(label, val, yCenter, color) {
                 ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-                ctx.font = '13px monospace'; ctx.fillStyle = '#aabbdd';
+                ctx.font = '13px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,170,240,0.85)';
                 ctx.fillText(label, sliderX, yCenter - 18);
-                // Track bg
-                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.fillStyle = 'rgba(255,255,255,0.08)';
                 ctx.beginPath(); ctx.roundRect(sliderX, yCenter - sliderH/2, sliderW, sliderH, 5); ctx.fill();
-                // Track fill — clip to track so right edge is clean
                 const fillW = val * sliderW;
                 const fg = ctx.createLinearGradient(sliderX, 0, sliderX + sliderW, 0);
-                fg.addColorStop(0, '#2255cc'); fg.addColorStop(1, '#44aaff');
+                fg.addColorStop(0, color + 'aa'); fg.addColorStop(1, color);
                 ctx.save();
                 ctx.beginPath(); ctx.roundRect(sliderX, yCenter - sliderH/2, sliderW, sliderH, 5); ctx.clip();
                 ctx.fillStyle = fg;
                 ctx.fillRect(sliderX, yCenter - sliderH/2, fillW, sliderH);
                 ctx.restore();
-                // Thumb
-                ctx.save();
-                ctx.shadowColor = '#44aaff'; ctx.shadowBlur = 10;
+                ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 10;
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath(); ctx.arc(sliderX + fillW, yCenter, thumbR, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
-                // Value %
-                ctx.textAlign = 'right'; ctx.font = '12px monospace'; ctx.fillStyle = '#8899bb';
+                ctx.textAlign = 'right'; ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,130,200,0.65)';
                 ctx.fillText(Math.round(val * 100) + '%', panX + panW - 18, yCenter - 18);
             }
 
-            drawSlider('🎵  MUSIC', MUSIC.getVol(), panY + 90);
-            drawSlider('🔊  SFX',   SFX.getVol(),   panY + 155);
+            drawSlider('🎵  MUSIC', MUSIC.getVol(), panY + 96, '#cc44ff');
+            drawSlider('🔊  SFX',   SFX.getVol(),   panY + 162, '#44aaff');
 
             // Close button
-            const closeX = panX + panW - 34, closeY = panY + 8, closeS = 24;
-            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            const closeX = panX + panW - 36, closeY = panY + 10, closeS = 24;
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,80,80,0.1)';
             ctx.beginPath(); ctx.roundRect(closeX, closeY, closeS, closeS, 6); ctx.fill();
-            ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#8899bb';
+            ctx.strokeStyle = 'rgba(255,80,80,0.4)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(closeX, closeY, closeS, closeS, 6); ctx.stroke();
+            ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#ff9999';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('✕', closeX + closeS/2, closeY + closeS/2);
+            ctx.restore();
 
             ctx.textBaseline = 'alphabetic';
         }
@@ -9599,8 +9699,9 @@ function _drawMpHostEndBtn() {
             ctx.beginPath(); ctx.roundRect(btnX + 8, btnY + 6, btnW - 16, btnH / 2 - 4, [14,14,0,0]); ctx.fill();
             ctx.font = '700 30px Orbitron, monospace';
             ctx.fillStyle = '#88ffbb';
+            ctx.textBaseline = 'middle';
             ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 16;
-            ctx.fillText('▶  PLAY', cx, btnY + btnH / 2 + 2);
+            ctx.fillText('▶  PLAY', cx, btnY + btnH / 2);
             ctx.shadowBlur = 0;
 
             // 🌐 PLAY ONLINE
@@ -9617,8 +9718,9 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
             ctx.beginPath(); ctx.roundRect(btnX + 5, onlineY + 5, btnW - 10, onlineH / 2 - 5, [11,11,0,0]); ctx.fill();
             ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#ee88ff';
+            ctx.textBaseline = 'middle';
             ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 10;
-            ctx.fillText('🌐  PLAY ONLINE', cx, onlineY + onlineH / 2 + 1);
+            ctx.fillText('🌐  PLAY ONLINE', cx, onlineY + onlineH / 2);
             ctx.shadowBlur = 0;
 
             // LOCKER + SHOP — side buttons
@@ -9636,7 +9738,7 @@ function _drawMpHostEndBtn() {
             ctx.beginPath(); ctx.roundRect(leftX + 4, sideY + 4, sideW - 8, sideH / 2 - 4, [11,11,0,0]); ctx.fill();
             ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#ee88ff';
             ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 6;
-            ctx.fillText('🔓 LOCKER', leftX + sideW / 2, sideY + sideH / 2 + 1);
+            ctx.fillText('🔓 LOCKER', leftX + sideW / 2, sideY + sideH / 2);
             ctx.shadowBlur = 0;
 
             // SHOP
@@ -9650,7 +9752,7 @@ function _drawMpHostEndBtn() {
             ctx.beginPath(); ctx.roundRect(rightX + 4, sideY + 4, sideW - 8, sideH / 2 - 4, [11,11,0,0]); ctx.fill();
             ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#ffcc66';
             ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 6;
-            ctx.fillText('🛒 SHOP', rightX + sideW / 2, sideY + sideH / 2 + 1);
+            ctx.fillText('🛒 SHOP', rightX + sideW / 2, sideY + sideH / 2);
             ctx.shadowBlur = 0;
 
             // ── FOOTER ──
@@ -9667,7 +9769,7 @@ function _drawMpHostEndBtn() {
             ctx.beginPath(); ctx.roundRect(gearX, gearY2, gearS, gearS, 12); ctx.stroke();
             ctx.font = '24px sans-serif'; ctx.fillStyle = 'rgba(220,160,255,0.9)';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('⚙', gearX + gearS / 2, gearY2 + gearS / 2 + 1);
+            ctx.fillText('⚙', gearX + gearS / 2, gearY2 + gearS / 2);
 
             if (showSettings) drawSettingsPanel();
 
@@ -9713,7 +9815,7 @@ function _drawMpHostEndBtn() {
                 ctx.strokeStyle = 'rgba(255,80,80,0.6)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.roundRect(cx - leaveW/2, leaveY, leaveW, leaveH, 10); ctx.stroke();
                 ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = '#ff9999';
-                ctx.fillText('LEAVE GAME', cx, leaveY + 23);
+                ctx.fillText('LEAVE GAME', cx, leaveY + 22);
                 return;
             }
 
@@ -9760,7 +9862,7 @@ function _drawMpHostEndBtn() {
             ctx.strokeStyle = '#44ff88'; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(btnX, contY, btnW, btnH, 14); ctx.stroke();
             ctx.font = 'bold 22px Orbitron, monospace'; ctx.fillStyle = '#44ff88';
-            ctx.fillText('▶  CONTINUE', cx, contY + btnH / 2 + 1);
+            ctx.fillText('▶  CONTINUE', cx, contY + btnH / 2);
             ctx.restore();
 
             // ↺ NEW GAME (hidden in tutorial and multiplayer)
@@ -9771,7 +9873,7 @@ function _drawMpHostEndBtn() {
                 ctx.strokeStyle = 'rgba(100,160,255,0.7)'; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.roundRect(btnX, newY, btnW, btnH, 12); ctx.stroke();
                 ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#88ccff';
-                ctx.fillText('↺  NEW GAME', cx, newY + btnH / 2 + 1);
+                ctx.fillText('↺  NEW GAME', cx, newY + btnH / 2);
             }
 
             // Multiplayer host / leave buttons
@@ -9783,7 +9885,7 @@ function _drawMpHostEndBtn() {
                     ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.lineWidth = 2;
                     ctx.beginPath(); ctx.roundRect(btnX, endY, btnW, btnH, 12); ctx.stroke();
                     ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#ff6666';
-                    ctx.fillText('⏹  END GAME', cx, endY + btnH / 2 + 1);
+                    ctx.fillText('⏹  END GAME', cx, endY + btnH / 2);
                 }
                 const leaveY = isRoomHost ? 392 : 322;
                 const leaveH = 46;
@@ -9792,7 +9894,7 @@ function _drawMpHostEndBtn() {
                 ctx.strokeStyle = 'rgba(255,80,80,0.5)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.roundRect(btnX, leaveY, btnW, leaveH, 10); ctx.stroke();
                 ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = '#ff9999';
-                ctx.fillText('← LEAVE GAME', cx, leaveY + leaveH / 2 + 1);
+                ctx.fillText('← LEAVE GAME', cx, leaveY + leaveH / 2);
             } else {
                 const mainY = tutorialMode ? 322 : 392;
                 const mainH = 46;
@@ -9801,7 +9903,7 @@ function _drawMpHostEndBtn() {
                 ctx.strokeStyle = 'rgba(160,100,255,0.6)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.roundRect(btnX, mainY, btnW, mainH, 10); ctx.stroke();
                 ctx.font = 'bold 16px Orbitron, monospace'; ctx.fillStyle = '#cc99ff';
-                ctx.fillText('⊞  BACK TO LEVEL', cx, mainY + mainH / 2 + 1);
+                ctx.fillText('⊞  BACK TO LEVEL', cx, mainY + mainH / 2);
             }
 
             // ── Inline volume sliders (solo only) ──
@@ -9875,27 +9977,40 @@ function _drawMpHostEndBtn() {
         function drawTutorialPause() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            ctx.fillStyle = 'rgba(4,10,32,0.72)';
+            ctx.fillStyle = 'rgba(8,0,22,0.75)';
             ctx.fillRect(WALL_W, 0, BASE_W - WALL_W * 2, BASE_H);
 
             const lineH = 28, boxW = BASE_W - WALL_W * 2 - 40;
             const boxH = 52 + tutorialMsg.length * lineH + 36;
             const boxX = WALL_W + 20, boxY = BASE_H / 2 - boxH / 2 - 20;
 
-            drawGlow(ctx, C.UI_ACCENT, cx, boxY + boxH / 2, 90, 28);
-            ctx.fillStyle = 'rgba(6,14,42,0.97)';
-            ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 14); ctx.fill();
-            ctx.strokeStyle = C.UI_ACCENT; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 14); ctx.stroke();
+            // Glow behind panel
+            const rg = ctx.createRadialGradient(cx, boxY + boxH/2, 0, cx, boxY + boxH/2, 130);
+            rg.addColorStop(0, 'rgba(150,60,255,0.22)'); rg.addColorStop(1, 'transparent');
+            ctx.fillStyle = rg; ctx.fillRect(boxX, boxY, boxW, boxH);
+
+            ctx.fillStyle = 'rgba(10,4,30,0.97)';
+            ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.fill();
+            ctx.save();
+            ctx.shadowColor = `hsl(${(t * 60) % 360},100%,65%)`; ctx.shadowBlur = 16;
+            ctx.strokeStyle = `hsl(${(t * 60) % 360},100%,65%)`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.stroke();
+            ctx.restore();
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             tutorialMsg.forEach((line, i) => {
-                ctx.font = i === 0 ? 'bold 20px monospace' : '13px monospace';
-                ctx.fillStyle = i === 0 ? '#78c8ff' : C.UI_TEXT;
+                if (i === 0) {
+                    const tg = ctx.createLinearGradient(cx - 80, 0, cx + 80, 0);
+                    tg.addColorStop(0, '#ff44aa'); tg.addColorStop(0.5, '#cc44ff'); tg.addColorStop(1, '#44aaff');
+                    ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = tg;
+                } else {
+                    ctx.font = '13px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,180,240,0.9)';
+                }
                 ctx.fillText(line, cx, boxY + 30 + i * lineH);
             });
             if (Math.floor(t * 1.5) % 2 === 0) {
-                ctx.font = '12px monospace'; ctx.fillStyle = C.UI_ACCENT;
+                ctx.font = '11px Orbitron, monospace';
+                ctx.fillStyle = `hsl(${(t * 80) % 360},90%,70%)`;
                 ctx.fillText('TAP  or  SPACE  to continue', cx, boxY + boxH - 14);
             }
             ctx.textBaseline = 'alphabetic';
@@ -9904,30 +10019,65 @@ function _drawMpHostEndBtn() {
         function drawTutorialWin() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            ctx.fillStyle = 'rgba(4,10,32,0.88)';
-            ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            const pulse = 0.7 + Math.sin(t * 2.5) * 0.3;
-            drawGlow(ctx, C.BOOK_GLOW, cx, 280, 110, Math.floor(60 * pulse));
+            // Purple celebration background
+            const bgG = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            bgG.addColorStop(0, '#0c0020'); bgG.addColorStop(0.5, '#180035'); bgG.addColorStop(1, '#0a0018');
+            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Star burst glow
+            const rg = ctx.createRadialGradient(cx, 280, 0, cx, 280, 200);
+            rg.addColorStop(0, 'rgba(200,100,255,0.18)'); rg.addColorStop(1, 'transparent');
+            ctx.fillStyle = rg; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Confetti
+            ctx.save();
+            for (let i = 0; i < 20; i++) {
+                const px = (Math.sin(i * 73.1) * 0.5 + 0.5) * BASE_W;
+                const py = ((Math.cos(i * 53.7) * 0.5 + 0.5) * BASE_H + t * (25 + i % 5 * 8)) % BASE_H;
+                const hue = (i * 37 + t * 30) % 360;
+                ctx.fillStyle = `hsl(${hue},100%,65%)`; ctx.globalAlpha = 0.5;
+                ctx.save(); ctx.translate(px, py); ctx.rotate(t + i);
+                ctx.fillRect(-4, -4, 8, 8); ctx.restore();
+            }
+            ctx.globalAlpha = 1; ctx.restore();
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 14px monospace'; ctx.fillStyle = C.BOOK_GLOW;
-            ctx.fillText('TUTORIAL', cx, 230);
-            ctx.font = 'bold 40px monospace'; ctx.fillStyle = '#ffffff';
-            ctx.fillText('COMPLETE!', cx, 278);
-            ctx.font = '16px monospace'; ctx.fillStyle = C.UI_TEXT;
-            ctx.fillText('You are ready to climb the tower.', cx, 326);
 
-            // Main Menu button
-            const btnW = 220, btnH = 52, btnX = cx - btnW / 2, btnY = 368;
+            // ⭐ icon with glow
+            ctx.save();
+            ctx.shadowColor = '#ffee44'; ctx.shadowBlur = 30 + Math.sin(t * 2) * 8;
+            ctx.font = '48px sans-serif'; ctx.fillText('⭐', cx, 220);
+            ctx.restore();
+
+            // "TUTORIAL" label
+            ctx.font = 'bold 12px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,140,255,0.75)';
+            ctx.fillText('— TUTORIAL —', cx, 260);
+
+            // "COMPLETE!" with rainbow gradient
+            const cG = ctx.createLinearGradient(cx - 120, 280, cx + 120, 310);
+            cG.addColorStop(0, '#ff44aa'); cG.addColorStop(0.5, '#ffee44'); cG.addColorStop(1, '#44ffcc');
+            ctx.save();
+            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 22;
+            ctx.font = 'bold 44px Orbitron, monospace'; ctx.fillStyle = cG;
+            ctx.fillText('COMPLETE!', cx, 296);
+            ctx.restore();
+
+            ctx.font = '14px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,180,255,0.85)';
+            ctx.fillText('You are ready to climb the tower.', cx, 342);
+
+            // MAIN MENU button
+            const btnW = 230, btnH = 54, btnX = cx - btnW / 2, btnY = 376;
             const g = 0.6 + Math.sin(t * 3) * 0.4;
-            drawGlow(ctx, '#80ffa0', cx, btnY + btnH / 2, 65, Math.floor(45 * g));
-            ctx.fillStyle = '#0d3020';
-            ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 12); ctx.fill();
-            ctx.strokeStyle = '#58e88a'; ctx.lineWidth = 2.5;
-            ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 12); ctx.stroke();
-            ctx.font = 'bold 22px monospace'; ctx.fillStyle = '#58e88a';
+            ctx.save();
+            ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 22 * g;
+            ctx.fillStyle = '#082818';
+            ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
+            ctx.strokeStyle = '#44ff88'; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
+            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#44ff88';
             ctx.fillText('← MAIN MENU', cx, btnY + btnH / 2 + 1);
+            ctx.restore();
 
             ctx.textBaseline = 'alphabetic';
         }
@@ -10049,7 +10199,8 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(255,255,255,0.07)';
             ctx.beginPath(); ctx.roundRect(btnX+5, newY+5, btnW-10, btnH/2-5, [11,11,0,0]); ctx.fill();
             ctx.fillStyle = '#66ffbb'; ctx.font = 'bold 22px monospace';
-            ctx.fillText('▶ PLAY AGAIN', cx2, newY + btnH/2 + 8);
+            ctx.textBaseline = 'middle';
+            ctx.fillText('▶ PLAY AGAIN', cx2, newY + btnH/2);
 
             const exitY = newY + btnH + 12;
             ctx.fillStyle = 'rgba(20,0,40,0.85)';
@@ -10057,7 +10208,7 @@ function _drawMpHostEndBtn() {
             ctx.strokeStyle = 'rgba(180,100,255,0.5)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX, exitY, btnW, btnH, 16); ctx.stroke();
             ctx.fillStyle = 'rgba(200,160,255,0.9)'; ctx.font = 'bold 20px monospace';
-            ctx.fillText('MAIN MENU', cx2, exitY + btnH/2 + 8);
+            ctx.fillText('MAIN MENU', cx2, exitY + btnH/2);
 
             ctx.restore();
         }
@@ -10245,7 +10396,7 @@ function _drawMpHostEndBtn() {
             ctx.beginPath(); ctx.roundRect(backX, backY, backW, backH, 12); ctx.stroke();
             ctx.fillStyle = 'rgba(200,150,255,0.8)'; ctx.font = 'bold 14px monospace';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('← BACK', BASE_W/2, backY + backH/2 + 1);
+            ctx.fillText('← BACK', BASE_W/2, backY + backH/2);
             ctx.textBaseline = 'alphabetic';
 
             ctx.restore();
@@ -10340,7 +10491,8 @@ function _drawMpHostEndBtn() {
             ctx.beginPath(); ctx.roundRect(rwX+5,rwY+5,rwW-10,rwH/2-5,[12,12,0,0]); ctx.fill();
             ctx.fillStyle = '#ffe000'; ctx.font = 'bold 20px monospace';
             ctx.shadowColor = '#ffcc00'; ctx.shadowBlur = cp*14;
-            ctx.fillText('★  OPEN CHEST  ★', cx2, rwY + rwH/2 + 8); ctx.shadowBlur = 0;
+            ctx.textBaseline = 'middle';
+            ctx.fillText('★  OPEN CHEST  ★', cx2, rwY + rwH/2); ctx.shadowBlur = 0;
 
             // Buttons
             const btnW = 220, btnH = 54, btnX = cx2 - btnW/2;
@@ -10353,7 +10505,8 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
             ctx.beginPath(); ctx.roundRect(btnX+5,newY+5,btnW-10,btnH/2-5,[12,12,0,0]); ctx.fill();
             ctx.fillStyle = '#66ffaa'; ctx.font = 'bold 22px monospace';
-            ctx.fillText('NEW GAME', cx2, newY + btnH/2 + 8);
+            ctx.textBaseline = 'middle';
+            ctx.fillText('NEW GAME', cx2, newY + btnH/2);
 
             const exitY = newY + btnH + 12;
             ctx.fillStyle = 'rgba(30,0,40,0.9)';
@@ -10361,7 +10514,7 @@ function _drawMpHostEndBtn() {
             ctx.strokeStyle = 'rgba(200,80,255,0.6)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX,exitY,btnW,btnH,16); ctx.stroke();
             ctx.fillStyle = 'rgba(210,140,255,0.9)'; ctx.font = 'bold 20px monospace';
-            ctx.fillText('MAIN MENU', cx2, exitY + btnH/2 + 8);
+            ctx.fillText('MAIN MENU', cx2, exitY + btnH/2);
 
             ctx.restore();
         }
@@ -10373,22 +10526,22 @@ function _drawMpHostEndBtn() {
         function _settingsTap(sx, sy) {
             if (!showSettings) return false;
             const cx = BASE_W / 2;
-            const panW = 290, panH = 210;
+            const panW = 300, panH = 220;
             const panX = cx - panW / 2, panY = BASE_H / 2 - panH / 2 - 20;
             const sliderX = panX + 22, sliderW = panW - 44;
             // Close button
-            const closeX = panX + panW - 34, closeY = panY + 8, closeS = 24;
+            const closeX = panX + panW - 36, closeY = panY + 10, closeS = 24;
             if (sx >= closeX && sx <= closeX + closeS && sy >= closeY && sy <= closeY + closeS) {
                 SFX.play('click'); showSettings = false; return true;
             }
-            // Music slider (yCenter = panY+90)
-            const mY = panY + 90;
+            // Music slider (yCenter = panY+96)
+            const mY = panY + 96;
             if (sy >= mY - 18 && sy <= mY + 18 && sx >= sliderX && sx <= sliderX + sliderW) {
                 const v = Math.max(0, Math.min(1, (sx - sliderX) / sliderW));
                 MUSIC.setVol(v); return true;
             }
-            // SFX slider (yCenter = panY+155)
-            const sY = panY + 155;
+            // SFX slider (yCenter = panY+162)
+            const sY = panY + 162;
             if (sy >= sY - 18 && sy <= sY + 18 && sx >= sliderX && sx <= sliderX + sliderW) {
                 const v = Math.max(0, Math.min(1, (sx - sliderX) / sliderW));
                 SFX.setVol(v); SFX.play('click'); return true;
@@ -10458,6 +10611,7 @@ function menuAction(sx, sy) {
 
             // Tutorial win screen: tap goes to main menu
             if (tutorialComplete) {
+                SFX.play('click');
                 tutorialMode = false; tutorialComplete = false;
                 hasActiveGame = false; state = STATE.MAIN;
                 return;
@@ -10591,9 +10745,9 @@ function menuAction(sx, sy) {
                 return;
             }
             if (state === STATE.SELECT) {
-                const rowH = 88, rowW = 430, rowX = BASE_W/2 - rowW/2, rowStart = 58;
+                const rowH = 90, rowW = 436, rowX = BASE_W/2 - rowW/2, rowStart = 55;
                 for (let i = 0; i < 6; i++) {
-                    const ry = rowStart + i*(rowH+7);
+                    const ry = rowStart + i*(rowH+6);
                     if (sy >= ry && sy <= ry+rowH && sx >= rowX && sx <= rowX+rowW) {
                         SFX.play('click');
                         if (i === 0) { currentMode = 'infinite'; currentLevel = 0; }
@@ -10601,8 +10755,8 @@ function menuAction(sx, sy) {
                         _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                     }
                 }
-                const backY = rowStart + 6*(rowH+7) + 10;
-                const backW = 140, backH = 36;
+                const backY = rowStart + 6*(rowH+6) + 12;
+                const backW = 150, backH = 40;
                 if (sy >= backY && sy <= backY+backH && sx >= BASE_W/2-backW/2 && sx <= BASE_W/2+backW/2) {
                     SFX.play('click'); state = STATE.MAIN; return;
                 }
@@ -10637,16 +10791,16 @@ function menuAction(sx, sy) {
                 // ── main online menu ──────────────────────────────────────
                 if (onlineScreen === 'main') {
                     const btnW = 260, btnX = cx - btnW / 2;
-                    if (sy >= 240 && sy <= 296 && sx >= btnX && sx <= btnX + btnW) {
+                    if (sy >= 230 && sy <= 288 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); onlineScreen = 'hostOptions'; return;
                     }
-                    if (sy >= 312 && sy <= 368 && sx >= btnX && sx <= btnX + btnW) {
+                    if (sy >= 302 && sy <= 360 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); joinCodeError = ''; codeInputText = ''; onlineScreen = 'joinCode'; return;
                     }
-                    if (sy >= 384 && sy <= 440 && sx >= btnX && sx <= btnX + btnW) {
+                    if (sy >= 374 && sy <= 432 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); _onlineSubPublicRooms(); onlineScreen = 'quickMatch'; return;
                     }
-                    if (sy >= 466 && sy <= 506 && sx >= cx - 80 && sx <= cx + 80) {
+                    if (sy >= 454 && sy <= 494 && sx >= cx - 80 && sx <= cx + 80) {
                         SFX.play('click'); state = STATE.MAIN; return;
                     }
                     return;
@@ -10804,28 +10958,27 @@ function menuAction(sx, sy) {
             }
             if (state === STATE.MENU) {
                 const cx = BASE_W / 2;
-                const btnW = 210, btnH = 52, btnX = cx - btnW / 2;
+                const btnW = 220, btnH = 54, btnX = cx - btnW / 2;
                 // Guests paused by host — only LEAVE button works
                 if (isMultiplayerGame && mpPausedByHost && !isRoomHost) {
-                    const leaveY = BASE_H / 2 + 40;
-                    if (sx >= cx - 80 && sx <= cx + 80 && sy >= leaveY && sy <= leaveY + 44) {
+                    const leaveY = BASE_H / 2 + 44;
+                    if (sx >= cx - 85 && sx <= cx + 85 && sy >= leaveY && sy <= leaveY + 44) {
                         SFX.play('click'); _mpGuestLeave();
                     }
                     return;
                 }
-                // CONTINUE
-// CONTINUE
-                if (sy >= 256 && sy <= 308 && sx >= btnX && sx <= btnX + btnW) {
+                // CONTINUE: contY=254, btnH=54
+                if (sy >= 254 && sy <= 308 && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); _startGameMusic(); state = STATE.PLAY;
                     if (isMultiplayerGame && isRoomHost && mpRoomId) {
-                        mpPausedByHost = false; // <--- להוסיף את השורה הזו
+                        mpPausedByHost = false;
                         _fbDb.collection('rooms').doc(mpRoomId).update({ paused: false }).catch(() => {});
                     }
                     return;
                 }
                 if (isMultiplayerGame) {
-                    // HOST only: END GAME button at y=320
-                    if (isRoomHost && sy >= 320 && sy <= 372 && sx >= btnX && sx <= btnX + btnW) {
+                    // HOST only: END GAME button at y=322
+                    if (isRoomHost && sy >= 322 && sy <= 376 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click');
                         mpEndGameConfirm = true;
                         return;
@@ -10844,12 +10997,12 @@ function menuAction(sx, sy) {
                         }
                         return;
                     }
-                    // LEAVE button: host at y=390, guest at y=320
-                    const leaveY = isRoomHost ? 390 : 320;
-                    if (sy >= leaveY && sy <= leaveY + 44 && sx >= btnX && sx <= btnX + btnW) {
+                    // LEAVE button: host at y=392, guest at y=322
+                    const leaveY = isRoomHost ? 392 : 322;
+                    if (sy >= leaveY && sy <= leaveY + 46 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click');
                         if (isRoomHost) {
-                            _mpHostLeave(); // handles alone vs. transfer internally
+                            _mpHostLeave();
                         } else {
                             _mpGuestLeave();
                         }
@@ -10857,17 +11010,19 @@ function menuAction(sx, sy) {
                     }
                     return;
                 }
-                if (!tutorialMode && sy >= 320 && sy <= 372 && sx >= btnX && sx <= btnX + btnW) {
+                // NEW GAME: newY=322, btnH=54
+                if (!tutorialMode && sy >= 322 && sy <= 376 && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                 }
-                const mainMenuY = tutorialMode ? 320 : 390;
-                if (sy >= mainMenuY && sy <= mainMenuY + 44 && sx >= btnX && sx <= btnX + btnW) {
+                // BACK TO LEVEL / BACK: mainY=392 (solo) or 322 (tutorial)
+                const mainMenuY = tutorialMode ? 322 : 392;
+                if (sy >= mainMenuY && sy <= mainMenuY + 46 && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click');
                     tutorialMode = false; hasActiveGame = false; state = STATE.SELECT; return;
                 }
                 // Inline volume sliders (non-tutorial only)
                 if (!tutorialMode) {
-                    const slY0 = mainMenuY + 44 + 18;
+                    const slY0 = mainMenuY + 46 + 18;
                     const slX = btnX, slW = btnW;
                     const mYc = slY0 + 26, sYc = slY0 + 66;
                     if (sy >= mYc - 16 && sy <= mYc + 16 && sx >= slX && sx <= slX + slW) {
@@ -10882,7 +11037,7 @@ function menuAction(sx, sy) {
             }
             if (state === STATE.DEAD) {
                 const panelY = 125;
-                const btnW = 210, btnH = 50, btnX = BASE_W/2 - btnW/2;
+                const btnW = 218, btnH = 54, btnX = BASE_W/2 - btnW/2;
                 const newY = panelY + 248;
                 if (sy >= newY && sy <= newY + btnH && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
@@ -10895,17 +11050,17 @@ function menuAction(sx, sy) {
             }
             if (state === STATE.WIN) {
                 const panelY = 68;
-                const btnW = 220, btnH = 52, btnX = BASE_W/2 - btnW/2;
-                const rwW = 230, rwH = 52, rwX = BASE_W/2 - rwW/2, rwY = panelY + 328;
+                const btnW = 220, btnH = 54, btnX = BASE_W/2 - btnW/2;
+                const rwW = 238, rwH = 54, rwX = BASE_W/2 - rwW/2, rwY = panelY + 330;
                 if (sy >= rwY && sy <= rwY + rwH && sx >= rwX && sx <= rwX + rwW) {
-                    // mechanic: to be defined
+                    SFX.play('click'); // chest button - mechanic TBD
                     return;
                 }
-                const newY = panelY + 398;
+                const newY = panelY + 402;
                 if (sy >= newY && sy <= newY + btnH && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                 }
-                const exitY = newY + btnH + 14;
+                const exitY = newY + btnH + 12;
                 if (sy >= exitY && sy <= exitY + btnH && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
                 }
