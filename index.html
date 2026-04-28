@@ -9252,26 +9252,28 @@ function _drawMpHostEndBtn() {
                     // grass blades swaying
                     for(let g=0;g<20;g++){const gx=bx+g*(bw/19.5);const gh=bh*0.055*(0.6+0.9*(g%3)/2);ctx.strokeStyle='rgba(60,220,70,0.75)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(gx,by+bh*0.8);ctx.quadraticCurveTo(gx+2.5*Math.sin(tt*1.1+g),by+bh*0.8-gh*0.5,gx+Math.sin(tt*0.8+g)*3.5,by+bh*0.8-gh);ctx.stroke();}
                 },
-                function(bx,by,bw,bh,tt){ // 2 DESERT — sun + sand dunes
-                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#1a0800');sg.addColorStop(1,'#3a1e00');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
-                    // sun glow
-                    const sunG=ctx.createRadialGradient(bx+bw*0.72,by+bh*0.15,0,bx+bw*0.72,by+bh*0.15,bw*0.32);sunG.addColorStop(0,'rgba(255,190,40,0.7)');sunG.addColorStop(1,'rgba(255,80,0,0)');ctx.fillStyle=sunG;ctx.fillRect(bx,by,bw,bh);
-                    ctx.fillStyle='rgba(255,210,60,0.95)';ctx.beginPath();ctx.arc(bx+bw*0.72,by+bh*0.15,bw*0.095,0,Math.PI*2);ctx.fill();
-                    // sand dunes
-                    ctx.fillStyle='rgba(195,125,38,0.82)';ctx.beginPath();ctx.moveTo(bx,by+bh);ctx.bezierCurveTo(bx+bw*0.18,by+bh*0.7,bx+bw*0.38,by+bh*0.84,bx+bw*0.55,by+bh*0.68);ctx.bezierCurveTo(bx+bw*0.7,by+bh*0.58,bx+bw*0.84,by+bh*0.76,bx+bw,by+bh*0.63);ctx.lineTo(bx+bw,by+bh);ctx.closePath();ctx.fill();
-                    // dune highlight
-                    ctx.fillStyle='rgba(245,185,80,0.38)';ctx.beginPath();ctx.moveTo(bx,by+bh);ctx.bezierCurveTo(bx+bw*0.18,by+bh*0.76,bx+bw*0.38,by+bh*0.88,bx+bw*0.55,by+bh*0.74);ctx.bezierCurveTo(bx+bw*0.7,by+bh*0.65,bx+bw*0.84,by+bh*0.8,bx+bw,by+bh*0.7);ctx.lineTo(bx+bw,by+bh);ctx.closePath();ctx.fill();
+                function(bx,by,bw,bh,tt){ // 2 OCEAN — underwater deep sea
+                    // deep ocean gradient
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#0c4a70');sg.addColorStop(0.5,'#062c50');sg.addColorStop(1,'#020e28');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    // caustic light rays from above
+                    for(let i=0;i<5;i++){const rx=bx+bw*(0.1+i*0.18);const rw=4+i%3*4;const ra=(0.04+i%2*0.03)*(0.7+0.3*Math.sin(tt*0.4+i*1.7));const rg=ctx.createLinearGradient(0,by,0,by+bh);rg.addColorStop(0,`rgba(100,220,255,${ra*2})`);rg.addColorStop(0.6,`rgba(40,140,210,${ra*0.5})`);rg.addColorStop(1,'rgba(10,40,120,0)');ctx.fillStyle=rg;ctx.save();ctx.translate(rx,by);ctx.rotate((i-2)*0.04);ctx.fillRect(-rw/2,0,rw,bh);ctx.restore();}
+                    // ambient water glow
+                    const wg=ctx.createRadialGradient(bx+bw*0.5,by+bh*0.2,0,bx+bw*0.5,by+bh*0.2,bw*0.55);wg.addColorStop(0,'rgba(60,200,255,0.15)');wg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=wg;ctx.fillRect(bx,by,bw,bh);
+                    // seabed
+                    const sb=ctx.createLinearGradient(bx,by+bh*0.82,bx,by+bh);sb.addColorStop(0,'rgba(20,80,140,0.8)');sb.addColorStop(1,'rgba(10,40,100,1)');ctx.fillStyle=sb;ctx.fillRect(bx,by+bh*0.82,bw,bh*0.18);
+                    // coral bumps
+                    for(let c=0;c<5;c++){const cx2=bx+bw*(0.08+c*0.2);const cr=3+c%3*2;ctx.fillStyle=c%2===0?'rgba(255,100,120,0.75)':'rgba(255,160,60,0.65)';ctx.beginPath();ctx.arc(cx2,by+bh*0.87,cr,Math.PI,0);ctx.fill();}
                 },
-                function(bx,by,bw,bh,tt){ // 3 LAVA — lava pool + rock silhouettes + fire glow
-                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#1a0400');sg.addColorStop(1,'#400800');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
-                    // rising heat glow
-                    const lg=ctx.createLinearGradient(bx,by+bh*0.45,bx,by+bh);lg.addColorStop(0,'rgba(0,0,0,0)');lg.addColorStop(0.55,'rgba(220,55,0,0.38)');lg.addColorStop(1,'rgba(255,110,0,0.72)');ctx.fillStyle=lg;ctx.fillRect(bx,by,bw,bh);
-                    // rock silhouettes
-                    for(let r=0;r<5;r++){const rx=bx+(r+0.3)*(bw/5);const rh=bh*(0.14+0.1*(r%3*0.4));ctx.fillStyle='#110300';ctx.beginPath();ctx.moveTo(rx-bw*0.09,by+bh);ctx.lineTo(rx,by+bh*(1-rh/bh));ctx.lineTo(rx+bw*0.09,by+bh);ctx.closePath();ctx.fill();}
-                    // lava surface
-                    const lv=ctx.createLinearGradient(bx,by+bh*0.82,bx,by+bh);lv.addColorStop(0,'rgba(255,100,0,0.85)');lv.addColorStop(0.4,'rgba(230,60,0,0.9)');lv.addColorStop(1,'rgba(180,20,0,1)');ctx.fillStyle=lv;ctx.fillRect(bx,by+bh*0.82,bw,bh*0.18);
-                    // lava bright spots (glowing blobs)
-                    for(let b=0;b<5;b++){const bxp=bx+bw*(0.1+b*0.18);const bpulse=0.7+0.3*Math.abs(Math.sin(tt*2.2+b*1.3));const bg2=ctx.createRadialGradient(bxp,by+bh*0.83,0,bxp,by+bh*0.83,bw*0.07);bg2.addColorStop(0,`rgba(255,240,60,${bpulse})`);bg2.addColorStop(1,'rgba(255,60,0,0)');ctx.fillStyle=bg2;ctx.fillRect(bxp-bw*0.07,by+bh*0.78,bw*0.14,bh*0.22);}
+                function(bx,by,bw,bh,tt){ // 3 FESTIVAL — bright sky + sun + festive lanterns
+                    // bright daytime sky
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#4ab8f0');sg.addColorStop(0.5,'#88d8f8');sg.addColorStop(1,'#ccf0ff');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    // sun glow
+                    const sunG=ctx.createRadialGradient(bx+bw*0.72,by+bh*0.14,0,bx+bw*0.72,by+bh*0.14,bw*0.28);sunG.addColorStop(0,'rgba(255,220,60,0.7)');sunG.addColorStop(1,'rgba(255,160,20,0)');ctx.fillStyle=sunG;ctx.fillRect(bx,by,bw,bh);
+                    ctx.fillStyle='rgba(255,230,80,0.95)';ctx.beginPath();ctx.arc(bx+bw*0.72,by+bh*0.14,bw*0.085,0,Math.PI*2);ctx.fill();
+                    // red lanterns hanging
+                    for(let l=0;l<3;l++){const lx=bx+bw*(0.18+l*0.28);const ly=by+bh*(0.22+l%2*0.08);ctx.fillStyle='rgba(220,30,30,0.85)';ctx.beginPath();ctx.ellipse(lx,ly,bw*0.055,bh*0.065,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,200,40,0.8)';ctx.fillRect(lx-1,ly-bh*0.065,2,bh*0.04);ctx.fillRect(lx-1,ly+bh*0.045,2,bh*0.04);}
+                    // distant rooftop silhouette at bottom
+                    ctx.fillStyle='rgba(30,10,10,0.55)';ctx.beginPath();ctx.moveTo(bx,by+bh);ctx.lineTo(bx,by+bh*0.78);ctx.lineTo(bx+bw*0.15,by+bh*0.68);ctx.lineTo(bx+bw*0.3,by+bh*0.78);ctx.lineTo(bx+bw*0.55,by+bh*0.72);ctx.lineTo(bx+bw*0.7,by+bh*0.82);ctx.lineTo(bx+bw,by+bh*0.75);ctx.lineTo(bx+bw,by+bh);ctx.closePath();ctx.fill();
                 },
                 function(bx,by,bw,bh,tt){ // 4 MOONLIT — crescent moon + star field + purple fog
                     const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#0a0020');sg.addColorStop(1,'#200060');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
@@ -10757,10 +10759,10 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
 
             const _selModes = [
-                { stroke:'#55ccff', dark:'#001830' },
+                { stroke:'#d4901a', dark:'#1a0e00' },
                 { stroke:'#4ec96a', dark:'#001a08' },
-                { stroke:'#c89030', dark:'#1a0e00' },
-                { stroke:'#ff5522', dark:'#200800' },
+                { stroke:'#3ac8e8', dark:'#001828' },
+                { stroke:'#ff8833', dark:'#1a0800' },
                 { stroke:'#bb77ff', dark:'#150030' },
                 { stroke:'#00ffcc', dark:'#002820' },
             ];
@@ -10801,12 +10803,12 @@ function _drawMpHostEndBtn() {
             ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic';
 
             const modes = [
-                { label:'INFINITE', icon:'∞', emoji:'⚙', stroke:'#55ccff', idx:0, goal:null,    name:'Clockwork'    },
-                { label:'GROVE',    icon:'1', emoji:'🌿', stroke:'#4ec96a', idx:1, goal:'500m',  name:'Forest'       },
-                { label:'DESERT',   icon:'2', emoji:'🏜', stroke:'#c89030', idx:2, goal:'1500m', name:'Desert Canyon'},
-                { label:'LAVA',     icon:'3', emoji:'🌋', stroke:'#ff5522', idx:3, goal:'2500m', name:'Lava / Fire'  },
-                { label:'MOONLIT',  icon:'4', emoji:'🌙', stroke:'#bb77ff', idx:4, goal:'3750m', name:'Magic'        },
-                { label:'COSMOS',   icon:'5', emoji:'🚀', stroke:'#00ffcc', idx:5, goal:'5000m', name:'Space'        },
+                { label:'INFINITE', icon:'∞', emoji:'⚙',  stroke:'#d4901a', idx:0, goal:null,    name:'Clockwork'   },
+                { label:'FOREST',   icon:'1', emoji:'🌿',  stroke:'#4ec96a', idx:1, goal:'500m',  name:'Canopy'      },
+                { label:'OCEAN',    icon:'2', emoji:'🌊',  stroke:'#3ac8e8', idx:2, goal:'1500m', name:'Deep Sea'    },
+                { label:'FESTIVAL', icon:'3', emoji:'🏮',  stroke:'#ff8833', idx:3, goal:'2500m', name:'Sky Festival'},
+                { label:'ENCHANTED',icon:'4', emoji:'🌙',  stroke:'#bb77ff', idx:4, goal:'3750m', name:'Magic Realm' },
+                { label:'COSMOS',   icon:'5', emoji:'🚀',  stroke:'#00ffcc', idx:5, goal:'5000m', name:'Space'       },
             ];
 
             const rowH = 90, rowW = 436, rowX = BASE_W/2 - rowW/2, rowStart = 55;
