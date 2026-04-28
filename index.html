@@ -1588,22 +1588,18 @@ await Promise.race([
 
                 // ── MAGIC GHOST PLATFORM ──
                 if (this.isGhost) {
-                    const gFlicker = 0.85 + 0.05 * Math.sin(t * 3.5 + px * 0.05); // subtle flicker, stays at ~85% opacity
+                    const gFlicker = 0.85 + 0.05 * Math.sin(t * 3.5 + px * 0.05);
                     ctx.save();
                     ctx.globalAlpha = gFlicker;
-                    // Solid body — looks like a real platform but with a distinct pale-purple tint
-                    const gGrad = ctx.createLinearGradient(px, sy, px + pw, sy + ph);
-                    gGrad.addColorStop(0, '#3a1066');
-                    gGrad.addColorStop(1, '#220844');
-                    ctx.fillStyle = gGrad;
-                    ctx.beginPath(); ctx.roundRect(px, sy, pw, ph, 4); ctx.fill();
-                    // Top surface — lighter strip like real platform
-                    const topGrad = ctx.createLinearGradient(px, sy, px + pw, sy);
-                    topGrad.addColorStop(0, 'rgba(200,140,255,0.6)');
-                    topGrad.addColorStop(0.5, 'rgba(240,180,255,0.75)');
-                    topGrad.addColorStop(1, 'rgba(200,140,255,0.6)');
-                    ctx.fillStyle = topGrad;
-                    ctx.beginPath(); ctx.roundRect(px, sy, pw, 4, [4, 4, 0, 0]); ctx.fill();
+                    // Body starts at sy+3 — same baseline as real magic platform
+                    ctx.fillStyle = '#3a1066';
+                    ctx.beginPath(); ctx.roundRect(px, sy + 3, pw, ph - 3, 4); ctx.fill();
+                    // Top highlight rim at sy+1 — same as real magic platform
+                    ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.moveTo(px + 4, sy + 1); ctx.lineTo(px + pw - 4, sy + 1); ctx.stroke();
+                    ctx.globalAlpha = gFlicker * 0.25; ctx.lineWidth = 7;
+                    ctx.beginPath(); ctx.moveTo(px, sy + 1); ctx.lineTo(px + pw, sy + 1); ctx.stroke();
+                    ctx.globalAlpha = gFlicker;
                     // ── "PHANTOM" warning: two diagonal X lines across the surface ──
                     ctx.save();
                     ctx.globalAlpha = 0.55;
@@ -3305,15 +3301,16 @@ await Promise.race([
                         : rndInt(8, 12);
                 }
                 // Magic theme: ~40% chance to spawn a ghost platform beside the real one
-                if (currentTheme === 4 && !plats[plats.length - 1].isBouncy && _worldRng() < 0.40) {
+                // Skip if real platform is moving (ghost must be static and at exact same position)
+                if (currentTheme === 4 && !plats[plats.length - 1].isBouncy && !plats[plats.length - 1].moving && _worldRng() < 0.40) {
                     const realPlat = plats[plats.length - 1];
-                    const gw = realPlat.w; // exactly same width
-                    // Place ghost touching the real platform (8–14px gap), same Y
+                    const gw = realPlat.w; // exactly same width as real platform
+                    const gy = realPlat.y;  // exactly same Y as real platform
+                    // Place ghost touching the real platform (8–14px gap)
                     const goLeft = _worldRng() < 0.5;
                     const gx = goLeft
                         ? Math.max(WALL_W, realPlat.x - gw - rndInt(8, 14))
                         : Math.min(BASE_W - WALL_W - gw, realPlat.x + realPlat.w + rndInt(8, 14));
-                    const gy = realPlat.y; // exact same height
                     const ghost = new Platform(gx, gy, gw, false);
                     ghost.isGhost = true;
                     ghost.spikes = [];
