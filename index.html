@@ -1588,26 +1588,45 @@ await Promise.race([
 
                 // ── MAGIC GHOST PLATFORM ──
                 if (this.isGhost) {
-                    const gPulse = 0.35 + 0.2 * Math.sin(t * 2.5 + px * 0.04);
+                    const gFlicker = 0.85 + 0.05 * Math.sin(t * 3.5 + px * 0.05); // subtle flicker, stays at ~85% opacity
                     ctx.save();
-                    ctx.globalAlpha = gPulse;
-                    // Ghost slab body (translucent purple)
+                    ctx.globalAlpha = gFlicker;
+                    // Solid body — looks like a real platform but with a distinct pale-purple tint
                     const gGrad = ctx.createLinearGradient(px, sy, px + pw, sy + ph);
-                    gGrad.addColorStop(0, 'rgba(200,120,255,0.55)');
-                    gGrad.addColorStop(1, 'rgba(120,60,200,0.35)');
+                    gGrad.addColorStop(0, '#3a1066');
+                    gGrad.addColorStop(1, '#220844');
                     ctx.fillStyle = gGrad;
                     ctx.beginPath(); ctx.roundRect(px, sy, pw, ph, 4); ctx.fill();
-                    // Dashed top edge
-                    ctx.setLineDash([6, 6]);
-                    ctx.strokeStyle = 'rgba(220,160,255,0.8)'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.moveTo(px + 4, sy + 1); ctx.lineTo(px + pw - 4, sy + 1); ctx.stroke();
-                    ctx.setLineDash([]);
-                    // Ghostly shimmer dots
-                    ctx.fillStyle = 'rgba(255,200,255,0.7)';
-                    for (let i = 0; i < Math.floor(pw / 22); i++) {
-                        const dotX = px + 11 + i * 22 + Math.sin(t * 1.8 + i) * 4;
-                        ctx.beginPath(); ctx.arc(dotX, sy + ph / 2, 1.5, 0, Math.PI * 2); ctx.fill();
+                    // Top surface — lighter strip like real platform
+                    const topGrad = ctx.createLinearGradient(px, sy, px + pw, sy);
+                    topGrad.addColorStop(0, 'rgba(200,140,255,0.6)');
+                    topGrad.addColorStop(0.5, 'rgba(240,180,255,0.75)');
+                    topGrad.addColorStop(1, 'rgba(200,140,255,0.6)');
+                    ctx.fillStyle = topGrad;
+                    ctx.beginPath(); ctx.roundRect(px, sy, pw, 4, [4, 4, 0, 0]); ctx.fill();
+                    // ── "PHANTOM" warning: two diagonal X lines across the surface ──
+                    ctx.save();
+                    ctx.globalAlpha = 0.55;
+                    ctx.strokeStyle = '#ff44ff'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+                    // draw X marks every ~28px along the platform
+                    const xStep = 28;
+                    const xCount = Math.max(1, Math.floor((pw - 16) / xStep));
+                    for (let i = 0; i < xCount; i++) {
+                        const cx2 = px + 8 + i * ((pw - 16) / Math.max(xCount - 1, 1));
+                        const r2 = 4;
+                        const cy2 = sy + ph / 2;
+                        ctx.beginPath(); ctx.moveTo(cx2 - r2, cy2 - r2); ctx.lineTo(cx2 + r2, cy2 + r2); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(cx2 + r2, cy2 - r2); ctx.lineTo(cx2 - r2, cy2 + r2); ctx.stroke();
                     }
+                    ctx.restore();
+                    // Thin dashed outer border to mark it as special
+                    ctx.save();
+                    ctx.globalAlpha = 0.7;
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeStyle = '#dd88ff'; ctx.lineWidth = 1.2;
+                    ctx.beginPath(); ctx.roundRect(px + 1, sy + 1, pw - 2, ph - 2, 3); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.restore();
                     ctx.restore();
                     return; // ghost platforms have no spikes, skip rest of draw
                 }
@@ -3062,7 +3081,7 @@ await Promise.race([
             constructor(x, y, platform = null) {
                 this.x = x; this.y = y;
                 const _isMagic = currentTheme === 4;
-                const _pool = POWERUP_TYPES.filter(t => t.id !== 'portal' || (_isMagic && Math.random() < 0.25));
+                const _pool = POWERUP_TYPES.filter(t => t.id !== 'portal' || (_isMagic && Math.random() < 0.50));
                 this.type = _pool[rndInt(0, _pool.length - 1)];
                 this.bob = rnd(0, Math.PI * 2);
                 this.alive = true;
@@ -3287,14 +3306,14 @@ await Promise.race([
                 }
                 // Magic theme: ~40% chance to spawn a ghost platform beside the real one
                 if (currentTheme === 4 && !plats[plats.length - 1].isBouncy && _worldRng() < 0.40) {
-                    const gw = rndInt(50, 110);
                     const realPlat = plats[plats.length - 1];
-                    // Place ghost to left or right of real platform
+                    const gw = realPlat.w; // exactly same width
+                    // Place ghost touching the real platform (8–14px gap), same Y
                     const goLeft = _worldRng() < 0.5;
                     const gx = goLeft
-                        ? Math.max(WALL_W, realPlat.x - gw - rndInt(10, 30))
-                        : Math.min(BASE_W - WALL_W - gw, realPlat.x + realPlat.w + rndInt(10, 30));
-                    const gy = realPlat.y + rndInt(-20, 20); // slight vertical offset
+                        ? Math.max(WALL_W, realPlat.x - gw - rndInt(8, 14))
+                        : Math.min(BASE_W - WALL_W - gw, realPlat.x + realPlat.w + rndInt(8, 14));
+                    const gy = realPlat.y; // exact same height
                     const ghost = new Platform(gx, gy, gw, false);
                     ghost.isGhost = true;
                     ghost.spikes = [];
