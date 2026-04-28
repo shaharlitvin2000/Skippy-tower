@@ -3407,7 +3407,7 @@ await Promise.race([
         let hostRoomType = 'public'; // 'public' | 'private', set when entering bg select
         let lobbyError = '';
         let lobbyCreating = false;
-        let lobbyCodeHidden = false;
+        let lobbyCodeHidden = true;
         let lobbyConfirm = null; // null | 'start' | 'leave'
         let lobbyStartAt = 0;   // synchronized lobby countdown timestamp (ms); 0 = not set
         let lobbySettingsNotif = '';   // brief text shown when host changes settings
@@ -7384,7 +7384,7 @@ await Promise.race([
 
         async function _onlineCreateRoom(type) {
             if (!UserSystem.currentUser) { lobbyError = 'Not logged in — please sign in first'; onlineScreen = 'hostOptions'; return; }
-            loadingMsg = 'Creating room\u2026'; lobbyError = ''; lobbyCodeHidden = false; lobbyConfirm = null;
+            loadingMsg = 'Creating room\u2026'; lobbyError = ''; lobbyCodeHidden = true; lobbyConfirm = null;
             currentRoomId = null; currentRoomData = null;
             isRoomHost = true; roomPlayersMap = {};
             onlineScreen = 'loading';
@@ -7446,7 +7446,7 @@ await Promise.race([
                 });
                 currentRoomId = code; currentRoomData = data; isRoomHost = data.hostUid === uid;
                 lobbyMapMode = data.mapMode || 'infinite'; lobbyMapLevel = data.mapLevel || 0; lobbyMapTheme = data.mapTheme || 0;
-                codeInputText = ''; lobbyCodeHidden = false; lobbyConfirm = null;
+                codeInputText = ''; lobbyCodeHidden = true; lobbyConfirm = null;
                 loadingMsg = 'Entering lobby\u2026';
                 _onlineSubRoom(code);
                 await new Promise(r => setTimeout(r, 600));
@@ -7546,7 +7546,7 @@ await Promise.race([
             }
             currentRoomId = null; currentRoomData = null; isRoomHost = false;
             roomPlayersMap = {}; lobbyError = ''; lobbyCreating = false;
-            lobbyCodeHidden = false; lobbyConfirm = null; lobbyStartAt = 0; loadingMsg = ''; onlineScreen = 'main';
+            lobbyCodeHidden = true; lobbyConfirm = null; lobbyStartAt = 0; loadingMsg = ''; onlineScreen = 'main';
         }
         async function _onlineHostUpdateMap(mapMode, mapLevel, mapTheme) {
             if (!currentRoomId || !isRoomHost) return;
@@ -9466,10 +9466,10 @@ function _drawMpHostEndBtn() {
             // ── Settings: THEME + HEIGHT selectors ──────────────────────
             const THEMES_DEF = [
                 { label:'CLOCK',   icon:'⚙',  color:'#d4901a' },
-                { label:'GROVE',   icon:'🌿', color:'#4ec96a' },
-                { label:'DESERT',  icon:'🏜', color:'#c89030' },
-                { label:'LAVA',    icon:'🌋', color:'#ff5522' },
-                { label:'MOONLIT', icon:'🌙', color:'#bb77ff' },
+                { label:'FOREST',  icon:'🌿', color:'#4ec96a' },
+                { label:'OCEAN',   icon:'🌊', color:'#3ac8e8' },
+                { label:'FEST',    icon:'🏮', color:'#ff8833' },
+                { label:'MAGIC',   icon:'🌙', color:'#bb77ff' },
                 { label:'COSMOS',  icon:'🚀', color:'#00ffcc' },
             ];
             const HEIGHTS_DEF = [
@@ -9493,29 +9493,69 @@ function _drawMpHostEndBtn() {
             if (!isRoomHost) { ctx.textAlign = 'right'; ctx.fillText('HOST ONLY', sGridX + sGridW, settingsY + 8); }
             ctx.textAlign = 'center';
 
+            const THEME_DETAILS = [
+                { badge:'⚙',  desc:'Gear platforms spin and push you sideways — stay balanced!'       },
+                { badge:'🍃', desc:'Wooden bridges in an ancient canopy — swaying leaf decorations.'   },
+                { badge:'🐠', desc:'Crumbling coral platforms — step off before they collapse!'        },
+                { badge:'🪁', desc:'Bright festival sky — vibrant colors and lantern-lit towers.'      },
+                { badge:'🔮', desc:'Moonlit crystals and enchanted platforms in a magical realm.'      },
+                { badge:'🪐', desc:'Deep space — float between asteroids and glowing nebulae.'         },
+            ];
+
             const tY = settingsY + 20;
             for (let i = 0; i < 6; i++) {
                 const m = THEMES_DEF[i];
+                const td = THEME_DETAILS[i];
                 const tx = sGridX + i * (sW + sGap);
                 const sel = i === lobbyMapTheme;
                 const [r2,g2,b2] = hexToRgb(m.color);
-                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.4;
-                ctx.fillStyle = sel ? `rgba(${r2},${g2},${b2},0.25)` : 'rgba(20,5,40,0.8)';
-                ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 8); ctx.fill();
-                if (sel) { ctx.save(); ctx.shadowColor = m.color; ctx.shadowBlur = 12; }
-                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 1 : 0.3})`; ctx.lineWidth = sel ? 2 : 1;
+                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.45;
+                // ── Mini theme background clipped to tile ──
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 8); ctx.clip();
+                _drawThemeMini(i, tx, tY, sW, sH, t);
+                ctx.fillStyle = sel ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.55)';
+                ctx.fillRect(tx, tY, sW, sH);
+                ctx.restore();
+                // Border
+                ctx.save();
+                if (sel) { ctx.shadowColor = m.color; ctx.shadowBlur = 14; }
+                ctx.strokeStyle = `rgba(${r2},${g2},${b2},${sel ? 1 : 0.4})`; ctx.lineWidth = sel ? 2.5 : 1;
                 ctx.beginPath(); ctx.roundRect(tx, tY, sW, sH, 8); ctx.stroke();
-                if (sel) ctx.restore();
-                ctx.globalAlpha = 1;
-                ctx.font = '14px sans-serif'; ctx.fillStyle = sel ? '#fff' : m.color;
-                ctx.fillText(m.icon, tx + sW / 2, tY + 16);
-                ctx.font = 'bold 8px Orbitron, monospace'; ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.85)`;
-                ctx.fillText(m.label, tx + sW / 2, tY + sH - 8);
+                ctx.restore();
+                ctx.globalAlpha = (sel || isRoomHost) ? 1 : 0.45;
+                // Main emoji + label
+                ctx.font = sel ? '15px sans-serif' : '12px sans-serif';
+                ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle';
+                ctx.fillText(m.icon, tx + sW / 2, tY + 15);
+                ctx.font = `${sel ? 'bold ' : ''}8px Orbitron, monospace`; ctx.textBaseline = 'alphabetic';
+                ctx.fillStyle = sel ? '#fff' : `rgba(${r2},${g2},${b2},0.9)`;
+                ctx.fillText(m.label, tx + sW / 2, tY + sH - 7);
+                // Unique badge — top-right corner
+                ctx.globalAlpha = sel ? 1 : (isRoomHost ? 0.7 : 0.35);
+                ctx.font = '10px sans-serif'; ctx.textBaseline = 'middle';
+                ctx.fillText(td.badge, tx + sW - 9, tY + 9);
             }
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+
+            // Description box for selected theme
+            {
+                const descY = tY + sH + 5;
+                const td = THEME_DETAILS[lobbyMapTheme];
+                const dm = THEMES_DEF[lobbyMapTheme];
+                const [dr,dg,db] = hexToRgb(dm.color);
+                ctx.fillStyle = `rgba(${dr},${dg},${db},0.1)`;
+                ctx.beginPath(); ctx.roundRect(sGridX, descY, sGridW, 18, 5); ctx.fill();
+                ctx.strokeStyle = `rgba(${dr},${dg},${db},0.3)`; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.roundRect(sGridX, descY, sGridW, 18, 5); ctx.stroke();
+                ctx.font = '9px monospace'; ctx.fillStyle = `rgba(${dr},${dg},${db},0.95)`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(`${td.badge}  ${td.desc}`, cx, descY + 9);
+                ctx.textBaseline = 'alphabetic';
+            }
 
             // HEIGHT label
-            const hLabelY = tY + sH + 10;
+            const hLabelY = tY + sH + 28;
             ctx.font = 'bold 10px Orbitron, monospace';
             ctx.fillStyle = isRoomHost ? 'rgba(200,150,255,0.85)' : 'rgba(140,100,180,0.5)';
             ctx.textAlign = 'left'; ctx.fillText('HEIGHT', sGridX, hLabelY + 8);
@@ -11430,8 +11470,8 @@ function menuAction(sx, sy) {
                                 return;
                             }
                         }
-                        // height row: hLabelY = tY+sH+10, hY = hLabelY+20
-                        const hY = tY + sH + 30;
+                        // height row: hLabelY = tY+sH+28, hY = hLabelY+20
+                        const hY = tY + sH + 48;
                         for (let i = 0; i < 6; i++) {
                             const hx = sGridX + i * (sW + sGap);
                             if (sx >= hx && sx <= hx + sW && sy >= hY && sy <= hY + sH) {
