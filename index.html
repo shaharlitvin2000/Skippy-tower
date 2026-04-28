@@ -2674,7 +2674,7 @@ await Promise.race([
             rect() { return { x: this.x, y: this.y, w: this.W, h: this.H }; }
             jump(bounceMult = 1.0) {
                 const speedMult = this.powerHighJump > 0 ? 1.4 : 1.0;
-                const spaceMult = (currentTheme === 5 || currentLevel === 5) ? 1.18 : 1.0;
+                const spaceMult = (currentTheme === 5 || currentLevel === 5) ? 1.09 : 1.0;
                 this.vy = -6.4 * speedMult * bounceMult * spaceMult;
                 this.onGround = false;
                 jumpStartY = this.y;
@@ -3195,7 +3195,9 @@ await Promise.race([
                 if (bouncyCounter >= nextBouncy) {
                     plats[plats.length - 1] = new Platform(x, y, w, moving, true);
                     bouncyCounter = 0;
-                    nextBouncy = rndInt(8, 12);
+                    nextBouncy = (currentTheme === 5 || currentLevel === 5)
+                        ? rndInt(20, 32)
+                        : rndInt(8, 12);
                 }
                 prevCenter = x + w / 2;
 
@@ -5868,7 +5870,7 @@ await Promise.race([
         // ─────────────────────────────────────────────
         const BH_SPACING = 2600;
         const BH_PULL_RADIUS = 480;
-        const BH_STRENGTH = 0.42;
+        const BH_STRENGTH = 0.26;
 
         function _bhSlots(camY) {
             const { BASE_Y, APEX_Y } = getBgRange();
@@ -7478,7 +7480,13 @@ await Promise.race([
                 const uid = _onlineUid();
                 const name = UserSystem.currentUser.username || 'Player';
                 if (!uid) { loadingMsg = ''; lobbyError = 'Enable Anonymous Auth in Firebase console'; onlineScreen = 'hostOptions'; return; }
-                const code = _onlineGenCode();
+                let code = _onlineGenCode();
+                // Ensure no collision with an existing room
+                for (let _attempt = 0; _attempt < 4; _attempt++) {
+                    const _existing = await _fbDb.collection('rooms').doc(code).get();
+                    if (!_existing.exists) break;
+                    code = _onlineGenCode();
+                }
                 await _fbDb.collection('rooms').doc(code).set({
                     type, hostUid: uid, hostName: name,
                     mapMode: 'infinite', mapLevel: 0, mapTheme: hostPreviewTheme, status: 'waiting',
@@ -7548,6 +7556,11 @@ await Promise.race([
                 const prevMode = lobbyMapMode, prevLevel = lobbyMapLevel, prevTheme = lobbyMapTheme;
                 currentRoomData = snap.data();
                 roomPlayersMap = currentRoomData.players || {};
+                // Kick if we're no longer in the players map (e.g. code collision / host replaced room)
+                const _myUid = _onlineUid();
+                if (_myUid && Object.keys(roomPlayersMap).length > 0 && !roomPlayersMap[_myUid] && !isRoomHost) {
+                    _onlineLeaveRoom(true); return;
+                }
                 lobbyMapMode  = currentRoomData.mapMode  || 'infinite';
                 lobbyMapLevel = currentRoomData.mapLevel || 0;
                 lobbyMapTheme = currentRoomData.mapTheme || 0;
