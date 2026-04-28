@@ -1603,7 +1603,7 @@ await Promise.race([
                     // ── "PHANTOM" warning: two diagonal X lines across the surface ──
                     ctx.save();
                     ctx.globalAlpha = 0.55;
-                    ctx.strokeStyle = '#ff44ff'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#6644cc'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
                     // draw X marks every ~28px along the platform
                     const xStep = 28;
                     const xCount = Math.max(1, Math.floor((pw - 16) / xStep));
@@ -3066,11 +3066,11 @@ await Promise.race([
         //  POWER-UPS
         // ─────────────────────────────────────────────
         const POWERUP_TYPES = [
-            { id: 'speed', color: '#ff9f20', glow: '#ffb840', icon: '⚡', label: 'SPEED!', duration: 300 },
-            { id: 'highjump', color: '#58e88a', glow: '#80ffa0', icon: '🟢', label: 'HIGH JUMP!', duration: 280 },
-            { id: 'shield', color: '#a06cff', glow: '#c8a0ff', icon: '🛡', label: 'SHIELD!', duration: 350 },
-            { id: 'slow', color: '#20d0ff', glow: '#80f0ff', icon: '❄', label: 'SLOW!', duration: 320 },
-            { id: 'portal', color: '#ff44cc', glow: '#ff88ff', icon: '🌀', label: 'PORTAL!', duration: 0 },
+            { id: 'speed',    color: '#3388ff', glow: '#66aaff', icon: '⚡', label: 'SPEED!',     duration: 300 },
+            { id: 'highjump', color: '#22bbdd', glow: '#55ddff', icon: '↑', label: 'HIGH JUMP!', duration: 280 },
+            { id: 'shield',   color: '#7744ee', glow: '#9966ff', icon: '◈', label: 'SHIELD!',    duration: 350 },
+            { id: 'slow',     color: '#2255bb', glow: '#4477dd', icon: '❄', label: 'SLOW!',      duration: 320 },
+            { id: 'portal',   color: '#aa44ff', glow: '#cc88ff', icon: '🌀', label: 'PORTAL!',   duration: 0   },
         ];
 
         class PowerUp {
@@ -3136,23 +3136,23 @@ await Promise.race([
                 const sy = this.y + Math.sin(this.bob) * 4 - camY;
                 if (sy < -40 || sy > BASE_H + 40) return;
                 const pulse = 0.6 + 0.4 * Math.abs(Math.sin(this.bob));
-                drawGlow(ctx, '#ffdd00', this.x, sy, 22, Math.floor(52 * pulse));
+                drawGlow(ctx, '#44aaff', this.x, sy, 22, Math.floor(52 * pulse));
                 ctx.save();
                 ctx.globalAlpha = 0.45 * pulse;
-                ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#66ccff'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size + 3 * pulse, 0, Math.PI * 2); ctx.stroke();
                 ctx.restore();
                 const cg = ctx.createRadialGradient(this.x - 4, sy - 4, 1, this.x, sy, this.size);
-                cg.addColorStop(0, '#fff8aa'); cg.addColorStop(0.4, '#ffdd00'); cg.addColorStop(1, '#cc8800');
+                cg.addColorStop(0, '#cceeff'); cg.addColorStop(0.4, '#3399ff'); cg.addColorStop(1, '#1144aa');
                 ctx.fillStyle = cg;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#ffee55'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#66ccff'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size, 0, Math.PI * 2); ctx.stroke();
-                // Star symbol
-                ctx.fillStyle = 'rgba(120,60,0,0.75)';
+                // Crystal symbol
+                ctx.fillStyle = 'rgba(200,240,255,0.85)';
                 ctx.font = `bold ${Math.round(this.size * 1.1)}px monospace`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('★', this.x, sy + 1);
+                ctx.fillText('◆', this.x, sy + 1);
             }
         }
 
@@ -6030,11 +6030,11 @@ await Promise.race([
                 ctx.translate(bhX, screenY);
                 ctx.rotate(t * 0.45 + worldY * 0.001);
                 const dg = ctx.createLinearGradient(-bhR*2.8, 0, bhR*2.8, 0);
-                dg.addColorStop(0,   'rgba(255,100,0,0.85)');
-                dg.addColorStop(0.3, 'rgba(255,220,50,0.7)');
+                dg.addColorStop(0,   'rgba(80,0,220,0.85)');
+                dg.addColorStop(0.3, 'rgba(140,80,255,0.7)');
                 dg.addColorStop(0.5, 'rgba(0,0,0,0)');
-                dg.addColorStop(0.7, 'rgba(255,220,50,0.7)');
-                dg.addColorStop(1,   'rgba(255,100,0,0.85)');
+                dg.addColorStop(0.7, 'rgba(140,80,255,0.7)');
+                dg.addColorStop(1,   'rgba(80,0,220,0.85)');
                 ctx.fillStyle = dg;
                 ctx.beginPath(); ctx.ellipse(0, 0, bhR*2.8, bhR*0.45, 0, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
@@ -6057,21 +6057,25 @@ await Promise.race([
             if (currentTheme !== 5 || state !== STATE.PLAY) return;
             const pcx = player.x + player.W / 2;
             const pcy = player.y + player.H / 2;
-            let insidePull = false;
+            let insideCore = false;
             for (const { worldY, bhX, bhR } of _bhSlots(camY)) {
                 const dx = bhX - pcx, dy = worldY - pcy;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist > BH_PULL_RADIUS || dist < 1) continue;
-                insidePull = true;
+                // Apply gravitational pull from full pull radius
                 const force = BH_STRENGTH * Math.pow((BH_PULL_RADIUS - dist) / BH_PULL_RADIUS, 1.5);
                 player.vx += (dx / dist) * force;
                 player.vy += (dy / dist) * force;
-                if (dist < bhR + player.W * 0.5) {
+                // Extra strong suck when close to core
+                const coreRadius = bhR * 2.5;
+                if (dist < coreRadius) {
                     player.vx += (dx / dist) * BH_STRENGTH * 6;
                     player.vy += (dy / dist) * BH_STRENGTH * 6;
+                    insideCore = true; // only count death timer when inside the visual core
                 }
             }
-            if (insidePull) {
+            // Death timer only accumulates inside the core, resets the moment player leaves
+            if (insideCore) {
                 bhCaptureTimer++;
                 if (bhCaptureTimer >= 60) { bhCaptureTimer = 0; handleDeath(); }
             } else {
@@ -6143,23 +6147,23 @@ await Promise.race([
                 const hudW = ctx.measureText(hudHm).width + 20, hudH = 34, hudX = 8, hudY = 68;
                 ctx.fillStyle = 'rgba(0,0,0,0.45)';
                 ctx.beginPath(); ctx.roundRect(hudX, hudY, hudW, hudH, 10); ctx.fill();
-                const hudColor = hm > (getBest() * 0.9) && hm > 0 ? '#ffee44' : C.UI_TEXT;
+                const hudColor = hm > (getBest() * 0.9) && hm > 0 ? '#88ddff' : C.UI_TEXT;
                 ctx.fillStyle = hudColor;
                 ctx.shadowColor = hudColor; ctx.shadowBlur = hm > effectiveBest - 20 ? 10 : 0;
                 ctx.textBaseline = 'middle';
                 ctx.fillText(hudHm, hudX + 10, hudY + hudH / 2 + 1);
                 ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic';
                 // Best line
-                ctx.fillStyle = '#ffcc44'; ctx.font = '12px monospace';
+                ctx.fillStyle = '#6699cc'; ctx.font = '12px monospace';
                 ctx.fillText(`best: ${effectiveBest > 0 ? effectiveBest + 'm' : '-'}`, hudX + 10, hudY + hudH + 14);
             }
 
             // Active power-up icons
             const powers = [
-                { val: player.powerSpeed, color: '#ff9f20', dur: 300, label: '⚡' },
-                { val: player.powerHighJump, color: '#58e88a', dur: 280, label: '↑↑' },
-                { val: player.powerShield, color: '#a06cff', dur: 350, label: '◈' },
-                { val: player.powerSlow, color: '#20d0ff', dur: 320, label: '❄' },
+                { val: player.powerSpeed,    color: '#3388ff', dur: 300, label: '⚡' },
+                { val: player.powerHighJump, color: '#22bbdd', dur: 280, label: '↑↑' },
+                { val: player.powerShield,   color: '#7744ee', dur: 350, label: '◈' },
+                { val: player.powerSlow,     color: '#2255bb', dur: 320, label: '❄' },
             ];
             let py = BASE_H - 155;
             for (const pw of powers) {
@@ -6188,9 +6192,9 @@ await Promise.race([
                 const bx = WALL_W + 8, bw = 80, bh = 26;
                 ctx.save();
                 ctx.globalAlpha = pulse;
-                ctx.fillStyle = 'rgba(80,0,120,0.75)';
+                ctx.fillStyle = 'rgba(40,20,100,0.75)';
                 ctx.beginPath(); ctx.roundRect(bx - 1, py - 1, bw + 2, bh + 2, 10); ctx.fill();
-                ctx.fillStyle = '#cc00ff';
+                ctx.fillStyle = '#8844ff';
                 ctx.beginPath(); ctx.roundRect(bx, py, bw, bh, 9); ctx.fill();
                 ctx.globalAlpha = 1;
                 ctx.fillStyle = '#fff'; ctx.font = 'bold 13px monospace';
@@ -9711,20 +9715,20 @@ function _drawMpHostEndBtn() {
 
             // ── Settings: THEME + HEIGHT selectors ──────────────────────
             const THEMES_DEF = [
-                { label:'CLOCK',   icon:'⚙',  color:'#d4901a' },
-                { label:'FOREST',  icon:'🌿', color:'#4ec96a' },
-                { label:'OCEAN',   icon:'🌊', color:'#3ac8e8' },
-                { label:'FEST',    icon:'🏮', color:'#ff8833' },
-                { label:'MAGIC',   icon:'🌙', color:'#bb77ff' },
-                { label:'COSMOS',  icon:'🚀', color:'#00ffcc' },
+                { label:'CLOCK',   icon:'⚙',  color:'#5588ff' },
+                { label:'FOREST',  icon:'🌿', color:'#3399cc' },
+                { label:'OCEAN',   icon:'🌊', color:'#22bbdd' },
+                { label:'FEST',    icon:'🏮', color:'#6655ee' },
+                { label:'MAGIC',   icon:'🌙', color:'#9955ff' },
+                { label:'COSMOS',  icon:'🚀', color:'#44ccff' },
             ];
             const HEIGHTS_DEF = [
-                { label:'INFINITE', icon:'∞',  mode:'infinite', level:0, color:'#55ccff' },
-                { label:'500 m',   icon:'🏔', mode:'level',    level:1, color:'#88dd55' },
-                { label:'1500 m',  icon:'🏔', mode:'level',    level:2, color:'#55aaff' },
-                { label:'2500 m',  icon:'🏔', mode:'level',    level:3, color:'#ff9944' },
-                { label:'3750 m',  icon:'🏔', mode:'level',    level:4, color:'#cc77ff' },
-                { label:'5000 m',  icon:'🏔', mode:'level',    level:5, color:'#00ffcc' },
+                { label:'INFINITE', icon:'∞',  mode:'infinite', level:0, color:'#5588ff' },
+                { label:'500 m',   icon:'🏔', mode:'level',    level:1, color:'#3399cc' },
+                { label:'1500 m',  icon:'🏔', mode:'level',    level:2, color:'#22bbdd' },
+                { label:'2500 m',  icon:'🏔', mode:'level',    level:3, color:'#6655ee' },
+                { label:'3750 m',  icon:'🏔', mode:'level',    level:4, color:'#9955ff' },
+                { label:'5000 m',  icon:'🏔', mode:'level',    level:5, color:'#44ccff' },
             ];
             const sW = 68, sH = 44, sGap = 3;
             const sGridW = 6 * sW + 5 * sGap;
@@ -11045,12 +11049,12 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
 
             const _selModes = [
-                { stroke:'#d4901a', dark:'#1a0e00' },
-                { stroke:'#4ec96a', dark:'#001a08' },
-                { stroke:'#3ac8e8', dark:'#001828' },
-                { stroke:'#ff8833', dark:'#1a0800' },
-                { stroke:'#bb77ff', dark:'#150030' },
-                { stroke:'#00ffcc', dark:'#002820' },
+                { stroke:'#5588ff', dark:'#06081e' },
+                { stroke:'#3399cc', dark:'#04101a' },
+                { stroke:'#22bbdd', dark:'#041418' },
+                { stroke:'#6655ee', dark:'#080618' },
+                { stroke:'#9955ff', dark:'#0c0520' },
+                { stroke:'#44ccff', dark:'#041820' },
             ];
             const _hIdx = selectHoverIdx >= 0 ? selectHoverIdx : 0;
             const _hCol = _selModes[_hIdx];
@@ -11127,12 +11131,12 @@ function _drawMpHostEndBtn() {
             ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic';
 
             const modes = [
-                { label:'INFINITE', icon:'∞', emoji:'⚙',  stroke:'#d4901a', idx:0, goal:null,    name:'Clockwork'   },
-                { label:'FOREST',   icon:'1', emoji:'🌿',  stroke:'#4ec96a', idx:1, goal:'500m',  name:'Canopy'      },
-                { label:'OCEAN',    icon:'2', emoji:'🌊',  stroke:'#3ac8e8', idx:2, goal:'1500m', name:'Deep Sea'    },
-                { label:'FESTIVAL', icon:'3', emoji:'🏮',  stroke:'#ff8833', idx:3, goal:'2500m', name:'Sky Festival'},
-                { label:'ENCHANTED',icon:'4', emoji:'🌙',  stroke:'#bb77ff', idx:4, goal:'3750m', name:'Magic Realm' },
-                { label:'COSMOS',   icon:'5', emoji:'🚀',  stroke:'#00ffcc', idx:5, goal:'5000m', name:'Space'       },
+                { label:'INFINITE', icon:'∞', emoji:'⚙',  stroke:'#5588ff', idx:0, goal:null,    name:'Clockwork'   },
+                { label:'FOREST',   icon:'1', emoji:'🌿',  stroke:'#3399cc', idx:1, goal:'500m',  name:'Canopy'      },
+                { label:'OCEAN',    icon:'2', emoji:'🌊',  stroke:'#22bbdd', idx:2, goal:'1500m', name:'Deep Sea'    },
+                { label:'FESTIVAL', icon:'3', emoji:'🏮',  stroke:'#6655ee', idx:3, goal:'2500m', name:'Sky Festival'},
+                { label:'ENCHANTED',icon:'4', emoji:'🌙',  stroke:'#9955ff', idx:4, goal:'3750m', name:'Magic Realm' },
+                { label:'COSMOS',   icon:'5', emoji:'🚀',  stroke:'#44ccff', idx:5, goal:'5000m', name:'Space'       },
             ];
 
             const rowH = 90, rowW = 436, rowX = BASE_W/2 - rowW/2, rowStart = 55;
@@ -12106,7 +12110,7 @@ function gameUpdate() {
                                 player.powerShield = 0;
                                 player.iframes = 90;
                                 plat.spikes.splice(si, 1);
-                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#c8a0ff'));
+                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#9966ff'));
                             } else {
                                 handleDeath();
                             }
@@ -12212,7 +12216,7 @@ function gameUpdate() {
                         SFX.play('coin');
                         addPoints(1);
                         runPointsEarned += 1;
-                        floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '+1 $', '#ffdd00'));
+                        floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '+1 ◆', '#55ccff'));
                         for (let i = 0; i < 10; i++) {
                             particles.push(new Particle(
                                 c.x + rnd(-6, 6), c.y,
@@ -12228,7 +12232,7 @@ function gameUpdate() {
                     const gr = { x: g.rect().x + 6, y: g.rect().y + 6, w: g.rect().w - 12, h: g.rect().h - 12 };
                     if (rectsOverlap(pr, gr)) {
                         if (invincible) continue;
-                        if (shielded) { SFX.play('shield'); player.powerShield = 0; player.iframes = 90; ghosts = ghosts.filter(x => x !== g); floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#c8a0ff')); }
+                        if (shielded) { SFX.play('shield'); player.powerShield = 0; player.iframes = 90; ghosts = ghosts.filter(x => x !== g); floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#9966ff')); }
                         else { handleDeath(); break; }
                     }
                 }
@@ -12522,21 +12526,21 @@ function gameUpdate() {
             if (cornerAnimIsRecord) {
                 ctx.font = 'bold 13px monospace';
                 ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-                ctx.shadowColor = '#ffdd00'; ctx.shadowBlur = 8;
-                ctx.fillStyle = '#ffee44';
+                ctx.shadowColor = '#66aaff'; ctx.shadowBlur = 8;
+                ctx.fillStyle = '#88ccff';
                 ctx.fillText('★ NEW RECORD!', BASE_W - 10, 22);
                 ctx.shadowBlur = 0;
             }
 
-            ctx.fillStyle = cornerAnimBonus ? 'rgba(30,15,0,0.92)' : 'rgba(0,18,10,0.92)';
+            ctx.fillStyle = cornerAnimBonus ? 'rgba(10,8,30,0.92)' : 'rgba(6,10,28,0.92)';
             ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 10); ctx.fill();
-            ctx.strokeStyle = cornerAnimBonus ? 'rgba(255,200,0,0.85)' : 'rgba(60,255,160,0.7)';
+            ctx.strokeStyle = cornerAnimBonus ? 'rgba(180,100,255,0.85)' : 'rgba(60,160,255,0.7)';
             ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 10); ctx.stroke();
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.font = 'bold 15px monospace';
-            ctx.fillStyle = cornerAnimBonus ? '#ffcc44' : '#55ffcc';
+            ctx.fillStyle = cornerAnimBonus ? '#bb88ff' : '#55aaff';
             const bonusTxt = cornerAnimBonus ? ' ×1.5!' : '';
             ctx.fillText(`⬡ ${displayPts}  (+${earned}${bonusTxt})`, boxX + boxW/2, boxY + boxH/2);
             ctx.restore();
