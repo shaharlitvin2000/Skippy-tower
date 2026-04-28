@@ -2674,7 +2674,7 @@ await Promise.race([
             rect() { return { x: this.x, y: this.y, w: this.W, h: this.H }; }
             jump(bounceMult = 1.0) {
                 const speedMult = this.powerHighJump > 0 ? 1.4 : 1.0;
-                const spaceMult = currentTheme === 5 ? 0.88 : 1.0;
+                const spaceMult = (currentTheme === 5 || currentLevel === 5) ? 0.82 : 1.0;
                 this.vy = -6.4 * speedMult * bounceMult * spaceMult;
                 this.onGround = false;
                 jumpStartY = this.y;
@@ -5867,8 +5867,8 @@ await Promise.race([
         //  BLACK HOLES (Space theme only)
         // ─────────────────────────────────────────────
         const BH_SPACING = 2600;
-        const BH_PULL_RADIUS = 270;
-        const BH_STRENGTH = 0.22;
+        const BH_PULL_RADIUS = 320;
+        const BH_STRENGTH = 0.42;
 
         function _bhSlots(camY) {
             const { BASE_Y, APEX_Y } = getBgRange();
