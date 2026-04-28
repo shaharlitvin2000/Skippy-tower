@@ -10772,22 +10772,25 @@ function _drawMpHostEndBtn() {
 
             // Background — abstract animated backdrop (reacts to hovered mode color)
             {
-                // Deep dark base
-                ctx.fillStyle = '#04030c';
-                ctx.fillRect(0, 0, BASE_W, BASE_H);
+                // Base — dark but with visible color tint from hovered mode
+                const _baseBg = ctx.createLinearGradient(0, 0, 0, BASE_H);
+                _baseBg.addColorStop(0,   `rgba(${Math.round(_hr*0.12)},${Math.round(_hg*0.12)},${Math.round(_hb*0.18)},1)`);
+                _baseBg.addColorStop(0.5, `rgba(${Math.round(_hr*0.08)},${Math.round(_hg*0.08)},${Math.round(_hb*0.14)},1)`);
+                _baseBg.addColorStop(1,   `rgba(${Math.round(_hr*0.14)},${Math.round(_hg*0.10)},${Math.round(_hb*0.20)},1)`);
+                ctx.fillStyle = _baseBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
                 // Slow-shifting radial glow in hovered mode's color
                 const _gx = BASE_W * 0.5, _gy = BASE_H * 0.45;
-                const _pulse = 0.55 + 0.15 * Math.sin(t * 0.7);
+                const _pulse = 0.65 + 0.2 * Math.sin(t * 0.7);
                 const _rg = ctx.createRadialGradient(_gx, _gy, 0, _gx, _gy, BASE_W * 0.75);
-                _rg.addColorStop(0,   `rgba(${_hr},${_hg},${_hb},${_pulse * 0.22})`);
-                _rg.addColorStop(0.5, `rgba(${_hr},${_hg},${_hb},${_pulse * 0.06})`);
+                _rg.addColorStop(0,   `rgba(${_hr},${_hg},${_hb},${_pulse * 0.45})`);
+                _rg.addColorStop(0.45, `rgba(${_hr},${_hg},${_hb},${_pulse * 0.14})`);
                 _rg.addColorStop(1,   'rgba(0,0,0,0)');
                 ctx.fillStyle = _rg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
                 // Second offset glow (bottom-left)
-                const _rg2 = ctx.createRadialGradient(BASE_W*0.1, BASE_H*0.85, 0, BASE_W*0.1, BASE_H*0.85, BASE_W*0.55);
-                _rg2.addColorStop(0,   `rgba(${_hr},${_hg},${_hb},${_pulse * 0.12})`);
+                const _rg2 = ctx.createRadialGradient(BASE_W*0.08, BASE_H*0.82, 0, BASE_W*0.08, BASE_H*0.82, BASE_W*0.6);
+                _rg2.addColorStop(0,   `rgba(${_hr},${_hg},${_hb},${_pulse * 0.28})`);
                 _rg2.addColorStop(1,   'rgba(0,0,0,0)');
                 ctx.fillStyle = _rg2; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
