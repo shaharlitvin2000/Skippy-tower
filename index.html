@@ -2674,7 +2674,8 @@ await Promise.race([
             rect() { return { x: this.x, y: this.y, w: this.W, h: this.H }; }
             jump(bounceMult = 1.0) {
                 const speedMult = this.powerHighJump > 0 ? 1.4 : 1.0;
-                this.vy = -6.4 * speedMult * bounceMult;
+                const spaceMult = currentTheme === 5 ? 1.35 : 1.0;
+                this.vy = -6.4 * speedMult * bounceMult * spaceMult;
                 this.onGround = false;
                 jumpStartY = this.y;
                 SFX.play(bounceMult > 1 ? 'bounce' : this.powerHighJump > 0 ? 'highjump' : 'jump');
@@ -2698,7 +2699,7 @@ await Promise.race([
                 this.vx += acc * (this.powerSpeed > 0 ? 0.55 : 0.4);
                 this.vx *= this.onGround ? 0.70 : 0.86;
                 this.vx = clamp(this.vx, -maxSpd, maxSpd);
-                this.vy += GRAVITY;
+                this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0);
                 this.vy = clamp(this.vy, -25, MAX_FALL);
 
                 this.lastVy = this.vy;
@@ -5862,6 +5863,83 @@ await Promise.race([
         }
 
         // ─────────────────────────────────────────────
+        // ─────────────────────────────────────────────
+        //  BLACK HOLES (Space theme only)
+        // ─────────────────────────────────────────────
+        const BH_SPACING = 2600;
+        const BH_PULL_RADIUS = 270;
+        const BH_STRENGTH = 0.22;
+
+        function _bhSlots(camY) {
+            const { BASE_Y, APEX_Y } = getBgRange();
+            const slots = [];
+            for (let slot = 0; slot < 30; slot++) {
+                const worldY = BASE_Y - (slot + 0.8) * BH_SPACING;
+                if (worldY < APEX_Y - BH_SPACING) break;
+                const rng = seededRandom(slot * 7919 + 42);
+                if (rng() > 0.62) continue;
+                const bhX = WALL_W + 32 + rng() * (BASE_W - WALL_W * 2 - 64);
+                const bhR = 20 + rng() * 14;
+                const screenY = worldY - camY;
+                slots.push({ worldY, bhX, bhR, screenY });
+            }
+            return slots;
+        }
+
+        function drawBlackHoles(camY) {
+            if (currentTheme !== 5) return;
+            const t = Date.now() / 1000;
+            for (const { bhX, bhR, screenY, worldY } of _bhSlots(camY)) {
+                if (screenY < -bhR * 4 || screenY > BASE_H + bhR * 4) continue;
+                ctx.save();
+                // Outer gravitational glow
+                const glow = ctx.createRadialGradient(bhX, screenY, bhR, bhX, screenY, bhR * 4.5);
+                glow.addColorStop(0,   `rgba(60,0,160,${0.55 + 0.15*Math.sin(t*1.4)})`);
+                glow.addColorStop(0.3, 'rgba(0,180,255,0.15)');
+                glow.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath(); ctx.arc(bhX, screenY, bhR * 4.5, 0, Math.PI * 2); ctx.fill();
+                // Accretion disk (rotating ellipse behind core)
+                ctx.save();
+                ctx.translate(bhX, screenY);
+                ctx.rotate(t * 0.45 + worldY * 0.001);
+                const dg = ctx.createLinearGradient(-bhR*2.8, 0, bhR*2.8, 0);
+                dg.addColorStop(0,   'rgba(255,100,0,0.85)');
+                dg.addColorStop(0.3, 'rgba(255,220,50,0.7)');
+                dg.addColorStop(0.5, 'rgba(0,0,0,0)');
+                dg.addColorStop(0.7, 'rgba(255,220,50,0.7)');
+                dg.addColorStop(1,   'rgba(255,100,0,0.85)');
+                ctx.fillStyle = dg;
+                ctx.beginPath(); ctx.ellipse(0, 0, bhR*2.8, bhR*0.45, 0, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+                // Black core
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(bhX, screenY, bhR, 0, Math.PI*2); ctx.fill();
+                // Event horizon ring
+                const pulse = 0.55 + 0.45*Math.sin(t*2.2);
+                ctx.strokeStyle = `rgba(0,200,255,${pulse})`;
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 12;
+                ctx.beginPath(); ctx.arc(bhX, screenY, bhR + 2, 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function applyBlackHolePull() {
+            if (currentTheme !== 5 || state !== STATE.PLAY) return;
+            const pcx = player.x + player.W / 2;
+            const pcy = player.y + player.H / 2;
+            for (const { worldY, bhX, bhR } of _bhSlots(camY)) {
+                const dx = bhX - pcx, dy = worldY - pcy;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > BH_PULL_RADIUS || dist < 1) continue;
+                const force = BH_STRENGTH * Math.pow((BH_PULL_RADIUS - dist) / BH_PULL_RADIUS, 1.5);
+                player.vx += (dx / dist) * force;
+                player.vy += (dy / dist) * force;
+                if (dist < bhR + player.W * 0.5) { handleDeath(); return; }
+            }
+        }
+
         //  HUD
         // ─────────────────────────────────────────────
         function drawHUD() {
@@ -9499,7 +9577,7 @@ function _drawMpHostEndBtn() {
                 { badge:'🐠', desc:'Crumbling coral platforms — step off before they collapse!'        },
                 { badge:'🪁', desc:'Bright festival sky — vibrant colors and lantern-lit towers.'      },
                 { badge:'🔮', desc:'Moonlit crystals and enchanted platforms in a magical realm.'      },
-                { badge:'🪐', desc:'Deep space — float between asteroids and glowing nebulae.'         },
+                { badge:'🕳', desc:'Low gravity + black holes that pull you in — escape or get swallowed!' },
             ];
 
             const tY = settingsY + 20;
@@ -11722,6 +11800,7 @@ function gameUpdate() {
                 const wasOnGround = player.onGround;
                 const visible = platforms.filter(p => Math.abs(p.y - player.y) < BASE_H * 2);
                 player.update(keys, visible, touch);
+                applyBlackHolePull();
                 if (wasOnGround && !player.onGround) player.emitJumpParticles(particles);
 
                 updateCamera();
@@ -12111,6 +12190,7 @@ function gameUpdate() {
                 for (const s of snowflakes) s.draw();
             } else {
                 drawBackground(camY);
+                drawBlackHoles(camY);
                 // for (const c of crystals) c.draw(camY);
                 for (const p of platforms) p.draw(camY);
                 // Draw crown above finish platform in level mode
