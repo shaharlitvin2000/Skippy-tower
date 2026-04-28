@@ -1446,6 +1446,8 @@ await Promise.race([
                 this.special = false; // gold finish platform in tutorial
                 this.spikes = [];
                 this.isBouncy = bouncy;
+                this.isGhost = false;  // magic theme: passable phantom platform
+                this.isPortal = false; // magic theme: portal powerup activated on this platform
                 // Fossil Canyon (level 2) platform properties
                 this.fossType = 0;      // 0=bone  1=shell/fossil  2=sandstone
                 this.crumble = false;   // crumbles after being stepped on
@@ -1583,6 +1585,70 @@ await Promise.race([
                 const themeIdx = currentTheme;
                 const t = Date.now() / 1000;
                 const px = this.x, pw = this.w, ph = this.h;
+
+                // ── MAGIC GHOST PLATFORM ──
+                if (this.isGhost) {
+                    const gPulse = 0.35 + 0.2 * Math.sin(t * 2.5 + px * 0.04);
+                    ctx.save();
+                    ctx.globalAlpha = gPulse;
+                    // Ghost slab body (translucent purple)
+                    const gGrad = ctx.createLinearGradient(px, sy, px + pw, sy + ph);
+                    gGrad.addColorStop(0, 'rgba(200,120,255,0.55)');
+                    gGrad.addColorStop(1, 'rgba(120,60,200,0.35)');
+                    ctx.fillStyle = gGrad;
+                    ctx.beginPath(); ctx.roundRect(px, sy, pw, ph, 4); ctx.fill();
+                    // Dashed top edge
+                    ctx.setLineDash([6, 6]);
+                    ctx.strokeStyle = 'rgba(220,160,255,0.8)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(px + 4, sy + 1); ctx.lineTo(px + pw - 4, sy + 1); ctx.stroke();
+                    ctx.setLineDash([]);
+                    // Ghostly shimmer dots
+                    ctx.fillStyle = 'rgba(255,200,255,0.7)';
+                    for (let i = 0; i < Math.floor(pw / 22); i++) {
+                        const dotX = px + 11 + i * 22 + Math.sin(t * 1.8 + i) * 4;
+                        ctx.beginPath(); ctx.arc(dotX, sy + ph / 2, 1.5, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.restore();
+                    return; // ghost platforms have no spikes, skip rest of draw
+                }
+
+                // ── MAGIC PORTAL PLATFORM ──
+                if (this.isPortal) {
+                    const pPulse = 0.7 + 0.3 * Math.sin(t * 6);
+                    ctx.save();
+                    // Platform base
+                    ctx.fillStyle = '#1a004a';
+                    ctx.beginPath(); ctx.roundRect(px, sy + 2, pw, ph - 2, 4); ctx.fill();
+                    // Swirling vortex gradient
+                    const vGrad = ctx.createRadialGradient(px + pw/2, sy + ph/2, 2, px + pw/2, sy + ph/2, pw/2);
+                    vGrad.addColorStop(0, `rgba(255,80,255,${0.9 * pPulse})`);
+                    vGrad.addColorStop(0.5, `rgba(120,0,255,${0.6 * pPulse})`);
+                    vGrad.addColorStop(1, `rgba(40,0,100,${0.2})`);
+                    ctx.fillStyle = vGrad;
+                    ctx.beginPath(); ctx.roundRect(px, sy, pw, ph, 4); ctx.fill();
+                    // Rotating spiral lines
+                    ctx.save(); ctx.translate(px + pw/2, sy + ph/2); ctx.rotate(t * 4);
+                    ctx.globalAlpha = 0.9 * pPulse;
+                    ctx.strokeStyle = '#ff88ff'; ctx.lineWidth = 1.5;
+                    for (let i = 0; i < 4; i++) {
+                        const a = (i / 4) * Math.PI * 2;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(a) * 4, Math.sin(a) * 2);
+                        ctx.lineTo(Math.cos(a) * (pw/2 - 6), Math.sin(a) * (ph/2 - 1));
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                    // Glowing top edge
+                    ctx.globalAlpha = pPulse;
+                    ctx.strokeStyle = '#ff44ff'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(px + 3, sy + 1); ctx.lineTo(px + pw - 3, sy + 1); ctx.stroke();
+                    // Outer glow
+                    ctx.globalAlpha = 0.35 * pPulse;
+                    ctx.strokeStyle = '#ff88ff'; ctx.lineWidth = 10;
+                    ctx.beginPath(); ctx.moveTo(px, sy); ctx.lineTo(px + pw, sy); ctx.stroke();
+                    ctx.restore();
+                    return;
+                }
 
                 if (this.special) {
                     // Gold finish platform — universal
@@ -2711,8 +2777,10 @@ await Promise.race([
                 this.justLanded = false;
                 let landedOnSpecial = false;
                 let landedOnBouncy = false;
+                let landedPlatRef = null;
                 for (const plat of platforms) {
                     if (plat.crumbleState === 2) continue; // fallen platform — no collision
+                    if (plat.isGhost) continue; // magic ghost platform — player passes through
                     const r = plat.rect();
                     if (rectsOverlap({ x: this.x, y: this.y, w: this.W, h: this.H }, r)) {
                         if (this.vy >= 0 && (this.y + this.H - this.vy) <= r.y + r.h / 2 + 16) {
@@ -2728,11 +2796,26 @@ await Promise.race([
                             if (plat.crumble && plat.crumbleTimer < 0) plat.crumbleTimer = 0;
                             if (plat.special) landedOnSpecial = true;
                             if (plat.isBouncy) landedOnBouncy = true;
+                            landedPlatRef = plat;
                         }
                     }
                 }
+                // Portal power-up: on first landing after collecting portal, activate the platform
+                if (this.justLanded && landedPlatRef && magicPortalReady && !landedPlatRef.isFinish && !landedOnSpecial) {
+                    magicPortalReady = false;
+                    landedPlatRef.isPortal = true;
+                    landedPlatRef.spikes = [];
+                    portalPlatRef = landedPlatRef;
+                    portalTimer = 40; // 40-frame wind-up before launching
+                }
+                // Portal launch: freeze player on portal platform during wind-up
+                if (portalTimer > 0 && portalPlatRef) {
+                    this.vx = 0; this.vy = 0; this.onGround = true;
+                    this.y = portalPlatRef.y - this.H;
+                    this.x = portalPlatRef.x + portalPlatRef.w / 2 - this.W / 2;
+                }
                 // AUTO-JUMP: skip on special (tutorial end) platform
-                if (this.justLanded && this.landCooldown <= 0 && !landedOnSpecial) {
+                if (this.justLanded && this.landCooldown <= 0 && !landedOnSpecial && portalTimer <= 0) {
                     this.landCooldown = 10;
                     this.jump(landedOnBouncy ? 1.75 : 1.0);
                 }
@@ -2972,12 +3055,15 @@ await Promise.race([
             { id: 'highjump', color: '#58e88a', glow: '#80ffa0', icon: '🟢', label: 'HIGH JUMP!', duration: 280 },
             { id: 'shield', color: '#a06cff', glow: '#c8a0ff', icon: '🛡', label: 'SHIELD!', duration: 350 },
             { id: 'slow', color: '#20d0ff', glow: '#80f0ff', icon: '❄', label: 'SLOW!', duration: 320 },
+            { id: 'portal', color: '#ff44cc', glow: '#ff88ff', icon: '🌀', label: 'PORTAL!', duration: 0 },
         ];
 
         class PowerUp {
             constructor(x, y, platform = null) {
                 this.x = x; this.y = y;
-                this.type = POWERUP_TYPES[rndInt(0, POWERUP_TYPES.length - 1)];
+                const _isMagic = currentTheme === 4;
+                const _pool = POWERUP_TYPES.filter(t => t.id !== 'portal' || (_isMagic && Math.random() < 0.25));
+                this.type = _pool[rndInt(0, _pool.length - 1)];
                 this.bob = rnd(0, Math.PI * 2);
                 this.alive = true;
                 this.size = 16;
@@ -3009,7 +3095,7 @@ await Promise.race([
                 ctx.fillStyle = '#fff';
                 ctx.font = `bold 14px monospace`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                const letters = { speed: '⚡', highjump: '↑↑', shield: '◈', slow: '❄' };
+                const letters = { speed: '⚡', highjump: '↑↑', shield: '◈', slow: '❄', portal: '🌀' };
                 ctx.fillText(letters[this.type.id] || '?', this.x, sy + 1);
             }
         }
@@ -3198,6 +3284,21 @@ await Promise.race([
                     nextBouncy = (currentTheme === 5 || currentLevel === 5)
                         ? rndInt(20, 32)
                         : rndInt(8, 12);
+                }
+                // Magic theme: ~40% chance to spawn a ghost platform beside the real one
+                if (currentTheme === 4 && !plats[plats.length - 1].isBouncy && _worldRng() < 0.40) {
+                    const gw = rndInt(50, 110);
+                    const realPlat = plats[plats.length - 1];
+                    // Place ghost to left or right of real platform
+                    const goLeft = _worldRng() < 0.5;
+                    const gx = goLeft
+                        ? Math.max(WALL_W, realPlat.x - gw - rndInt(10, 30))
+                        : Math.min(BASE_W - WALL_W - gw, realPlat.x + realPlat.w + rndInt(10, 30));
+                    const gy = realPlat.y + rndInt(-20, 20); // slight vertical offset
+                    const ghost = new Platform(gx, gy, gw, false);
+                    ghost.isGhost = true;
+                    ghost.spikes = [];
+                    plats.push(ghost);
                 }
                 prevCenter = x + w / 2;
 
@@ -3487,6 +3588,11 @@ await Promise.race([
         let cornerAnimIsRecord = false;
         let shakeX = 0, shakeY = 0;
         let rockTimer = 0, ghostTimer = 0, powerupTimer = 0;
+        // Magic level portal state
+        let magicPortalReady = false;
+        let portalPlatRef = null;
+        let portalTimer = 0;
+        let portalFlashAlpha = 0;
         // Fossil Canyon wind gust state (level 2 mechanic)
         let canyonWind = { vx: 0, vy: 0, timer: 0, next: 160, active: false, duration: 0 };
         let prevOnGround = false;
@@ -3521,7 +3627,7 @@ await Promise.race([
             camY = player.y - BASE_H + 200; camYVel = 0;
             highestY = player.y; startY = player.y; jumpStartY = player.y; bestJumpStartY = player.y; cameraFloorY = player.y; difficulty = 1;
             highestLandedPlatY = player.y;
-            shakeX = 0; shakeY = 0;
+            shakeX = 0; shakeY = 0; bhCaptureTimer = 0;
             lastPointMilestone = 0; runPointsEarned = 0; pointsBeforeRun = lockerPoints;
             fallPeakY = 0; wasFalling = false;
 
@@ -3601,6 +3707,7 @@ await Promise.race([
             // No enemies pre-spawned — they appear as you climb
             rockTimer = 999; ghostTimer = 999; powerupTimer = rndInt(80, 160);
             lastCoinMilestone = 0;
+            magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
         }
 
         function initTutorial() {
@@ -3638,6 +3745,7 @@ await Promise.race([
             coins = [];
             rocks = []; ghosts = [];
             rockTimer = 999999; ghostTimer = 999999; powerupTimer = 999999;
+            magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
         }
 
         function updateCamera() {
@@ -5927,22 +6035,31 @@ await Promise.race([
             }
         }
 
+        let bhCaptureTimer = 0; // frames the player has spent inside any BH pull radius
+
         function applyBlackHolePull() {
             if (currentTheme !== 5 || state !== STATE.PLAY) return;
             const pcx = player.x + player.W / 2;
             const pcy = player.y + player.H / 2;
+            let insidePull = false;
             for (const { worldY, bhX, bhR } of _bhSlots(camY)) {
                 const dx = bhX - pcx, dy = worldY - pcy;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist > BH_PULL_RADIUS || dist < 1) continue;
+                insidePull = true;
                 const force = BH_STRENGTH * Math.pow((BH_PULL_RADIUS - dist) / BH_PULL_RADIUS, 1.5);
                 player.vx += (dx / dist) * force;
                 player.vy += (dy / dist) * force;
                 if (dist < bhR + player.W * 0.5) {
-                    // Inside core — extreme pull burst instead of instant death
                     player.vx += (dx / dist) * BH_STRENGTH * 6;
                     player.vy += (dy / dist) * BH_STRENGTH * 6;
                 }
+            }
+            if (insidePull) {
+                bhCaptureTimer++;
+                if (bhCaptureTimer >= 60) { bhCaptureTimer = 0; handleDeath(); }
+            } else {
+                bhCaptureTimer = 0;
             }
         }
 
@@ -6047,6 +6164,23 @@ await Promise.race([
                 ctx.fillText(pw.label, bx + 5, py + bh / 2);
                 ctx.restore();
                 py -= 30;
+            }
+            // Magic portal ready indicator
+            if (magicPortalReady) {
+                const tt2 = Date.now() / 1000;
+                const pulse = 0.75 + 0.25 * Math.sin(tt2 * 5);
+                const bx = WALL_W + 8, bw = 80, bh = 26;
+                ctx.save();
+                ctx.globalAlpha = pulse;
+                ctx.fillStyle = 'rgba(80,0,120,0.75)';
+                ctx.beginPath(); ctx.roundRect(bx - 1, py - 1, bw + 2, bh + 2, 10); ctx.fill();
+                ctx.fillStyle = '#cc00ff';
+                ctx.beginPath(); ctx.roundRect(bx, py, bw, bh, 9); ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 13px monospace';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('🌀 PORTAL', bx + bw / 2, py + bh / 2);
+                ctx.restore();
             }
         }
 
@@ -7927,6 +8061,7 @@ await Promise.race([
             // Clear carried power-ups
             player.powerSpeed = 0; player.powerHighJump = 0;
             player.powerShield = 0; player.powerSlow = 0;
+            magicPortalReady = false; if (portalPlatRef) { portalPlatRef.isPortal = false; portalPlatRef = null; } portalTimer = 0; portalFlashAlpha = 0;
             camY = player.y - BASE_H + 200; camYVel = 0;
             highestY = player.y; jumpStartY = player.y; bestJumpStartY = player.y;
             highestLandedPlatY = player.y;
@@ -11820,6 +11955,55 @@ function gameUpdate() {
                 applyBlackHolePull();
                 if (wasOnGround && !player.onGround) player.emitJumpParticles(particles);
 
+                // ── MAGIC PORTAL LAUNCH SEQUENCE ──
+                if (portalTimer > 0) {
+                    portalTimer--;
+                    // Build up flash
+                    portalFlashAlpha = Math.min(1, (40 - portalTimer) / 20);
+                    // Emit purple particles from portal platform
+                    if (portalPlatRef && portalTimer % 3 === 0) {
+                        const pp = portalPlatRef;
+                        for (let i = 0; i < 4; i++) {
+                            particles.push(new Particle(
+                                pp.x + rnd(0, pp.w), pp.y - rnd(0, 20),
+                                rnd(-2.5, 2.5), rnd(-4, -1),
+                                rndInt(20, 35), '#ff44ff', rndInt(3, 6)
+                            ));
+                        }
+                    }
+                    if (portalTimer === 0) {
+                        // LAUNCH! Send player up 1000px (100 meters)
+                        const launchY = player.y - 1000;
+                        // Spawn a clean landing platform near where they'll arrive
+                        const landX = clamp(player.x - 30, WALL_W, BASE_W - WALL_W - 120);
+                        const landPlat = new Platform(landX, launchY - 10, 140, false);
+                        landPlat.spikes = [];
+                        platforms.push(landPlat);
+                        // Teleport player and send upward
+                        player.y = launchY;
+                        player.vy = -18;
+                        player.vx = 0;
+                        player.onGround = false;
+                        portalFlashAlpha = 1;
+                        SFX.play('powerup');
+                        // Burst particles
+                        for (let i = 0; i < 30; i++) {
+                            const angle = (i / 30) * Math.PI * 2;
+                            particles.push(new Particle(
+                                player.x + player.W / 2, player.y + player.H / 2,
+                                Math.cos(angle) * rnd(3, 8), Math.sin(angle) * rnd(3, 8),
+                                rndInt(30, 50), i % 2 === 0 ? '#ff44ff' : '#ffffff', rndInt(3, 7)
+                            ));
+                        }
+                        // Clear portal state
+                        if (portalPlatRef) { portalPlatRef.isPortal = false; portalPlatRef = null; }
+                    }
+                }
+                // Fade out flash
+                if (portalTimer === 0 && portalFlashAlpha > 0) {
+                    portalFlashAlpha = Math.max(0, portalFlashAlpha - 0.04);
+                }
+
                 updateCamera();
                 if (player.y < highestY) highestY = player.y;
                 const _maxH = Math.floor((BASE_H - 120 - TOWER_TOP) / 10);
@@ -11927,7 +12111,7 @@ function gameUpdate() {
                         return true;
                     });
                     const freePlats = nearPlats.filter(plat => {
-                        if (plat.isFinish || plat.spikes.length > 0) return false;
+                        if (plat.isFinish || plat.spikes.length > 0 || plat.isGhost || plat.isPortal) return false;
                         const px = plat.x + plat.w / 2;
                         // no existing powerup on this platform
                         if (powerups.some(pu => Math.abs(pu.x - px) < 32 && Math.abs(pu.y - (plat.y - 20)) < 24)) return false;
@@ -11950,7 +12134,7 @@ function gameUpdate() {
                         // Pick a random platform near the player but slightly above
                         const coinPlats = platforms.filter(p => {
                             if (p.y <= player.y - BASE_H * 2.2 || p.y >= player.y - BASE_H * 1.2) return false;
-                            if (p.isFinish) return false;
+                            if (p.isFinish || p.isGhost || p.isPortal) return false;
                             if (finishPlatRef && p.y <= finishPlatRef.y) return false; // level mode: no spawn at/above finish
                             if (p.y > floorY) return false; // never below start
                             if (p.spikes.length > 0) return false;
@@ -11985,6 +12169,7 @@ function gameUpdate() {
                             case 'highjump': player.powerHighJump = _puDur; break;
                             case 'shield': player.powerShield = _puDur; break;
                             case 'slow': player.powerSlow = _puDur; break;
+                            case 'portal': magicPortalReady = true; break;
                         }
                         if (tutorialMode && POWERUP_TUTORIAL[pu.type.id]) {
                             tutorialMsg = POWERUP_TUTORIAL[pu.type.id];
@@ -12230,6 +12415,14 @@ function gameUpdate() {
                 if (state === STATE.PLAY) drawTrailParticles(camY);
                 if (state === STATE.PLAY || state === STATE.DEAD) _drawRemotePlayers(camY);
                 if (state === STATE.PLAY || state === STATE.DEAD) player.draw(camY);
+                // Magic portal flash overlay
+                if (portalFlashAlpha > 0) {
+                    ctx.save();
+                    ctx.globalAlpha = portalFlashAlpha * 0.75;
+                    ctx.fillStyle = '#cc00ff';
+                    ctx.fillRect(0, 0, BASE_W, BASE_H);
+                    ctx.restore();
+                }
                 for (const s of snowflakes) s.draw();
                 if (state === STATE.PLAY) drawHUD();
                 if (isMultiplayerGame) _drawMpCountdown();
