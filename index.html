@@ -2674,7 +2674,7 @@ await Promise.race([
             rect() { return { x: this.x, y: this.y, w: this.W, h: this.H }; }
             jump(bounceMult = 1.0) {
                 const speedMult = this.powerHighJump > 0 ? 1.4 : 1.0;
-                const spaceMult = currentTheme === 5 ? 1.35 : 1.0;
+                const spaceMult = currentTheme === 5 ? 0.88 : 1.0;
                 this.vy = -6.4 * speedMult * bounceMult * spaceMult;
                 this.onGround = false;
                 jumpStartY = this.y;
@@ -5936,7 +5936,11 @@ await Promise.race([
                 const force = BH_STRENGTH * Math.pow((BH_PULL_RADIUS - dist) / BH_PULL_RADIUS, 1.5);
                 player.vx += (dx / dist) * force;
                 player.vy += (dy / dist) * force;
-                if (dist < bhR + player.W * 0.5) { handleDeath(); return; }
+                if (dist < bhR + player.W * 0.5) {
+                    // Inside core — extreme pull burst instead of instant death
+                    player.vx += (dx / dist) * BH_STRENGTH * 6;
+                    player.vy += (dy / dist) * BH_STRENGTH * 6;
+                }
             }
         }
 
