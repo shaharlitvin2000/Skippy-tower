@@ -9223,14 +9223,25 @@ function _drawMpHostEndBtn() {
 
         function _drawThemeMini(idx, bx, by, bw, bh, tt) {
             const _tm = [
-                function(bx,by,bw,bh,tt){ // 0 ICE — icicles + snow
-                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#001830');sg.addColorStop(1,'#003a5a');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
-                    // twinkling stars
-                    for(let s=0;s<40;s++){const sa=0.25+0.55*Math.abs(Math.sin(tt*1.8+s));ctx.globalAlpha=sa;ctx.fillStyle='#cceeff';ctx.beginPath();ctx.arc(bx+(s*73)%bw,by+(s*47)%(bh*0.55),1,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
-                    // icicles hanging from top
-                    for(let ic=0;ic<7;ic++){const ix=bx+(ic+0.5)*(bw/7);const ih=bh*(0.12+0.1*(ic%3)*0.5);ctx.fillStyle='rgba(160,230,255,0.6)';ctx.beginPath();ctx.moveTo(ix-3.5,by);ctx.lineTo(ix+3.5,by);ctx.lineTo(ix,by+ih);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(230,255,255,0.35)';ctx.fillRect(ix-1,by,1.5,ih*0.55);}
-                    // snowflakes falling
-                    for(let s=0;s<22;s++){const spx=bx+((s*61+tt*22)%bw);const spy=by+(((s*41)+(tt*28*((s%3)+1)))%bh);ctx.globalAlpha=0.55;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(spx,spy,1.2,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+                function(bx,by,bw,bh,tt){ // 0 CLOCK — gears + animated clock face
+                    const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#0a0810');sg.addColorStop(1,'#1c1428');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
+                    // warm copper glow center
+                    const cg=ctx.createRadialGradient(bx+bw*0.45,by+bh*0.5,0,bx+bw*0.45,by+bh*0.5,bw*0.65);cg.addColorStop(0,'rgba(190,130,30,0.18)');cg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=cg;ctx.fillRect(bx,by,bw,bh);
+                    // gear helper
+                    const _gear=(cx,cy,r,teeth,spd,col,lw)=>{ctx.save();ctx.translate(cx,cy);ctx.rotate(tt*spd);ctx.strokeStyle=col;ctx.lineWidth=lw;const step=Math.PI*2/(teeth*2);ctx.beginPath();for(let i=0;i<teeth*2;i++){const ang=i*step;const rad=i%2===0?r:r*0.72;i===0?ctx.moveTo(Math.cos(ang)*rad,Math.sin(ang)*rad):ctx.lineTo(Math.cos(ang)*rad,Math.sin(ang)*rad);}ctx.closePath();ctx.stroke();ctx.beginPath();ctx.arc(0,0,r*0.28,0,Math.PI*2);ctx.stroke();ctx.restore();};
+                    _gear(bx+bw*0.35,by+bh*0.52,bw*0.24,8, 0.35,'rgba(210,160,55,0.72)',1.8);
+                    _gear(bx+bw*0.74,by+bh*0.62,bw*0.16,6,-0.55,'rgba(185,140,45,0.58)',1.5);
+                    _gear(bx+bw*0.16,by+bh*0.7, bw*0.12,5, 0.65,'rgba(165,120,38,0.48)',1.3);
+                    // clock face
+                    const clkx=bx+bw*0.73,clky=by+bh*0.24,clkr=bw*0.14;
+                    ctx.strokeStyle='rgba(230,185,75,0.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(clkx,clky,clkr,0,Math.PI*2);ctx.stroke();
+                    // tick marks
+                    for(let k=0;k<12;k++){const ka=k*Math.PI/6;const kr1=clkr*0.82,kr2=clkr*0.95;ctx.strokeStyle='rgba(210,170,60,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(clkx+Math.cos(ka)*kr1,clky+Math.sin(ka)*kr1);ctx.lineTo(clkx+Math.cos(ka)*kr2,clky+Math.sin(ka)*kr2);ctx.stroke();}
+                    // hour hand
+                    const ha=tt*0.5;ctx.strokeStyle='rgba(255,220,90,0.9)';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(clkx,clky);ctx.lineTo(clkx+Math.cos(ha-Math.PI/2)*clkr*0.52,clky+Math.sin(ha-Math.PI/2)*clkr*0.52);ctx.stroke();
+                    // minute hand
+                    const ma=tt*3;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(clkx,clky);ctx.lineTo(clkx+Math.cos(ma-Math.PI/2)*clkr*0.78,clky+Math.sin(ma-Math.PI/2)*clkr*0.78);ctx.stroke();
+                    ctx.lineCap='butt';
                 },
                 function(bx,by,bw,bh,tt){ // 1 GROVE — trees + grass ground
                     const sg=ctx.createLinearGradient(bx,by,bx,by+bh);sg.addColorStop(0,'#001a08');sg.addColorStop(1,'#004018');ctx.fillStyle=sg;ctx.fillRect(bx,by,bw,bh);
@@ -10790,7 +10801,7 @@ function _drawMpHostEndBtn() {
             ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic';
 
             const modes = [
-                { label:'INFINITE', icon:'∞', emoji:'🌌', stroke:'#55ccff', idx:0, goal:null,    name:'Endless'      },
+                { label:'INFINITE', icon:'∞', emoji:'⚙', stroke:'#55ccff', idx:0, goal:null,    name:'Clockwork'    },
                 { label:'GROVE',    icon:'1', emoji:'🌿', stroke:'#4ec96a', idx:1, goal:'500m',  name:'Forest'       },
                 { label:'DESERT',   icon:'2', emoji:'🏜', stroke:'#c89030', idx:2, goal:'1500m', name:'Desert Canyon'},
                 { label:'LAVA',     icon:'3', emoji:'🌋', stroke:'#ff5522', idx:3, goal:'2500m', name:'Lava / Fire'  },
