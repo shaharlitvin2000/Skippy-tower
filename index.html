@@ -1306,7 +1306,7 @@ await Promise.race([
         let prevBestOnDeath = 0; // stored for record screen display
         function handleDeath() {
             if (player.powerHighJump > 0) return;
-            if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } }
+            if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } drakonCooldownUntil = lastRunHigh + rndInt(150, 250); }
             if (isMultiplayerGame) { _mpRespawn(); return; }
             SFX.play('death');
             _flushSaves();
@@ -3265,6 +3265,8 @@ await Promise.race([
                 this.SEG = 22;
                 this.color = color; // 'red' | 'green'
                 this.riseSpeed = color === 'green' ? 6.0 : 3.0;
+                this.spinning = false; // end-of-ride celebration spin
+                this.spinX = 0; this.spinY = 0; this.spinT = 0;
             }
             // Lerp between flying (horizontal) and riding (vertical) orientations
             segX(i) {
@@ -3748,7 +3750,8 @@ await Promise.race([
         // Fossil Canyon wind gust state (level 2 mechanic)
         let canyonWind = { vx: 0, vy: 0, timer: 0, next: 160, active: false, duration: 0 };
         let drakon = null, ridingDrakon = false, drakonRideStartY = 0;
-        let drakonRedNext = 230, drakonGreenNext = 400; // meter milestones for spawning
+        let drakonRedNext = 230, drakonGreenNext = 400;
+        let drakonCooldownUntil = 0; // next dragon won't spawn until this meter count
         let prevOnGround = false;
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
@@ -3864,6 +3867,7 @@ await Promise.race([
             magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
             drakon = null; ridingDrakon = false; drakonRideStartY = 0;
             drakonRedNext = rndInt(200, 260); drakonGreenNext = rndInt(370, 430);
+            drakonCooldownUntil = 0;
         }
 
         function initTutorial() {
@@ -12270,15 +12274,18 @@ function gameUpdate() {
                 for (const plat of visible) {
                     for (let si = plat.spikes.length - 1; si >= 0; si--) {
                         const sp = plat.spikes[si];
-                        const hazard = { x: plat.x + sp.offset, y: plat.y - 10, w: sp.width, h: 5 };
+                        const _sweep = Math.max(0, Math.ceil(player.vy)); // extend upward for fast-falling players
+                        const hazard = { x: plat.x + sp.offset, y: plat.y - 10 - _sweep, w: sp.width, h: 5 + _sweep };
                         if (rectsOverlap(pr, hazard)) {
                             if (invincible) break;
-                            if (ridingDrakon) {
-                                // Dragon absorbs spike: dragon disappears, player survives with iframes
-                                ridingDrakon = false;
-                                if (drakon) { drakon.alive = false; drakon = null; }
+                            if (ridingDrakon && drakon) {
+                                if (drakon.color === 'green') break; // green = full immunity
+                                // Red: dragon breaks, spike destroyed, player survives
+                                ridingDrakon = false; drakon.alive = false; drakon = null;
+                                drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
+                                plat.spikes.splice(si, 1);
                                 player.iframes = 60;
-                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ffcc44'));
+                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ff9922'));
                                 break;
                             }
                             if (shielded) {
@@ -12407,7 +12414,16 @@ function gameUpdate() {
                     const gr = { x: g.rect().x + 6, y: g.rect().y + 6, w: g.rect().w - 12, h: g.rect().h - 12 };
                     if (rectsOverlap(pr, gr)) {
                         if (invincible) continue;
-                        if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } }
+                        if (ridingDrakon && drakon) {
+                            if (drakon.color === 'green') continue; // green = full immunity
+                            // Red: dragon breaks, ghost removed, player survives
+                            ridingDrakon = false; drakon.alive = false; drakon = null;
+                            drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
+                            ghosts = ghosts.filter(x => x !== g);
+                            player.iframes = 60;
+                            floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ff9922'));
+                            continue;
+                        }
                         if (shielded) { SFX.play('shield'); player.powerShield = 0; player.iframes = 90; ghosts = ghosts.filter(x => x !== g); floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#9966ff')); }
                         else { handleDeath(); break; }
                     }
@@ -12418,34 +12434,45 @@ function gameUpdate() {
                     // Dismount if 5m (50px) above finish line
                     if (ridingDrakon && finishPlatRef && player.y < finishPlatRef.y - 50) {
                         ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; }
+                        drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
                     }
                     if (!drakon || !drakon.alive) {
                         if (drakon) { drakon = null; ridingDrakon = false; }
                         const h = lastRunHigh;
                         // Don't spawn above finish line
-                        if (!_aboveFinish) {
+                        if (!_aboveFinish && h >= drakonCooldownUntil) {
                             let spawnColor = null;
                             // Green every ~400m (takes priority)
                             if (h >= drakonGreenNext) {
                                 drakonGreenNext = h + rndInt(370, 430);
-                                drakonRedNext = Math.max(drakonRedNext, h + rndInt(200, 260)); // skip red
+                                // After any dragon, next dragon (red or green) must be 200m later
+                                drakonRedNext = h + 200 + rndInt(0, 60);
                                 spawnColor = 'green';
                             }
                             // Red every ~230m
                             else if (h >= drakonRedNext) {
                                 drakonRedNext = h + rndInt(200, 260);
+                                // Green also waits at least 200m after red
+                                drakonGreenNext = Math.max(drakonGreenNext, h + 200 + rndInt(0, 60));
                                 spawnColor = 'red';
                             }
                             if (spawnColor) {
-                                const targetY = player.y - BASE_H * 0.55;
+                                // Base Y ± 50m (500px) randomness, clamped to visible range
+                                const baseY = player.y - BASE_H * 0.55;
+                                const targetY = baseY + rndInt(-500, 500);
+                                const clampedBase = Math.max(player.y - BASE_H * 0.9, Math.min(player.y - BASE_H * 0.15, targetY));
                                 const candidates = [];
                                 for (let dy = -100; dy <= 100; dy += 20) {
-                                    const testY = targetY + dy;
+                                    const testY = clampedBase + dy;
                                     const near = platforms.some(p => Math.abs(p.y - testY) < 50);
                                     if (!near) candidates.push(testY);
                                 }
-                                if (candidates.length > 0) {
-                                    const sy = candidates[Math.floor(Math.random() * candidates.length)];
+                                // Filter out any Y that's above the finish line
+                                const validCandidates = finishPlatRef
+                                    ? candidates.filter(cy => cy > finishPlatRef.y)
+                                    : candidates;
+                                if (validCandidates.length > 0) {
+                                    const sy = validCandidates[Math.floor(Math.random() * validCandidates.length)];
                                     drakon = new Drakon(Math.random() < 0.5 ? 1 : -1, sy, spawnColor);
                                 }
                             }
@@ -12475,23 +12502,77 @@ function gameUpdate() {
                                 rndInt(18, 35), cols[rndInt(0, cols.length - 1)], rndInt(2, 4)
                             ));
                         }
-                        // Exit: 120 meters climbed
-                        if (drakonRideStartY - player.y >= 1200) {
-                            ridingDrakon = false; drakon.alive = false; drakon = null;
+                        // Exit: 120m for red, 240m for green
+                        const _rideLimit = drakon.color === 'green' ? 2400 : 1200;
+                        if (drakonRideStartY - player.y >= _rideLimit) {
+                            const _isGreen = drakon.color === 'green';
+                            ridingDrakon = false;
+                            drakon.riding = false;
+                            drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
                             player.vy = -5;
-                            floatTexts.push(new FloatText(player.x + 11, player.y - 16, '+120m!', '#ffcc44'));
+                            floatTexts.push(new FloatText(player.x + 11, player.y - 16, _isGreen ? '+240m!' : '+120m!', _isGreen ? '#44ff88' : '#ffcc44'));
                             SFX.play('powerup');
+                            // Spin above finish line if there's room, otherwise just despawn
+                            if (finishPlatRef) {
+                                const spinCY = finishPlatRef.y - 200; // 20m above finish
+                                const spinCX = BASE_W / 2;
+                                const blocked = platforms.some(p =>
+                                    !p.isFinish && Math.abs(p.y - spinCY) < 70 &&
+                                    Math.abs((p.x + p.w / 2) - spinCX) < 110);
+                                if (!blocked) {
+                                    drakon.spinning = true;
+                                    drakon.spinX = spinCX; drakon.spinY = spinCY; drakon.spinT = 0;
+                                } else {
+                                    drakon.alive = false; drakon = null;
+                                }
+                            } else {
+                                drakon.alive = false; drakon = null;
+                            }
+                        }
+                    } else if (drakon.spinning) {
+                        drakon.spinT++;
+                        drakon.t += 0.14;
+                        // Circle above finish line
+                        drakon.x = drakon.spinX + Math.cos(drakon.t * 1.6) * 72;
+                        drakon.y = drakon.spinY + Math.sin(drakon.t * 1.6) * 22;
+                        // Festive trail particles
+                        if (Math.random() < 0.5) {
+                            const col = drakon.color === 'green' ? '#44ff88' : '#ffcc44';
+                            particles.push(new Particle(
+                                drakon.x + rnd(-12, 12), drakon.y + rnd(-12, 12),
+                                rnd(-1.5, 1.5), rnd(-2, 0),
+                                rndInt(20, 40), col, rndInt(2, 4)
+                            ));
+                        }
+                        // After ~4 seconds (240 frames), burst and despawn
+                        if (drakon.spinT >= 240) {
+                            const col = drakon.color === 'green' ? '#44ff88' : '#ffcc44';
+                            for (let i = 0; i < 24; i++) {
+                                const angle = (i / 24) * Math.PI * 2;
+                                particles.push(new Particle(
+                                    drakon.x, drakon.y,
+                                    Math.cos(angle) * rnd(3, 8), Math.sin(angle) * rnd(3, 8),
+                                    rndInt(30, 55), col, rndInt(3, 6)
+                                ));
+                            }
+                            drakon.alive = false; drakon = null;
                         }
                     } else {
                         drakon.update();
-                        // Any contact with dragon body grabs it
+                        // Must land from above like a platform (player falling, feet near dragon top)
                         const pr = player.rect();
-                        const anyHit = Array.from({length: drakon.N}, (_, i) => {
-                            const sx = drakon.segX(i), sy = drakon.segY(i);
-                            const r = Math.max(5, 13 - i * 0.9) + 4; // a bit generous
-                            return pr.x < sx + r && pr.x + pr.w > sx - r &&
-                                   pr.y < sy + r && pr.y + pr.h > sy - r;
-                        }).some(Boolean);
+                        let anyHit = false;
+                        if (player.vy >= 0) { // must be falling or still
+                            for (let i = 0; i < drakon.N; i++) {
+                                const sx = drakon.segX(i), sy = drakon.segY(i);
+                                const r = Math.max(5, 13 - i * 0.9);
+                                const topY = sy - r;
+                                if (pr.x + pr.w > sx - r - 4 && pr.x < sx + r + 4 &&
+                                    pr.y + pr.h >= topY - 8 && pr.y + pr.h <= topY + r) {
+                                    anyHit = true; break;
+                                }
+                            }
+                        }
                         if (anyHit) {
                             ridingDrakon = true;
                             drakonRideStartY = player.y;
