@@ -10594,8 +10594,8 @@ function _drawMpHostEndBtn() {
                 return;
             }
 
-            // Purple glass overlay over frozen game
-            ctx.fillStyle = 'rgba(8,0,22,0.86)';
+            // Dark overlay — fully covers the game behind the pause panel
+            ctx.fillStyle = 'rgba(4,0,12,0.97)';
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
             // Ambient purple glow behind panel area
@@ -12366,7 +12366,7 @@ function gameUpdate() {
             lastTime = ts;
 
             // Show user tag only on main menu — only touch DOM when state actually changes
-            const _wantTag = (state !== STATE.PLAY && window.icyCurrentUser) ? 'flex' : 'none';
+            const _wantTag = (state === STATE.MAIN && window.icyCurrentUser) ? 'flex' : 'none';
             if (_wantTag !== _lastUserTagState) {
                 if (_userTagEl) _userTagEl.style.display = _wantTag;
                 _lastUserTagState = _wantTag;
@@ -12482,7 +12482,7 @@ function gameUpdate() {
             }
             if (isMultiplayerGame) _drawAfkPrompt();
 
-            if (state !== STATE.MAIN && !(isMultiplayerGame && mpGameOver)) drawTouchButtons();
+            if (state === STATE.PLAY && !(isMultiplayerGame && mpGameOver)) drawTouchButtons();
 
             if (state === STATE.MAIN) drawMainMenu();
             else if (state === STATE.SELECT) drawSelect();
