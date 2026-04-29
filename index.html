@@ -3253,37 +3253,33 @@ await Promise.race([
         // ─────────────────────────────────────────────
         class Drakon {
             constructor(dir, spawnY) {
-                this.dir = dir; // 1 = left→right, -1 = right→left
+                this.dir = dir; // 1 = L→R, -1 = R→L (flying mode only)
                 this.x = dir === 1 ? -140 : BASE_W + 140;
                 this.y = spawnY;
                 this.t = 0;
                 this.speed = 1.8;
                 this.alive = true;
-                this.N = 7;   // body segments
-                this.SEG = 20; // px between segments
+                this.riding = false; // true when player grabbed it
+                this.N = 7;
+                this.SEG = 22;
             }
-            segX(i) { return this.x - this.dir * i * this.SEG; }
-            segY(i) { return this.y + Math.sin(this.t - i * 0.55) * 14; }
-            get rideX() { return this.segX(2) - 11; } // player sits on seg 2
-            get rideY() { return this.segY(2) - 28; }
-            topRect() {
-                const sx = this.segX(2), sy = this.segY(2);
-                return { x: sx - 34, y: sy - 22, w: 68, h: 22 };
-            }
-            update() {
+            // Flying mode: horizontal segments with sine wave
+            segX(i) { return this.riding ? this.x + Math.sin(this.t - i * 0.5) * 10 : this.x - this.dir * i * this.SEG; }
+            segY(i) { return this.riding ? this.y + i * this.SEG               : this.y + Math.sin(this.t - i * 0.55) * 14; }
+            update() { // called only when not riding
                 this.t += 0.11;
                 this.x += this.dir * this.speed;
                 if ((this.dir === 1 && this.x > BASE_W + 160) ||
                     (this.dir === -1 && this.x < -160)) this.alive = false;
             }
-            riseUp() {
+            riseUp() { // called every frame while riding
                 this.t += 0.11;
                 this.y -= 1.8;
             }
             draw(camY) {
-                const N = this.N, d = this.dir;
+                const N = this.N;
                 ctx.save();
-                // Body segments tail→neck
+                // Body segments tail→neck (drawn first so head is on top)
                 for (let i = N - 1; i >= 0; i--) {
                     const sx = this.segX(i), sy = this.segY(i) - camY;
                     if (sy < -80 || sy > BASE_H + 80) continue;
@@ -3297,12 +3293,19 @@ await Promise.race([
                     if (i > 0 && i < N - 1) {
                         const sh = 5 + Math.sin(this.t - i * 0.4) * 2;
                         ctx.fillStyle = '#ffaa22';
+                        // Spines: sideways when flying, upward when riding
+                        const spx = this.riding ? sx : sx;
+                        const spy = this.riding ? sy : sy;
+                        const spDx = this.riding ? -sh : 0;
+                        const spDy = this.riding ? 0 : -sh;
                         ctx.beginPath();
-                        ctx.moveTo(sx - 3, sy - r); ctx.lineTo(sx, sy - r - sh); ctx.lineTo(sx + 3, sy - r);
+                        ctx.moveTo(spx - 3, spy - r);
+                        ctx.lineTo(spx + spDx, spy + spDy - r);
+                        ctx.lineTo(spx + 3, spy - r);
                         ctx.closePath(); ctx.fill();
                     }
                 }
-                // Head
+                // Head at segment 0
                 const hx = this.segX(0), hy = this.segY(0) - camY;
                 const hg = ctx.createRadialGradient(hx, hy - 4, 2, hx, hy, 14);
                 hg.addColorStop(0, '#ff6622'); hg.addColorStop(1, '#aa1100');
@@ -3310,31 +3313,43 @@ await Promise.race([
                 ctx.beginPath(); ctx.arc(hx, hy, 14, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(hx, hy, 14, 0, Math.PI * 2); ctx.stroke();
-                // Snout
+                // Snout direction: forward when flying, upward when riding
+                const sd = this.riding ? 0 : this.dir; // used for snout/flame/eye/horn offsets
+                const snx = this.riding ? hx         : hx + sd * 16;
+                const sny = this.riding ? hy - 16    : hy + 3;
                 ctx.fillStyle = '#dd3300';
-                ctx.beginPath(); ctx.ellipse(hx + d * 16, hy + 3, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(snx, sny, this.riding ? 7 : 10, this.riding ? 10 : 7, 0, 0, Math.PI * 2); ctx.fill();
                 // Flame
                 const fl = 0.7 + 0.3 * Math.sin(this.t * 4);
                 ctx.globalAlpha = fl;
                 ctx.fillStyle = '#ffaa00';
-                ctx.beginPath(); ctx.ellipse(hx + d * 28, hy - 2, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
+                const fx = this.riding ? hx + Math.sin(this.t * 3) * 4 : hx + sd * 28;
+                const fy = this.riding ? hy - 32 : hy - 2;
+                ctx.beginPath(); ctx.ellipse(fx, fy, this.riding ? 5 : 8, this.riding ? 8 : 5, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#ff4400';
-                ctx.beginPath(); ctx.ellipse(hx + d * 33, hy, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(fx, this.riding ? fy - 8 : fy, this.riding ? 4 : 5, this.riding ? 6 : 4, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
                 // Eye
+                const ex = this.riding ? hx + 8 : hx + sd * 7;
+                const ey = this.riding ? hy - 7 : hy - 7;
                 ctx.fillStyle = '#ffff44';
-                ctx.beginPath(); ctx.arc(hx + d * 7, hy - 7, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#000';
-                ctx.beginPath(); ctx.arc(hx + d * 8, hy - 7, 2.5, 0, Math.PI * 2); ctx.fill();
-                // Horn
+                ctx.beginPath(); ctx.arc(ex + (this.riding ? 0 : sd), ey, 2.5, 0, Math.PI * 2); ctx.fill();
+                // Horn: upward always
                 ctx.fillStyle = '#ffe055';
                 ctx.beginPath();
-                ctx.moveTo(hx - d * 2, hy - 13); ctx.lineTo(hx + d * 3, hy - 26); ctx.lineTo(hx + d * 9, hy - 14);
+                ctx.moveTo(hx - 4, hy - 12); ctx.lineTo(hx, hy - 28); ctx.lineTo(hx + 4, hy - 12);
                 ctx.closePath(); ctx.fill();
-                // Whiskers
+                // Whiskers: out to sides when riding, forward when flying
                 ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.moveTo(hx + d * 18, hy); ctx.lineTo(hx + d * 33, hy - 8); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(hx + d * 18, hy + 5); ctx.lineTo(hx + d * 33, hy + 11); ctx.stroke();
+                if (this.riding) {
+                    ctx.beginPath(); ctx.moveTo(hx - 6, hy - 6); ctx.lineTo(hx - 20, hy - 10); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(hx + 6, hy - 6); ctx.lineTo(hx + 20, hy - 10); ctx.stroke();
+                } else {
+                    ctx.beginPath(); ctx.moveTo(hx + sd * 18, hy); ctx.lineTo(hx + sd * 33, hy - 8); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(hx + sd * 18, hy + 5); ctx.lineTo(hx + sd * 33, hy + 11); ctx.stroke();
+                }
                 ctx.restore();
             }
         }
@@ -12363,7 +12378,6 @@ function gameUpdate() {
                         drakonTimer--;
                         if (drakonTimer <= 0) {
                             drakonTimer = rndInt(160, 280);
-                            // Pick Y farthest from any platform in visible range
                             const targetY = player.y - BASE_H * 0.55;
                             const candidates = [];
                             for (let dy = -100; dy <= 100; dy += 20) {
@@ -12378,12 +12392,21 @@ function gameUpdate() {
                             }
                         }
                     } else if (ridingDrakon) {
+                        // Steer left/right with input, drift toward screen center
+                        const goLeft  = keys.left  || touch.left;
+                        const goRight = keys.right || touch.right;
+                        const centerPull = (BASE_W / 2 - drakon.x) * 0.025;
+                        if (goLeft)       drakon.x -= 3.2;
+                        else if (goRight) drakon.x += 3.2;
+                        else              drakon.x += centerPull;
+                        drakon.x = Math.max(WALL_W + 20, Math.min(BASE_W - WALL_W - 20, drakon.x));
                         drakon.riseUp();
-                        player.x = drakon.rideX;
-                        player.y = drakon.rideY;
+                        // Place player just below head
+                        player.x = drakon.x - player.W / 2;
+                        player.y = drakon.y - 32 - player.H;
                         player.vy = 0; player.vx = 0;
                         player.onGround = false;
-                        jumpStartY = player.y; // prevent fall-death
+                        jumpStartY = player.y;
                         // Exit: 120 meters climbed
                         if (drakonRideStartY - player.y >= 1200) {
                             ridingDrakon = false; drakon.alive = false; drakon = null;
@@ -12393,18 +12416,21 @@ function gameUpdate() {
                         }
                     } else {
                         drakon.update();
-                        // Check if player lands on top of drakon
-                        if (player.vy >= 0) {
-                            const tr = drakon.topRect();
-                            const pr = player.rect();
-                            const pb = player.y + player.H;
-                            if (rectsOverlap(pr, tr) && pb <= tr.y + tr.h + 8 && pb >= tr.y - 6) {
-                                ridingDrakon = true;
-                                drakonRideStartY = player.y;
-                                player.vy = 0;
-                                floatTexts.push(new FloatText(player.x + 11, player.y - 16, 'DRAKON!', '#ffcc44'));
-                                SFX.play('bounce');
-                            }
+                        // Any contact with dragon body grabs it
+                        const pr = player.rect();
+                        const anyHit = Array.from({length: drakon.N}, (_, i) => {
+                            const sx = drakon.segX(i), sy = drakon.segY(i);
+                            const r = Math.max(5, 13 - i * 0.9) + 4; // a bit generous
+                            return pr.x < sx + r && pr.x + pr.w > sx - r &&
+                                   pr.y < sy + r && pr.y + pr.h > sy - r;
+                        }).some(Boolean);
+                        if (anyHit) {
+                            ridingDrakon = true;
+                            drakonRideStartY = player.y;
+                            drakon.riding = true;
+                            player.vy = 0;
+                            floatTexts.push(new FloatText(player.x + 11, player.y - 16, 'DRAKON!', '#ffcc44'));
+                            SFX.play('bounce');
                         }
                     }
                 }
