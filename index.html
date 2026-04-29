@@ -3137,20 +3137,20 @@ await Promise.race([
                 const sy = this.y + Math.sin(this.bob) * 4 - camY;
                 if (sy < -40 || sy > BASE_H + 40) return;
                 const pulse = 0.6 + 0.4 * Math.abs(Math.sin(this.bob));
-                drawGlow(ctx, '#44aaff', this.x, sy, 22, Math.floor(52 * pulse));
+                drawGlow(ctx, '#ffcc00', this.x, sy, 22, Math.floor(52 * pulse));
                 ctx.save();
                 ctx.globalAlpha = 0.45 * pulse;
-                ctx.strokeStyle = '#66ccff'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size + 3 * pulse, 0, Math.PI * 2); ctx.stroke();
                 ctx.restore();
                 const cg = ctx.createRadialGradient(this.x - 4, sy - 4, 1, this.x, sy, this.size);
-                cg.addColorStop(0, '#cceeff'); cg.addColorStop(0.4, '#3399ff'); cg.addColorStop(1, '#1144aa');
+                cg.addColorStop(0, '#fff7aa'); cg.addColorStop(0.4, '#ffd700'); cg.addColorStop(1, '#b8860b');
                 ctx.fillStyle = cg;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#66ccff'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size, 0, Math.PI * 2); ctx.stroke();
                 // Crystal symbol
-                ctx.fillStyle = 'rgba(200,240,255,0.85)';
+                ctx.fillStyle = 'rgba(255,255,200,0.9)';
                 ctx.font = `bold ${Math.round(this.size * 1.1)}px monospace`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText('◆', this.x, sy + 1);
