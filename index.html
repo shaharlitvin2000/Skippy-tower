@@ -3751,7 +3751,9 @@ await Promise.race([
         let canyonWind = { vx: 0, vy: 0, timer: 0, next: 160, active: false, duration: 0 };
         let drakon = null, ridingDrakon = false, drakonRideStartY = 0;
         let drakonRedNext = 230, drakonGreenNext = 400;
-        let drakonCooldownUntil = 0; // next dragon won't spawn until this meter count
+        let drakonCooldownUntil = 0;
+        let festivalWind = { active: false, dir: 0, nextM: 200, untilM: 0, alpha: 0 };
+        let festivalWindDriftX = 0;
         let prevOnGround = false;
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
@@ -3868,6 +3870,9 @@ await Promise.race([
             drakon = null; ridingDrakon = false; drakonRideStartY = 0;
             drakonRedNext = rndInt(200, 260); drakonGreenNext = rndInt(370, 430);
             drakonCooldownUntil = 0;
+            lastRunHigh = 0; lastCoinMilestone = 0;
+            festivalWind = { active: false, dir: 0, nextM: rndInt(180, 220), untilM: 0, alpha: 0 };
+            festivalWindDriftX = 0;
         }
 
         function initTutorial() {
@@ -12200,6 +12205,27 @@ function gameUpdate() {
                 const _maxH = Math.floor((BASE_H - 120 - TOWER_TOP) / 10);
                 lastRunHigh = Math.min(Math.max(lastRunHigh, Math.floor((BASE_H - 120 - highestY) / 10)), _maxH);
 
+                // ── FESTIVAL WIND ──
+                if (currentTheme === 3 && !tutorialMode && !ridingDrakon) {
+                    if (!festivalWind.active && lastRunHigh >= festivalWind.nextM) {
+                        festivalWind.active = true;
+                        festivalWind.dir = Math.random() < 0.5 ? 1 : -1;
+                        festivalWind.untilM = lastRunHigh + 90 + rndInt(-20, 20);
+                    }
+                    if (festivalWind.active) {
+                        festivalWind.alpha = Math.min(1, festivalWind.alpha + 0.018);
+                        player.vx += festivalWind.dir * 0.22;
+                        if (lastRunHigh >= festivalWind.untilM) {
+                            festivalWind.active = false;
+                            festivalWind.nextM = lastRunHigh + 200 + rndInt(-30, 30);
+                        }
+                    } else {
+                        festivalWind.alpha = Math.max(0, festivalWind.alpha - 0.018);
+                    }
+                    const _driftTarget = festivalWind.active ? festivalWind.dir * 9 : 0;
+                    festivalWindDriftX += (_driftTarget - festivalWindDriftX) * 0.035;
+                }
+
                 // Fall-death: die if you fall 30 meters (300px) from where the jump started
                 if (!player.onGround && player.y - jumpStartY >= 300) { handleDeath(); return; }
                 // Award 1 point per 40 meters climbed (not in tutorial)
@@ -12766,7 +12792,8 @@ function gameUpdate() {
 
             // ─── DRAW ───────────────────────────────
             ctx.save();
-            ctx.translate(shakeX, shakeY);
+            const _windDrift = (currentTheme === 3 && state === STATE.PLAY) ? festivalWindDriftX : 0;
+            ctx.translate(shakeX + _windDrift, shakeY);
 
             if (state === STATE.MAIN) {
                 // Main menu: draw animated background + snowflakes
@@ -12806,6 +12833,15 @@ function gameUpdate() {
                     ctx.restore();
                 }
                 for (const s of snowflakes) s.draw();
+                // Festival wind vignette — dark circular gradient fades in/out with wind
+                if (currentTheme === 3 && festivalWind.alpha > 0.01) {
+                    const vA = festivalWind.alpha * 0.42;
+                    const vg = ctx.createRadialGradient(BASE_W / 2, BASE_H / 2, BASE_H * 0.12, BASE_W / 2, BASE_H / 2, BASE_W * 0.9);
+                    vg.addColorStop(0, 'rgba(0,0,0,0)');
+                    vg.addColorStop(0.55, `rgba(0,0,20,${vA * 0.4})`);
+                    vg.addColorStop(1, `rgba(0,0,15,${vA})`);
+                    ctx.save(); ctx.fillStyle = vg; ctx.fillRect(0, 0, BASE_W, BASE_H); ctx.restore();
+                }
                 if (state === STATE.PLAY) drawHUD();
                 if (isMultiplayerGame) _drawMpCountdown();
                 if (isMultiplayerGame) _drawMpHeightBar();
