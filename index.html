@@ -12261,7 +12261,7 @@ function gameUpdate() {
                         const sp = plat.spikes[si];
                         const hazard = { x: plat.x + sp.offset, y: plat.y - 10, w: sp.width, h: 5 };
                         if (rectsOverlap(pr, hazard)) {
-                            if (invincible) break;
+                            if (invincible || ridingDrakon) break;
                             if (shielded) {
                                 player.powerShield = 0;
                                 player.iframes = 90;
