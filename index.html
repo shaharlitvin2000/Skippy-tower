@@ -3136,7 +3136,7 @@ await Promise.race([
                 const sy = this.y + Math.sin(this.bob) * 4 - camY;
                 if (sy < -40 || sy > BASE_H + 40) return;
                 const pulse = 0.6 + 0.4 * Math.abs(Math.sin(this.bob));
-שששששש                drawGlow(ctx, '#44aaff', this.x, sy, 22, Math.floor(52 * pulse));
+                drawGlow(ctx, '#44aaff', this.x, sy, 22, Math.floor(52 * pulse));
                 ctx.save();
                 ctx.globalAlpha = 0.45 * pulse;
                 ctx.strokeStyle = '#66ccff'; ctx.lineWidth = 1.5;
@@ -6067,19 +6067,19 @@ await Promise.race([
                 player.vx += (dx / dist) * force;
                 player.vy += (dy / dist) * force;
                 // Extra strong suck when close to core
-                const coreRadius = bhR * 2.5;
+                const coreRadius = bhR * 3.5;
                 if (dist < coreRadius) {
                     player.vx += (dx / dist) * BH_STRENGTH * 6;
                     player.vy += (dy / dist) * BH_STRENGTH * 6;
                     insideCore = true; // only count death timer when inside the visual core
                 }
             }
-            // Death timer only accumulates inside the core, resets the moment player leaves
+            // Death timer: builds inside core, decays slowly outside (brief exits don't reset it)
             if (insideCore) {
                 bhCaptureTimer++;
                 if (bhCaptureTimer >= 60) { bhCaptureTimer = 0; handleDeath(); }
             } else {
-                bhCaptureTimer = 0;
+                bhCaptureTimer = Math.max(0, bhCaptureTimer - 1);
             }
         }
 
@@ -8692,7 +8692,7 @@ function _drawMpHostEndBtn() {
             }
             ctx.beginPath(); ctx.roundRect(lobbyBtnX, btnY, lobbyBtnW, lobbyBtnH, 14); ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = canReturn ? `hsl(${(t * 60) % 360},100%,65%)` : '#333';
+            ctx.strokeStyle = canReturn ? `hsl(${230 + Math.sin(t * 1.5) * 30},100%,65%)` : '#333';
             ctx.lineWidth = canReturn ? 2 : 1;
             ctx.beginPath(); ctx.roundRect(lobbyBtnX, btnY, lobbyBtnW, lobbyBtnH, 14); ctx.stroke();
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -8827,11 +8827,11 @@ function _drawMpHostEndBtn() {
             ctx.fillText('You will be removed in ' + rem + 's', cx, by + 64);
             // YES button
             const btnY = by + 86, btnH = 48;
-            ctx.fillStyle = '#0d3020';
+            ctx.fillStyle = '#0a1240';
             ctx.beginPath(); ctx.roundRect(cx - 60, btnY, 120, btnH, 12); ctx.fill();
-            ctx.strokeStyle = '#44ff88'; ctx.lineWidth = 2;
+            ctx.strokeStyle = '#5577ff'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(cx - 60, btnY, 120, btnH, 12); ctx.stroke();
-            ctx.font = 'bold 22px "Segoe UI",Arial'; ctx.fillStyle = '#44ff88';
+            ctx.font = 'bold 22px "Segoe UI",Arial'; ctx.fillStyle = '#aabbff';
             ctx.fillText('YES', cx, btnY + 31);
         }
 
@@ -8856,7 +8856,7 @@ function _drawMpHostEndBtn() {
 
             // Floating ambient orbs
             ctx.save();
-            const orbColors = ['#ff44aa','#aa44ff','#44aaff','#44ffaa','#ffaa44'];
+            const orbColors = ['#5566ff','#8844ff','#4488ff','#6655ee','#9966ff'];
             for (let i = 0; i < 5; i++) {
                 const ox = cx + Math.cos(t * 0.4 + i * 1.26) * 120;
                 const oy = BASE_H / 2 + Math.sin(t * 0.3 + i * 0.9) * 140;
@@ -8881,10 +8881,11 @@ function _drawMpHostEndBtn() {
             }
             ctx.restore();
 
-            // Inner glow circle
+            // Inner glow circle — blue-purple
+            const _igHue = 230 + Math.sin(t * 1.5) * 30;
             ctx.save();
-            ctx.shadowColor = `hsl(${(t * 80) % 360},100%,65%)`; ctx.shadowBlur = 28;
-            ctx.strokeStyle = `hsla(${(t * 80) % 360},100%,70%,0.4)`; ctx.lineWidth = 2.5;
+            ctx.shadowColor = `hsl(${_igHue},100%,65%)`; ctx.shadowBlur = 28;
+            ctx.strokeStyle = `hsla(${_igHue},100%,70%,0.4)`; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.arc(ringX, ringY, ringR - 12, 0, Math.PI * 2); ctx.stroke();
             ctx.restore();
 
@@ -8897,7 +8898,7 @@ function _drawMpHostEndBtn() {
             // Game title label
             ctx.save();
             const titleLG = ctx.createLinearGradient(cx - 80, 0, cx + 80, 0);
-            titleLG.addColorStop(0, '#ff44aa'); titleLG.addColorStop(0.5, '#cc44ff'); titleLG.addColorStop(1, '#44aaff');
+            titleLG.addColorStop(0, '#5577ff'); titleLG.addColorStop(0.5, '#9955ff'); titleLG.addColorStop(1, '#aabbff');
             ctx.font = 'bold 13px Orbitron, monospace'; ctx.fillStyle = titleLG;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('SKIPPY TOWER', cx, BASE_H / 2 - 14);
@@ -8925,7 +8926,7 @@ function _drawMpHostEndBtn() {
                     const px = dotStartX + i * dotGap, py = BASE_H / 2 + 48;
                     const isMe = i === 0;
                     const isConn = i < connected;
-                    const dHue = isMe ? 150 : (220 + i * 30);
+                    const dHue = [240, 260, 210, 280, 220, 250][i % 6];
                     ctx.save();
                     ctx.shadowColor = isConn ? `hsl(${dHue},100%,65%)` : 'transparent';
                     ctx.shadowBlur = isConn ? 12 : 0;
@@ -8939,19 +8940,19 @@ function _drawMpHostEndBtn() {
                     ctx.fillText(isMe ? '★' : '●', px, py + 1);
                 }
                 ctx.font = 'bold 16px Orbitron, monospace';
-                ctx.fillStyle = allReady ? '#44ff88' : `hsl(${(t * 60) % 360},90%,70%)`;
+                ctx.fillStyle = allReady ? '#aabbff' : `hsl(${230 + Math.sin(t * 1.5) * 30},90%,70%)`;
                 ctx.fillText(connected + ' / ' + total + ' connected', cx, BASE_H / 2 + 78);
                 if (allReady) {
-                    ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = '#44ff88';
+                    ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = '#aabbff';
                     ctx.fillText('Starting\u2026', cx, BASE_H / 2 + 100);
                 }
             } else {
                 const dots = ready ? '' : '.'.repeat(Math.floor(t * 2.5) % 4);
                 ctx.font = 'bold 16px Orbitron, monospace';
-                ctx.fillStyle = ready ? '#44ff88' : `hsl(${(t * 50) % 360},90%,70%)`;
+                ctx.fillStyle = ready ? '#aabbff' : `hsl(${230 + Math.sin(t * 1.5) * 30},90%,70%)`;
                 ctx.fillText((loadingMsg || 'Loading') + dots, cx, BASE_H / 2 + 20);
                 if (ready) {
-                    ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = 'rgba(100,220,150,0.75)';
+                    ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,180,255,0.75)';
                     ctx.fillText('Please wait\u2026', cx, BASE_H / 2 + 46);
                 }
             }
@@ -8965,10 +8966,11 @@ function _drawMpHostEndBtn() {
                 ctx.fillRect(0, BASE_H / 2 + 110, BASE_W, 100);
                 ctx.save();
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.shadowColor = rem <= 1 ? '#44ff88' : `hsl(${(t * 80) % 360},100%,65%)`;
+                const _cdHue = 230 + Math.sin(t * 2) * 30;
+                ctx.shadowColor = rem <= 1 ? '#aabbff' : `hsl(${_cdHue},100%,65%)`;
                 ctx.shadowBlur = 36 * pulse2;
                 ctx.font = 'bold 80px Orbitron, monospace';
-                ctx.fillStyle = rem <= 1 ? '#44ff88' : `hsl(${(t * 80) % 360},100%,72%)`;
+                ctx.fillStyle = rem <= 1 ? '#aabbff' : `hsl(${_cdHue},100%,72%)`;
                 ctx.fillText(rem > 0 ? rem : 'GO!', cx, BASE_H / 2 + 160);
                 ctx.restore();
             }
@@ -8983,7 +8985,7 @@ function _drawMpHostEndBtn() {
             bgG.addColorStop(0, '#0e0028'); bgG.addColorStop(0.5, '#1a0040'); bgG.addColorStop(1, '#0a001a');
             ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
             ctx.save();
-            const orbC = ['#ff44aa','#aa44ff','#44aaff','#ffaa44','#44ffcc'];
+            const orbC = ['#5566ff','#8844ff','#4488ff','#6655ee','#9966ff'];
             for (let i = 0; i < 5; i++) {
                 const ox = cx + Math.cos(t * 0.3 + i * 1.26) * 150;
                 const oy = BASE_H / 2 + Math.sin(t * 0.25 + i * 0.9) * 200;
@@ -8996,16 +8998,16 @@ function _drawMpHostEndBtn() {
             // Title section
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.save();
-            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.8)';
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,140,255,0.8)';
             ctx.fillText('— MULTIPLAYER MODE —', cx, 142);
             ctx.restore();
 
-            // "PLAY ONLINE" rainbow title
+            // "PLAY ONLINE" blue-purple title
             ctx.save();
-            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 30;
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 30;
             const ttG = ctx.createLinearGradient(cx - 130, 165, cx + 130, 200);
-            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.3, '#cc44ff');
-            ttG.addColorStop(0.6, '#44aaff'); ttG.addColorStop(1, '#44ffcc');
+            ttG.addColorStop(0, '#5577ff'); ttG.addColorStop(0.3, '#8855ff');
+            ttG.addColorStop(0.6, '#aabbff'); ttG.addColorStop(1, '#6644ff');
             ctx.font = 'bold 40px Orbitron, monospace';
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5;
             for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) {
@@ -9015,19 +9017,19 @@ function _drawMpHostEndBtn() {
             ctx.fillText('PLAY ONLINE', cx, 183);
             ctx.restore();
 
-            // Rainbow separator
+            // Blue-purple separator
             const sepG = ctx.createLinearGradient(cx - 160, 0, cx + 160, 0);
-            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.2, '#ff44aa');
-            sepG.addColorStop(0.5, '#cc44ff'); sepG.addColorStop(0.8, '#44aaff'); sepG.addColorStop(1, 'transparent');
+            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.2, '#5566ff');
+            sepG.addColorStop(0.5, '#8844ff'); sepG.addColorStop(0.8, '#6688ff'); sepG.addColorStop(1, 'transparent');
             ctx.strokeStyle = sepG; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.6;
             ctx.beginPath(); ctx.moveTo(cx - 160, 210); ctx.lineTo(cx + 160, 210); ctx.stroke();
             ctx.globalAlpha = 1;
 
             const btnW = 260, btnH = 58, btnX = cx - btnW / 2;
             const btnDefs = [
-                { y: 230, icon: '🏠', label: 'HOST GAME', color: '#44ffaa', bg: 'rgba(0,40,20,0.85)', border: 'rgba(68,255,170,0.7)' },
-                { y: 302, icon: '🔑', label: 'JOIN WITH CODE', color: '#44aaff', bg: 'rgba(0,20,50,0.85)', border: 'rgba(68,170,255,0.7)' },
-                { y: 374, icon: '🎲', label: 'QUICK MATCH', color: '#dd88ff', bg: 'rgba(30,0,55,0.85)', border: 'rgba(180,80,255,0.7)' },
+                { y: 230, icon: '🏠', label: 'HOST GAME', color: '#aabbff', bg: 'rgba(8,12,44,0.85)', border: 'rgba(80,140,255,0.7)' },
+                { y: 302, icon: '🔑', label: 'JOIN WITH CODE', color: '#88aaff', bg: 'rgba(6,10,40,0.85)', border: 'rgba(70,120,255,0.7)' },
+                { y: 374, icon: '🎲', label: 'QUICK MATCH', color: '#dd88ff', bg: 'rgba(20,8,50,0.85)', border: 'rgba(160,80,255,0.7)' },
             ];
             btnDefs.forEach(b => {
                 ctx.fillStyle = b.bg;
@@ -9063,7 +9065,7 @@ function _drawMpHostEndBtn() {
 
             // Floating orbs
             ctx.save();
-            const oc = ['#44ffaa','#ff44aa','#aa44ff'];
+            const oc = ['#5566ff','#8844ff','#4488ff'];
             for (let i = 0; i < 3; i++) {
                 const ox = cx + Math.cos(t * 0.4 + i * 2.1) * 140;
                 const oy = BASE_H / 2 + Math.sin(t * 0.3 + i * 1.4) * 180;
@@ -9075,22 +9077,22 @@ function _drawMpHostEndBtn() {
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.save();
-            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.75)';
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,140,255,0.75)';
             ctx.fillText('— MULTIPLAYER —', cx, 148);
             ctx.restore();
 
             // Title
             ctx.save();
             const ttG = ctx.createLinearGradient(cx - 130, 172, cx + 130, 196);
-            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, '#cc44ff'); ttG.addColorStop(1, '#44aaff');
-            ctx.shadowColor = '#9944ff'; ctx.shadowBlur = 22;
+            ttG.addColorStop(0, '#5577ff'); ttG.addColorStop(0.5, '#9955ff'); ttG.addColorStop(1, '#aabbff');
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 22;
             ctx.font = 'bold 30px Orbitron, monospace'; ctx.fillStyle = ttG;
             ctx.fillText('CHOOSE ROOM TYPE', cx, 184);
             ctx.restore();
 
             // Sep
             const sg = ctx.createLinearGradient(cx-140, 0, cx+140, 0);
-            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4,'#cc44ff'); sg.addColorStop(1,'transparent');
+            sg.addColorStop(0,'transparent'); sg.addColorStop(0.4,'#7755ff'); sg.addColorStop(1,'transparent');
             ctx.strokeStyle = sg; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.4;
             ctx.beginPath(); ctx.moveTo(cx - 140, 208); ctx.lineTo(cx + 140, 208); ctx.stroke();
             ctx.globalAlpha = 1;
@@ -9099,15 +9101,15 @@ function _drawMpHostEndBtn() {
 
             // PUBLIC card
             ctx.save();
-            ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 14 + Math.sin(t * 2) * 5;
-            ctx.fillStyle = 'rgba(0,30,16,0.92)';
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 14 + Math.sin(t * 2) * 5;
+            ctx.fillStyle = 'rgba(8,12,44,0.92)';
             ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.fill();
-            ctx.strokeStyle = `rgba(68,255,136,${0.5 + Math.sin(t * 2) * 0.2})`; ctx.lineWidth = 2;
+            ctx.strokeStyle = `rgba(80,140,255,${0.5 + Math.sin(t * 2) * 0.2})`; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX, 240, btnW, btnH, 14); ctx.stroke();
             ctx.restore();
-            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#44ee88';
+            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#aabbff';
             ctx.fillText('🌍  PUBLIC ROOM', cx, 278);
-            ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(100,220,140,0.7)';
+            ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(140,170,255,0.7)';
             ctx.fillText('Visible to everyone in Quick Match', cx, 304);
             ctx.fillText('Anyone with the code can also join', cx, 321);
 
@@ -9373,8 +9375,8 @@ function _drawMpHostEndBtn() {
             ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(220,200,255,0.7)';
             ctx.fillText('— MULTIPLAYER —', cx, 28);
             const tg = ctx.createLinearGradient(cx-120,0,cx+120,0);
-            tg.addColorStop(0,'#ff44aa'); tg.addColorStop(0.5, sel.color); tg.addColorStop(1,'#44aaff');
-            ctx.shadowColor = sel.color; ctx.shadowBlur = 20;
+            tg.addColorStop(0,'#5577ff'); tg.addColorStop(0.5, '#aabbff'); tg.addColorStop(1,'#8855ff');
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 20;
             ctx.font = 'bold 24px Orbitron, monospace'; ctx.fillStyle = tg;
             ctx.fillText('CHOOSE BACKGROUND', cx, 54);
             ctx.restore();
@@ -9613,18 +9615,18 @@ function _drawMpHostEndBtn() {
 
             // Header
             const hdrG = ctx.createLinearGradient(cx - 100, 0, cx + 100, 0);
-            hdrG.addColorStop(0, '#ff44aa'); hdrG.addColorStop(0.5, '#cc44ff'); hdrG.addColorStop(1, '#44aaff');
-            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.7)';
+            hdrG.addColorStop(0, '#5577ff'); hdrG.addColorStop(0.5, '#9955ff'); hdrG.addColorStop(1, '#aabbff');
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,140,255,0.7)';
             ctx.fillText('— MULTIPLAYER —', cx, 22);
-            ctx.save(); ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 18;
+            ctx.save(); ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 18;
             ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = hdrG;
             ctx.fillText('WAITING ROOM', cx, 50);
             ctx.restore();
 
-            // Rainbow separator
+            // Blue-purple separator
             const sepG = ctx.createLinearGradient(cx - 160, 0, cx + 160, 0);
-            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.2, '#ff44aa');
-            sepG.addColorStop(0.5, '#aa44ff'); sepG.addColorStop(0.8, '#44aaff'); sepG.addColorStop(1, 'transparent');
+            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.2, '#5566ff');
+            sepG.addColorStop(0.5, '#8844ff'); sepG.addColorStop(0.8, '#6688ff'); sepG.addColorStop(1, 'transparent');
             ctx.strokeStyle = sepG; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(cx - 160, 68); ctx.lineTo(cx + 160, 68); ctx.stroke();
             ctx.globalAlpha = 1;
@@ -9669,8 +9671,8 @@ function _drawMpHostEndBtn() {
                 ctx.fillText(lobbyCodeHidden ? '🙈' : '👁', eyeX + eyeW / 2, eyeY + eyeH / 2);
                 const isPublic = currentRoomData?.type === 'public';
                 ctx.font = 'bold 10px Orbitron, monospace';
-                ctx.fillStyle = isPublic ? '#44ee88' : '#cc88ff';
-                ctx.save(); if (isPublic) { ctx.shadowColor = '#44ee88'; ctx.shadowBlur = 8; }
+                ctx.fillStyle = isPublic ? '#88bbff' : '#cc88ff';
+                ctx.save(); if (isPublic) { ctx.shadowColor = '#5588ff'; ctx.shadowBlur = 8; }
                 ctx.fillText(isPublic ? '🌍 PUBLIC' : '🔒 PRIVATE', cx, codeBoxY + codeBoxH + 12);
                 ctx.restore();
                 ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(160,120,220,0.45)';
@@ -9865,10 +9867,11 @@ function _drawMpHostEndBtn() {
                 const rem = Math.max(0, Math.ceil(msLeft / 1000));
                 const pulse3 = 0.6 + Math.sin(t * 6) * 0.4;
                 ctx.save();
-                ctx.shadowColor = rem <= 1 ? '#44ff88' : `hsl(${(t*80)%360},100%,70%)`;
+                const _lbHue = 230 + Math.sin(t * 2) * 30;
+                ctx.shadowColor = rem <= 1 ? '#aabbff' : `hsl(${_lbHue},100%,70%)`;
                 ctx.shadowBlur = 28 * pulse3;
                 ctx.font = 'bold 60px Orbitron, monospace';
-                ctx.fillStyle = rem <= 1 ? '#44ff88' : '#ffffff';
+                ctx.fillStyle = rem <= 1 ? '#aabbff' : '#ffffff';
                 ctx.fillText(rem > 0 ? rem : 'GO!', cx, startY + 30);
                 ctx.shadowBlur = 0;
                 ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,140,255,0.7)';
@@ -9878,13 +9881,13 @@ function _drawMpHostEndBtn() {
                 const canStart = players.length >= 2;
                 const sBtnW = 240, sBtnH = 52, sBtnX = cx - sBtnW / 2;
                 ctx.save();
-                if (canStart) { ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 16; }
-                ctx.fillStyle = canStart ? 'rgba(0,40,18,0.92)' : 'rgba(15,10,30,0.75)';
+                if (canStart) { ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 16; }
+                ctx.fillStyle = canStart ? 'rgba(8,12,44,0.92)' : 'rgba(15,10,30,0.75)';
                 ctx.beginPath(); ctx.roundRect(sBtnX, startY, sBtnW, sBtnH, 14); ctx.fill();
-                ctx.strokeStyle = canStart ? 'rgba(68,255,136,0.85)' : 'rgba(80,60,120,0.4)'; ctx.lineWidth = canStart ? 2.5 : 1;
+                ctx.strokeStyle = canStart ? 'rgba(80,140,255,0.85)' : 'rgba(80,60,120,0.4)'; ctx.lineWidth = canStart ? 2.5 : 1;
                 ctx.beginPath(); ctx.roundRect(sBtnX, startY, sBtnW, sBtnH, 14); ctx.stroke();
                 ctx.restore();
-                ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = canStart ? '#44ff88' : 'rgba(100,80,140,0.6)';
+                ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = canStart ? '#aabbff' : 'rgba(100,80,140,0.6)';
                 ctx.fillText('▶  START GAME', cx, startY + sBtnH / 2);
                 if (!canStart) { ctx.font = '10px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,120,200,0.55)'; ctx.fillText('Need at least 2 players to start', cx, startY + sBtnH + 14); }
             } else {
@@ -9923,14 +9926,14 @@ function _drawMpHostEndBtn() {
                 ctx.fillText(lobbyConfirm === 'start' ? 'All players will be taken to the game.' : 'The room will be closed.', cx, pY + 70);
                 const yBtnW = 110, yBtnH = 42, yBtnX = cx - yBtnW - 10, yBtnY = pY + pH - 62;
                 ctx.save();
-                if (lobbyConfirm === 'start') { ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 12; }
+                if (lobbyConfirm === 'start') { ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 12; }
                 else { ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 10; }
-                ctx.fillStyle = lobbyConfirm === 'start' ? 'rgba(0,40,18,0.96)' : 'rgba(50,5,5,0.96)';
+                ctx.fillStyle = lobbyConfirm === 'start' ? 'rgba(8,12,44,0.96)' : 'rgba(50,5,5,0.96)';
                 ctx.beginPath(); ctx.roundRect(yBtnX, yBtnY, yBtnW, yBtnH, 12); ctx.fill();
-                ctx.strokeStyle = lobbyConfirm === 'start' ? 'rgba(68,255,136,0.9)' : 'rgba(255,60,60,0.9)'; ctx.lineWidth = 2;
+                ctx.strokeStyle = lobbyConfirm === 'start' ? 'rgba(80,140,255,0.9)' : 'rgba(255,60,60,0.9)'; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.roundRect(yBtnX, yBtnY, yBtnW, yBtnH, 12); ctx.stroke();
                 ctx.restore();
-                ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = lobbyConfirm === 'start' ? '#44ff88' : '#ff6655';
+                ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = lobbyConfirm === 'start' ? '#aabbff' : '#ff6655';
                 ctx.fillText('✔  YES', yBtnX + yBtnW / 2, yBtnY + yBtnH / 2);
                 const nBtnX = cx + 10, nBtnY = yBtnY;
                 ctx.fillStyle = 'rgba(15,5,35,0.92)';
@@ -9970,11 +9973,11 @@ function _drawMpHostEndBtn() {
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-            // Title with rainbow gradient
+            // Title — blue-purple
             ctx.save();
             const ttG2 = ctx.createLinearGradient(cx - 110, 0, cx + 110, 0);
-            ttG2.addColorStop(0, '#ff44aa'); ttG2.addColorStop(0.5, '#cc44ff'); ttG2.addColorStop(1, '#44aaff');
-            ctx.shadowColor = '#9944ff'; ctx.shadowBlur = 18;
+            ttG2.addColorStop(0, '#5577ff'); ttG2.addColorStop(0.5, '#9955ff'); ttG2.addColorStop(1, '#aabbff');
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 18;
             ctx.font = 'bold 22px Orbitron, monospace'; ctx.fillStyle = ttG2;
             ctx.fillText('JOIN WITH CODE', cx, startY + 10);
             ctx.restore();
@@ -9985,7 +9988,7 @@ function _drawMpHostEndBtn() {
             for (let i = 0; i < 6; i++) {
                 const bx = boxStartX + i * (boxW + boxGap), ch = codeInputText[i] || '';
                 const isActive = i === codeInputText.length && codeInputText.length < 6;
-                const boxHue = (i * 50 + t * 30) % 360;
+                const boxHue = 230 + Math.sin(t * 2 + i) * 30;
                 ctx.fillStyle = 'rgba(12,5,35,0.95)';
                 ctx.beginPath(); ctx.roundRect(bx, boxY, boxW, 58, 10); ctx.fill();
                 ctx.save();
@@ -9994,7 +9997,7 @@ function _drawMpHostEndBtn() {
                     ctx.strokeStyle = `hsla(${boxHue},100%,65%,${0.5 + 0.5 * Math.sin(t * 4)})`;
                 } else {
                     ctx.shadowBlur = 0;
-                    ctx.strokeStyle = ch ? `hsl(${i*50},80%,65%)` : 'rgba(80,50,130,0.35)';
+                    ctx.strokeStyle = ch ? `hsl(${230 + i * 8},80%,65%)` : 'rgba(80,50,130,0.35)';
                 }
                 ctx.lineWidth = isActive ? 2.5 : 1.5;
                 ctx.beginPath(); ctx.roundRect(bx, boxY, boxW, 58, 10); ctx.stroke();
@@ -10035,10 +10038,9 @@ function _drawMpHostEndBtn() {
                     const kbx = rowStartX + c * (kW + kGap), kby = kY + r * (kH + kGap);
                     const isNum = r === 0;
                     const isDis = KB_DISABLED.has(key);
-                    const kHue = (c * 20 + r * 60) % 360;
                     ctx.fillStyle = isDis ? 'rgba(8,4,18,0.55)' : (isNum ? 'rgba(15,5,40,0.92)' : 'rgba(12,5,32,0.92)');
                     ctx.beginPath(); ctx.roundRect(kbx, kby, kW, kH, 7); ctx.fill();
-                    ctx.strokeStyle = isDis ? 'rgba(50,30,80,0.25)' : (isNum ? `hsla(${kHue},80%,60%,0.5)` : `hsla(${kHue},60%,55%,0.38)`);
+                    ctx.strokeStyle = isDis ? 'rgba(50,30,80,0.25)' : (isNum ? 'rgba(100,140,255,0.5)' : 'rgba(120,100,220,0.38)');
                     ctx.lineWidth = 1.2;
                     ctx.beginPath(); ctx.roundRect(kbx, kby, kW, kH, 7); ctx.stroke();
                     ctx.font = 'bold 15px Orbitron, monospace';
@@ -10059,13 +10061,13 @@ function _drawMpHostEndBtn() {
             const canJoin = codeInputText.length === 6;
             const jbX = kX + delW + kGap;
             ctx.save();
-            if (canJoin) { ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 12; }
-            ctx.fillStyle = canJoin ? 'rgba(0,40,18,0.95)' : 'rgba(12,5,28,0.7)';
+            if (canJoin) { ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 12; }
+            ctx.fillStyle = canJoin ? 'rgba(8,12,44,0.95)' : 'rgba(12,5,28,0.7)';
             ctx.beginPath(); ctx.roundRect(jbX, botY, joinW, kH, 8); ctx.fill();
-            ctx.strokeStyle = canJoin ? 'rgba(68,255,136,0.85)' : 'rgba(60,40,100,0.35)';
+            ctx.strokeStyle = canJoin ? 'rgba(80,140,255,0.85)' : 'rgba(60,40,100,0.35)';
             ctx.lineWidth = canJoin ? 2 : 1;
             ctx.beginPath(); ctx.roundRect(jbX, botY, joinW, kH, 8); ctx.stroke();
-            ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = canJoin ? '#44ff88' : 'rgba(80,60,120,0.5)';
+            ctx.font = 'bold 15px Orbitron, monospace'; ctx.fillStyle = canJoin ? '#aabbff' : 'rgba(80,60,120,0.5)';
             ctx.fillText('JOIN ▶', jbX + joinW/2, botY + kH/2);
             ctx.restore();
 
@@ -10092,19 +10094,19 @@ function _drawMpHostEndBtn() {
 
             // Title
             ctx.save();
-            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(180,120,255,0.7)';
+            ctx.font = 'bold 11px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,140,255,0.7)';
             ctx.fillText('— MULTIPLAYER —', cx, 32);
             const ttG = ctx.createLinearGradient(cx - 110, 52, cx + 110, 76);
-            ttG.addColorStop(0, '#ffaa44'); ttG.addColorStop(0.5, '#ff44aa'); ttG.addColorStop(1, '#cc44ff');
-            ctx.shadowColor = '#ff44aa'; ctx.shadowBlur = 18;
+            ttG.addColorStop(0, '#5577ff'); ttG.addColorStop(0.5, '#9955ff'); ttG.addColorStop(1, '#aabbff');
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 18;
             ctx.font = 'bold 26px Orbitron, monospace'; ctx.fillStyle = ttG;
             ctx.fillText('🎲  PUBLIC ROOMS', cx, 64);
             ctx.restore();
 
-            // Rainbow separator
+            // Blue-purple separator
             const sg = ctx.createLinearGradient(30, 0, BASE_W - 30, 0);
-            sg.addColorStop(0, 'transparent'); sg.addColorStop(0.3, '#ff44aa');
-            sg.addColorStop(0.7, '#cc44ff'); sg.addColorStop(1, 'transparent');
+            sg.addColorStop(0, 'transparent'); sg.addColorStop(0.3, '#5566ff');
+            sg.addColorStop(0.7, '#8844ff'); sg.addColorStop(1, 'transparent');
             ctx.strokeStyle = sg; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(30, 82); ctx.lineTo(BASE_W - 30, 82); ctx.stroke();
             ctx.globalAlpha = 1;
@@ -10115,7 +10117,7 @@ function _drawMpHostEndBtn() {
 
             if (shown.length === 0) {
                 const dots = '.'.repeat(Math.floor(t * 2) % 4);
-                ctx.font = '14px Orbitron, monospace'; ctx.fillStyle = `hsl(${(t*50)%360},80%,70%)`;
+                ctx.font = '14px Orbitron, monospace'; ctx.fillStyle = `hsl(${230 + Math.sin(t * 1.5) * 30},80%,70%)`;
                 ctx.fillText('Looking for rooms' + dots, cx, 300);
                 ctx.font = '11px Orbitron, monospace'; ctx.fillStyle = 'rgba(160,120,220,0.55)';
                 ctx.fillText('No public rooms open right now.', cx, 330);
@@ -10125,13 +10127,12 @@ function _drawMpHostEndBtn() {
                     const room = shown[i];
                     const ry = listY + i * (rowH + 6);
                     const pCount = Object.keys(room.players || {}).length;
-                    const cardHue = (i * 55 + t * 20) % 360;
                     ctx.fillStyle = 'rgba(15,5,40,0.88)';
                     ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 12); ctx.fill();
-                    ctx.strokeStyle = `hsla(${cardHue},70%,60%,0.35)`; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(90,120,220,0.35)'; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.roundRect(rowX, ry, rowW, rowH, 12); ctx.stroke();
                     ctx.textAlign = 'left';
-                    ctx.font = 'bold 13px Orbitron, monospace'; ctx.fillStyle = `hsl(${cardHue},90%,75%)`;
+                    ctx.font = 'bold 13px Orbitron, monospace'; ctx.fillStyle = '#aabbff';
                     ctx.fillText('👑 ' + (room.hostName || 'Unknown'), rowX + 12, ry + rowH / 2 - 12);
                     const _qmThemes = ['⚙CLOCK','🌿GROVE','🏜DESERT','🌋LAVA','🌙MOONLIT','🚀COSMOS'];
                     const _qmHeights = ['∞','500m','1500m','2500m','3750m','5000m'];
@@ -10141,12 +10142,12 @@ function _drawMpHostEndBtn() {
                     ctx.fillText(themeTag + '  •  ' + heightTag + '  •  ' + pCount + '/8', rowX + 12, ry + rowH / 2 + 10);
                     const jbW = 64, jbH = 32, jbX = rowX + rowW - jbW - 10, jbY = ry + rowH / 2 - jbH / 2;
                     ctx.save();
-                    ctx.shadowColor = '#44ee88'; ctx.shadowBlur = 8;
-                    ctx.fillStyle = 'rgba(0,38,18,0.92)';
+                    ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 8;
+                    ctx.fillStyle = 'rgba(8,12,44,0.92)';
                     ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 8); ctx.fill();
-                    ctx.strokeStyle = 'rgba(68,238,136,0.7)'; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(80,140,255,0.7)'; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.roundRect(jbX, jbY, jbW, jbH, 8); ctx.stroke();
-                    ctx.textAlign = 'center'; ctx.font = 'bold 12px Orbitron, monospace'; ctx.fillStyle = '#44ff88';
+                    ctx.textAlign = 'center'; ctx.font = 'bold 12px Orbitron, monospace'; ctx.fillStyle = '#aabbff';
                     ctx.fillText('JOIN', jbX + jbW / 2, jbY + jbH / 2);
                     ctx.restore();
                 }
@@ -10173,20 +10174,21 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(8,0,20,0.7)';
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Panel bg with purple glow
+            // Panel bg with blue-purple glow
+            const _setHue = 230 + Math.sin(t * 1.2) * 30;
             ctx.save();
-            ctx.shadowColor = `hsl(${(t * 60) % 360},100%,65%)`; ctx.shadowBlur = 28;
+            ctx.shadowColor = `hsl(${_setHue},100%,65%)`; ctx.shadowBlur = 28;
             ctx.fillStyle = 'rgba(10,4,30,0.97)';
             ctx.beginPath(); ctx.roundRect(panX, panY, panW, panH, 18); ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = `hsl(${(t * 60) % 360},100%,65%)`; ctx.lineWidth = 2;
+            ctx.strokeStyle = `hsl(${_setHue},100%,65%)`; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(panX, panY, panW, panH, 18); ctx.stroke();
             ctx.restore();
 
             // Title
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             const ttG = ctx.createLinearGradient(cx - 80, 0, cx + 80, 0);
-            ttG.addColorStop(0, '#ff44aa'); ttG.addColorStop(0.5, '#cc44ff'); ttG.addColorStop(1, '#44aaff');
+            ttG.addColorStop(0, '#5577ff'); ttG.addColorStop(0.5, '#9955ff'); ttG.addColorStop(1, '#aabbff');
             ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = ttG;
             ctx.fillText('⚙  SETTINGS', cx, panY + 28);
 
@@ -10220,8 +10222,8 @@ function _drawMpHostEndBtn() {
                 ctx.fillText(Math.round(val * 100) + '%', panX + panW - 18, yCenter - 18);
             }
 
-            drawSlider('🎵  MUSIC', MUSIC.getVol(), panY + 96, '#cc44ff');
-            drawSlider('🔊  SFX',   SFX.getVol(),   panY + 162, '#44aaff');
+            drawSlider('🎵  MUSIC', MUSIC.getVol(), panY + 96, '#7755ff');
+            drawSlider('🔊  SFX',   SFX.getVol(),   panY + 162, '#5588ff');
 
             // Close button
             const closeX = panX + panW - 36, closeY = panY + 10, closeS = 24;
@@ -10251,8 +10253,8 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Floating colorful orbs (Sling Kong vibes)
-            const orbCols = ['#ff4499','#ff8800','#00ccff','#88ff44','#cc44ff','#ffcc00','#44ffcc','#ff6644'];
+            // Floating colorful orbs — blue-purple
+            const orbCols = ['#6644ff','#4488ff','#8833ff','#2299cc','#aa55ff','#3366dd','#7722ee','#55aaff'];
             for (let i = 0; i < 8; i++) {
                 const ox = (Math.sin(i * 2.317) * 0.42 + 0.5) * BASE_W;
                 const oy = (Math.cos(i * 1.733) * 0.42 + 0.5) * BASE_H + Math.sin(t * 0.35 + i) * 22;
@@ -10302,25 +10304,25 @@ function _drawMpHostEndBtn() {
                 ctx.fillText('SKIPPY TOWER', cx + dx, 68 + dy + titleBob);
             }
 
-            // Rainbow gradient title
+            // Blue-purple gradient title
             const rg = ctx.createLinearGradient(cx - 200, 0, cx + 200, 0);
-            rg.addColorStop(0,    '#ff44aa');
-            rg.addColorStop(0.2,  '#ff9900');
-            rg.addColorStop(0.45, '#ffee00');
-            rg.addColorStop(0.7,  '#44ddff');
-            rg.addColorStop(1,    '#cc44ff');
+            rg.addColorStop(0,    '#4466ff');
+            rg.addColorStop(0.25, '#7744ff');
+            rg.addColorStop(0.5,  '#cc88ff');
+            rg.addColorStop(0.75, '#55aaff');
+            rg.addColorStop(1,    '#8855ff');
             ctx.fillStyle = rg;
             ctx.font = '900 50px Orbitron, monospace';
             ctx.fillText('SKIPPY TOWER', cx, 68 + titleBob);
 
-            // Sparkles along title
+            // Sparkles along title — blue-purple
             ctx.save();
             for (let i = 0; i < 6; i++) {
                 const spx = (cx - 170) + i * 68 + Math.sin(t * 1.2 + i) * 6;
                 const spy = 28 + Math.sin(t * 2.1 + i * 1.4) * 7 + titleBob;
                 const sa = Math.abs(Math.sin(t * 2.8 + i * 1.1));
                 ctx.globalAlpha = sa * 0.95;
-                const sparkColor = ['#ffee44','#ff88cc','#44ffcc','#ffaa44','#cc88ff','#88ffaa'][i];
+                const sparkColor = ['#aaccff','#8866ff','#66aaff','#cc99ff','#5588ff','#99bbff'][i];
                 ctx.fillStyle = sparkColor;
                 ctx.beginPath(); ctx.arc(spx, spy, 1.8 + sa * 2.2, 0, Math.PI * 2); ctx.fill();
                 if (sa > 0.65) {
@@ -10338,14 +10340,14 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(220,180,255,0.8)';
             ctx.fillText('Reach the Magic Book at the top!', cx, 100);
 
-            // Rainbow separator
+            // Blue-purple separator
             ctx.save();
             const sepG = ctx.createLinearGradient(WALL_W + 20, 0, BASE_W - WALL_W - 20, 0);
-            sepG.addColorStop(0, 'rgba(255,68,170,0)');
-            sepG.addColorStop(0.2, 'rgba(255,153,0,0.5)');
-            sepG.addColorStop(0.5, 'rgba(68,221,255,0.5)');
-            sepG.addColorStop(0.8, 'rgba(204,68,255,0.5)');
-            sepG.addColorStop(1, 'rgba(255,68,170,0)');
+            sepG.addColorStop(0, 'rgba(80,100,255,0)');
+            sepG.addColorStop(0.2, 'rgba(100,130,255,0.5)');
+            sepG.addColorStop(0.5, 'rgba(160,100,255,0.5)');
+            sepG.addColorStop(0.8, 'rgba(100,130,255,0.5)');
+            sepG.addColorStop(1, 'rgba(80,100,255,0)');
             ctx.strokeStyle = sepG; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.moveTo(WALL_W + 20, 116); ctx.lineTo(BASE_W - WALL_W - 20, 116); ctx.stroke();
             ctx.restore();
@@ -10363,21 +10365,21 @@ function _drawMpHostEndBtn() {
             cardBg.addColorStop(1, 'rgba(30,0,60,0.45)');
             ctx.fillStyle = cardBg;
             ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 22); ctx.fill();
-            // Card border — animated rainbow
+            // Card border — animated blue-purple shimmer
             const ang = t * 0.8;
+            const _bpShift = 220 + Math.sin(ang) * 30;
             const cBorderG = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-            cBorderG.addColorStop(0, `hsl(${(ang*60)%360},100%,70%)`);
-            cBorderG.addColorStop(0.33, `hsl(${(ang*60+120)%360},100%,70%)`);
-            cBorderG.addColorStop(0.66, `hsl(${(ang*60+240)%360},100%,70%)`);
-            cBorderG.addColorStop(1, `hsl(${(ang*60)%360},100%,70%)`);
+            cBorderG.addColorStop(0, `hsl(${_bpShift},100%,70%)`);
+            cBorderG.addColorStop(0.5, `hsl(${_bpShift + 40},100%,75%)`);
+            cBorderG.addColorStop(1, `hsl(${_bpShift},100%,70%)`);
             ctx.strokeStyle = cBorderG; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 22); ctx.stroke();
             // Shine strip inside card
             ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.beginPath(); ctx.roundRect(cardX + 6, cardY + 6, cardW - 12, cardH / 2 - 6, [16,16,0,0]); ctx.fill();
 
-            // Large multi-color glow behind character
-            const hueShift = (t * 40) % 360;
+            // Glow behind character — blue-purple
+            const hueShift = 220 + Math.sin(t * 0.6) * 40;
             const heroG = ctx.createRadialGradient(cx, prevCy, 0, cx, prevCy, 120);
             heroG.addColorStop(0, `hsla(${hueShift},100%,65%,0.25)`);
             heroG.addColorStop(1, 'rgba(0,0,0,0)');
@@ -10428,10 +10430,10 @@ function _drawMpHostEndBtn() {
             const badgeW = 140, badgeH = 26, badgeX = cx - badgeW / 2, badgeY = prevCy + 70;
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 13); ctx.fill();
-            ctx.strokeStyle = `hsl(${hueShift},100%,70%)`; ctx.lineWidth = 1.5;
+            ctx.strokeStyle = `hsl(${hueShift},80%,70%)`; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 13); ctx.stroke();
             ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = `hsl(${hueShift},100%,85%)`;
+            ctx.fillStyle = `hsl(${hueShift},80%,85%)`;
             ctx.fillText(eqSkin.name, cx, badgeY + badgeH / 2 + 1);
 
             // Trail name
@@ -10455,25 +10457,25 @@ function _drawMpHostEndBtn() {
             const btnW = 230, btnH = 64, btnX = cx - btnW / 2;
             const btnY = 442;
 
-            // ▶ PLAY — big green, pulsing
+            // ▶ PLAY — blue-purple, pulsing
             const btnGlow = 0.55 + Math.sin(t * 3.2) * 0.45;
             ctx.save();
-            ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 28 * btnGlow;
+            ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 28 * btnGlow;
             const playBg = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
-            playBg.addColorStop(0, '#1a7a3a');
-            playBg.addColorStop(0.45, '#0f5228');
-            playBg.addColorStop(1, '#08280f');
+            playBg.addColorStop(0, '#2233aa');
+            playBg.addColorStop(0.45, '#1a2480');
+            playBg.addColorStop(1, '#0e1450');
             ctx.fillStyle = playBg;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 20); ctx.fill();
-            ctx.strokeStyle = `rgba(50,255,130,${0.7 + btnGlow * 0.3})`; ctx.lineWidth = 3;
+            ctx.strokeStyle = `rgba(100,150,255,${0.7 + btnGlow * 0.3})`; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 20); ctx.stroke();
             ctx.restore();
             ctx.fillStyle = 'rgba(255,255,255,0.10)';
             ctx.beginPath(); ctx.roundRect(btnX + 8, btnY + 6, btnW - 16, btnH / 2 - 4, [14,14,0,0]); ctx.fill();
             ctx.font = '700 30px Orbitron, monospace';
-            ctx.fillStyle = '#88ffbb';
+            ctx.fillStyle = '#aabbff';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 16;
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 16;
             ctx.fillText('▶  PLAY', cx, btnY + btnH / 2);
             ctx.shadowBlur = 0;
 
@@ -10766,8 +10768,9 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(10,4,30,0.97)';
             ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.fill();
             ctx.save();
-            ctx.shadowColor = `hsl(${(t * 60) % 360},100%,65%)`; ctx.shadowBlur = 16;
-            ctx.strokeStyle = `hsl(${(t * 60) % 360},100%,65%)`; ctx.lineWidth = 2;
+            const _tutHue = 230 + Math.sin(t * 1.2) * 30;
+            ctx.shadowColor = `hsl(${_tutHue},100%,65%)`; ctx.shadowBlur = 16;
+            ctx.strokeStyle = `hsl(${_tutHue},100%,65%)`; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 16); ctx.stroke();
             ctx.restore();
 
@@ -10775,7 +10778,7 @@ function _drawMpHostEndBtn() {
             tutorialMsg.forEach((line, i) => {
                 if (i === 0) {
                     const tg = ctx.createLinearGradient(cx - 80, 0, cx + 80, 0);
-                    tg.addColorStop(0, '#ff44aa'); tg.addColorStop(0.5, '#cc44ff'); tg.addColorStop(1, '#44aaff');
+                    tg.addColorStop(0, '#5577ff'); tg.addColorStop(0.5, '#9955ff'); tg.addColorStop(1, '#aabbff');
                     ctx.font = 'bold 18px Orbitron, monospace'; ctx.fillStyle = tg;
                 } else {
                     ctx.font = '13px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,180,240,0.9)';
@@ -10784,7 +10787,7 @@ function _drawMpHostEndBtn() {
             });
             if (Math.floor(t * 1.5) % 2 === 0) {
                 ctx.font = '11px Orbitron, monospace';
-                ctx.fillStyle = `hsl(${(t * 80) % 360},90%,70%)`;
+                ctx.fillStyle = `hsl(${230 + Math.sin(t * 1.5) * 30},90%,70%)`;
                 ctx.fillText('TAP  or  SPACE  to continue', cx, boxY + boxH - 14);
             }
             ctx.textBaseline = 'alphabetic';
@@ -10804,13 +10807,13 @@ function _drawMpHostEndBtn() {
             rg.addColorStop(0, 'rgba(200,100,255,0.18)'); rg.addColorStop(1, 'transparent');
             ctx.fillStyle = rg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Confetti
+            // Confetti — blue-purple
+            const _twCols = ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4488ff','#9966ff'];
             ctx.save();
             for (let i = 0; i < 20; i++) {
                 const px = (Math.sin(i * 73.1) * 0.5 + 0.5) * BASE_W;
                 const py = ((Math.cos(i * 53.7) * 0.5 + 0.5) * BASE_H + t * (25 + i % 5 * 8)) % BASE_H;
-                const hue = (i * 37 + t * 30) % 360;
-                ctx.fillStyle = `hsl(${hue},100%,65%)`; ctx.globalAlpha = 0.5;
+                ctx.fillStyle = _twCols[i % _twCols.length]; ctx.globalAlpha = 0.5;
                 ctx.save(); ctx.translate(px, py); ctx.rotate(t + i);
                 ctx.fillRect(-4, -4, 8, 8); ctx.restore();
             }
@@ -10828,11 +10831,11 @@ function _drawMpHostEndBtn() {
             ctx.font = 'bold 12px Orbitron, monospace'; ctx.fillStyle = 'rgba(200,140,255,0.75)';
             ctx.fillText('— TUTORIAL —', cx, 260);
 
-            // "COMPLETE!" with rainbow gradient
+            // "COMPLETE!" — blue-purple gradient
             const cG = ctx.createLinearGradient(cx - 120, 280, cx + 120, 310);
-            cG.addColorStop(0, '#ff44aa'); cG.addColorStop(0.5, '#ffee44'); cG.addColorStop(1, '#44ffcc');
+            cG.addColorStop(0, '#5577ff'); cG.addColorStop(0.5, '#aabbff'); cG.addColorStop(1, '#8855ff');
             ctx.save();
-            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 22;
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 22;
             ctx.font = 'bold 44px Orbitron, monospace'; ctx.fillStyle = cG;
             ctx.fillText('COMPLETE!', cx, 296);
             ctx.restore();
@@ -10844,12 +10847,12 @@ function _drawMpHostEndBtn() {
             const btnW = 230, btnH = 54, btnX = cx - btnW / 2, btnY = 376;
             const g = 0.6 + Math.sin(t * 3) * 0.4;
             ctx.save();
-            ctx.shadowColor = '#44ff88'; ctx.shadowBlur = 22 * g;
-            ctx.fillStyle = '#082818';
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 22 * g;
+            ctx.fillStyle = '#080e38';
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
-            ctx.strokeStyle = '#44ff88'; ctx.lineWidth = 2.5;
+            ctx.strokeStyle = `rgba(100,150,255,${0.7 + g * 0.3})`; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
-            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#44ff88';
+            ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#aabbff';
             ctx.fillText('← MAIN MENU', cx, btnY + btnH / 2 + 1);
             ctx.restore();
 
@@ -11132,9 +11135,9 @@ function _drawMpHostEndBtn() {
             // Title
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             const selTg = ctx.createLinearGradient(BASE_W/2-160,0,BASE_W/2+160,0);
-            selTg.addColorStop(0,'#ff44aa'); selTg.addColorStop(0.5,'#44ddff'); selTg.addColorStop(1,'#cc44ff');
+            selTg.addColorStop(0,'#5577ff'); selTg.addColorStop(0.5,'#aabbff'); selTg.addColorStop(1,'#8855ff');
             ctx.fillStyle = selTg; ctx.font = '900 26px Orbitron, monospace';
-            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 18;
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 18;
             ctx.fillText('CHOOSE YOUR MODE', BASE_W/2, 36);
             ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic';
 
