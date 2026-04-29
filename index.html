@@ -3305,17 +3305,22 @@ await Promise.race([
                 // Skip if real platform is moving (ghost must be static and at exact same position)
                 if (currentTheme === 4 && !plats[plats.length - 1].isBouncy && !plats[plats.length - 1].moving && _worldRng() < 0.40) {
                     const realPlat = plats[plats.length - 1];
-                    const gw = realPlat.w; // exactly same width as real platform
-                    const gy = realPlat.y;  // exactly same Y as real platform
-                    // Place ghost touching the real platform (8–14px gap)
+                    const gw = realPlat.w;
+                    const gy = realPlat.y;
                     const goLeft = _worldRng() < 0.5;
                     const gx = goLeft
                         ? Math.max(WALL_W, realPlat.x - gw - rndInt(8, 14))
                         : Math.min(BASE_W - WALL_W - gw, realPlat.x + realPlat.w + rndInt(8, 14));
-                    const ghost = new Platform(gx, gy, gw, false);
-                    ghost.isGhost = true;
-                    ghost.spikes = [];
-                    plats.push(ghost);
+                    // Don't place ghost if it overlaps any existing real platform
+                    const overlaps = plats.some(p => !p.isGhost &&
+                        gx < p.x + p.w + 4 && gx + gw > p.x - 4 &&
+                        Math.abs(gy - p.y) < 20);
+                    if (!overlaps) {
+                        const ghost = new Platform(gx, gy, gw, false);
+                        ghost.isGhost = true;
+                        ghost.spikes = [];
+                        plats.push(ghost);
+                    }
                 }
                 prevCenter = x + w / 2;
 
