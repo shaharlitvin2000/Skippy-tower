@@ -6080,12 +6080,12 @@ await Promise.race([
                     insideCore = true; // only count death timer when inside the visual core
                 }
             }
-            // Death timer: builds inside core, decays slowly outside (brief exits don't reset it)
+            // Death timer: builds inside core, resets quickly once you escape
             if (insideCore) {
                 bhCaptureTimer++;
                 if (bhCaptureTimer >= 60) { bhCaptureTimer = 0; handleDeath(); }
             } else {
-                bhCaptureTimer = Math.max(0, bhCaptureTimer - 1);
+                bhCaptureTimer = Math.max(0, bhCaptureTimer - 5);
             }
         }
 
