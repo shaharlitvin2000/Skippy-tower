@@ -1305,6 +1305,7 @@ await Promise.race([
         }
         let prevBestOnDeath = 0; // stored for record screen display
         function handleDeath() {
+            if (player.powerHighJump > 0) return;
             if (isMultiplayerGame) { _mpRespawn(); return; }
             SFX.play('death');
             _flushSaves();
@@ -3591,6 +3592,7 @@ await Promise.race([
         let fallPeakY = 0;
         let wasFalling = false;
         let lastRunHigh = 0;
+        let _hjLaunchY = 0; // player.y when HIGH JUMP powerup was collected
         let lastPointMilestone = 0;
         let lastCoinMilestone = 0; // tracks 50m coin spawns
         let runPointsEarned = 0;    // points earned this run (for display)
@@ -5993,8 +5995,8 @@ await Promise.race([
         //  BLACK HOLES (Space theme only)
         // ─────────────────────────────────────────────
         const BH_SPACING = 2600;
-        const BH_PULL_RADIUS = 480;
-        const BH_STRENGTH = 0.16;
+        const BH_PULL_RADIUS = 320;
+        const BH_STRENGTH = 0.09;
 
         function _bhSlots(camY) {
             const { BASE_Y, APEX_Y } = getBgRange();
@@ -6069,8 +6071,8 @@ await Promise.race([
                 // Extra strong suck when close to core
                 const coreRadius = bhR * 3.5;
                 if (dist < coreRadius) {
-                    player.vx += (dx / dist) * BH_STRENGTH * 4;
-                    player.vy += (dy / dist) * BH_STRENGTH * 4;
+                    player.vx += (dx / dist) * BH_STRENGTH * 2.5;
+                    player.vy += (dy / dist) * BH_STRENGTH * 2.5;
                     insideCore = true; // only count death timer when inside the visual core
                 }
             }
@@ -11986,7 +11988,12 @@ function gameUpdate() {
                 // Prev on ground tracking
                 const wasOnGround = player.onGround;
                 const visible = platforms.filter(p => Math.abs(p.y - player.y) < BASE_H * 2);
+                const _hjWasActive = player.powerHighJump > 0;
                 player.update(keys, visible, touch);
+                if (_hjWasActive && player.powerHighJump === 0) {
+                    const meters = Math.max(0, Math.floor((_hjLaunchY - player.y) / 10));
+                    if (meters > 0) floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 30, '+' + meters + 'm', '#58e88a'));
+                }
                 applyBlackHolePull();
                 if (wasOnGround && !player.onGround) player.emitJumpParticles(particles);
 
@@ -12201,7 +12208,7 @@ function gameUpdate() {
                         const _puDur = tutorialMode ? 24 : pu.type.duration; // 24 frames = 0.4s in tutorial
                         switch (pu.type.id) {
                             case 'speed': player.powerSpeed = _puDur; break;
-                            case 'highjump': player.powerHighJump = _puDur; break;
+                            case 'highjump': player.powerHighJump = _puDur; _hjLaunchY = player.y; break;
                             case 'shield': player.powerShield = _puDur; break;
                             case 'slow': player.powerSlow = _puDur; break;
                             case 'portal': magicPortalReady = true; break;
