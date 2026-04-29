@@ -1306,6 +1306,7 @@ await Promise.race([
         let prevBestOnDeath = 0; // stored for record screen display
         function handleDeath() {
             if (player.powerHighJump > 0) return;
+            if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } }
             if (isMultiplayerGame) { _mpRespawn(); return; }
             SFX.play('death');
             _flushSaves();
@@ -3248,6 +3249,97 @@ await Promise.race([
         }
 
         // ─────────────────────────────────────────────
+        //  DRAKON — Festival level flying dragon
+        // ─────────────────────────────────────────────
+        class Drakon {
+            constructor(dir, spawnY) {
+                this.dir = dir; // 1 = left→right, -1 = right→left
+                this.x = dir === 1 ? -140 : BASE_W + 140;
+                this.y = spawnY;
+                this.t = 0;
+                this.speed = 1.8;
+                this.alive = true;
+                this.N = 7;   // body segments
+                this.SEG = 20; // px between segments
+            }
+            segX(i) { return this.x - this.dir * i * this.SEG; }
+            segY(i) { return this.y + Math.sin(this.t - i * 0.55) * 14; }
+            get rideX() { return this.segX(2) - 11; } // player sits on seg 2
+            get rideY() { return this.segY(2) - 28; }
+            topRect() {
+                const sx = this.segX(2), sy = this.segY(2);
+                return { x: sx - 34, y: sy - 22, w: 68, h: 22 };
+            }
+            update() {
+                this.t += 0.11;
+                this.x += this.dir * this.speed;
+                if ((this.dir === 1 && this.x > BASE_W + 160) ||
+                    (this.dir === -1 && this.x < -160)) this.alive = false;
+            }
+            riseUp() {
+                this.t += 0.11;
+                this.y -= 1.8;
+            }
+            draw(camY) {
+                const N = this.N, d = this.dir;
+                ctx.save();
+                // Body segments tail→neck
+                for (let i = N - 1; i >= 0; i--) {
+                    const sx = this.segX(i), sy = this.segY(i) - camY;
+                    if (sy < -80 || sy > BASE_H + 80) continue;
+                    const r = Math.max(5, 13 - i * 0.9);
+                    const bg = ctx.createRadialGradient(sx - 2, sy - 2, 1, sx, sy, r);
+                    bg.addColorStop(0, '#ff7744'); bg.addColorStop(0.55, '#cc1100'); bg.addColorStop(1, '#770000');
+                    ctx.fillStyle = bg;
+                    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 1.2;
+                    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
+                    if (i > 0 && i < N - 1) {
+                        const sh = 5 + Math.sin(this.t - i * 0.4) * 2;
+                        ctx.fillStyle = '#ffaa22';
+                        ctx.beginPath();
+                        ctx.moveTo(sx - 3, sy - r); ctx.lineTo(sx, sy - r - sh); ctx.lineTo(sx + 3, sy - r);
+                        ctx.closePath(); ctx.fill();
+                    }
+                }
+                // Head
+                const hx = this.segX(0), hy = this.segY(0) - camY;
+                const hg = ctx.createRadialGradient(hx, hy - 4, 2, hx, hy, 14);
+                hg.addColorStop(0, '#ff6622'); hg.addColorStop(1, '#aa1100');
+                ctx.fillStyle = hg;
+                ctx.beginPath(); ctx.arc(hx, hy, 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(hx, hy, 14, 0, Math.PI * 2); ctx.stroke();
+                // Snout
+                ctx.fillStyle = '#dd3300';
+                ctx.beginPath(); ctx.ellipse(hx + d * 16, hy + 3, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+                // Flame
+                const fl = 0.7 + 0.3 * Math.sin(this.t * 4);
+                ctx.globalAlpha = fl;
+                ctx.fillStyle = '#ffaa00';
+                ctx.beginPath(); ctx.ellipse(hx + d * 28, hy - 2, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ff4400';
+                ctx.beginPath(); ctx.ellipse(hx + d * 33, hy, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+                // Eye
+                ctx.fillStyle = '#ffff44';
+                ctx.beginPath(); ctx.arc(hx + d * 7, hy - 7, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(hx + d * 8, hy - 7, 2.5, 0, Math.PI * 2); ctx.fill();
+                // Horn
+                ctx.fillStyle = '#ffe055';
+                ctx.beginPath();
+                ctx.moveTo(hx - d * 2, hy - 13); ctx.lineTo(hx + d * 3, hy - 26); ctx.lineTo(hx + d * 9, hy - 14);
+                ctx.closePath(); ctx.fill();
+                // Whiskers
+                ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(hx + d * 18, hy); ctx.lineTo(hx + d * 33, hy - 8); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(hx + d * 18, hy + 5); ctx.lineTo(hx + d * 33, hy + 11); ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // ─────────────────────────────────────────────
         //  LEVEL GENERATOR
         // ─────────────────────────────────────────────
         function generatePlatforms(fromY, toY, anchor = null) {
@@ -3618,6 +3710,7 @@ await Promise.race([
         let portalFlashAlpha = 0;
         // Fossil Canyon wind gust state (level 2 mechanic)
         let canyonWind = { vx: 0, vy: 0, timer: 0, next: 160, active: false, duration: 0 };
+        let drakon = null, drakonTimer = 200, ridingDrakon = false, drakonRideStartY = 0;
         let prevOnGround = false;
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
@@ -3731,6 +3824,7 @@ await Promise.race([
             rockTimer = 999; ghostTimer = 999; powerupTimer = rndInt(80, 160);
             lastCoinMilestone = 0;
             magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
+            drakon = null; drakonTimer = rndInt(150, 280); ridingDrakon = false; drakonRideStartY = 0;
         }
 
         function initTutorial() {
@@ -12262,6 +12356,59 @@ function gameUpdate() {
                         else { handleDeath(); break; }
                     }
                 }
+                // ── FESTIVAL DRAKON ──
+                if (currentTheme === 3 && !tutorialMode) {
+                    if (!drakon || !drakon.alive) {
+                        if (drakon) { drakon = null; ridingDrakon = false; }
+                        drakonTimer--;
+                        if (drakonTimer <= 0) {
+                            drakonTimer = rndInt(160, 280);
+                            // Pick Y farthest from any platform in visible range
+                            const targetY = player.y - BASE_H * 0.55;
+                            const candidates = [];
+                            for (let dy = -100; dy <= 100; dy += 20) {
+                                const testY = targetY + dy;
+                                const near = platforms.some(p => Math.abs(p.y - testY) < 50);
+                                if (!near) candidates.push(testY);
+                            }
+                            if (candidates.length > 0) {
+                                const sy = candidates[Math.floor(Math.random() * candidates.length)];
+                                const dir = Math.random() < 0.5 ? 1 : -1;
+                                drakon = new Drakon(dir, sy);
+                            }
+                        }
+                    } else if (ridingDrakon) {
+                        drakon.riseUp();
+                        player.x = drakon.rideX;
+                        player.y = drakon.rideY;
+                        player.vy = 0; player.vx = 0;
+                        player.onGround = false;
+                        jumpStartY = player.y; // prevent fall-death
+                        // Exit: 120 meters climbed
+                        if (drakonRideStartY - player.y >= 1200) {
+                            ridingDrakon = false; drakon.alive = false; drakon = null;
+                            player.vy = -5;
+                            floatTexts.push(new FloatText(player.x + 11, player.y - 16, '+120m!', '#ffcc44'));
+                            SFX.play('powerup');
+                        }
+                    } else {
+                        drakon.update();
+                        // Check if player lands on top of drakon
+                        if (player.vy >= 0) {
+                            const tr = drakon.topRect();
+                            const pr = player.rect();
+                            const pb = player.y + player.H;
+                            if (rectsOverlap(pr, tr) && pb <= tr.y + tr.h + 8 && pb >= tr.y - 6) {
+                                ridingDrakon = true;
+                                drakonRideStartY = player.y;
+                                player.vy = 0;
+                                floatTexts.push(new FloatText(player.x + 11, player.y - 16, 'DRAKON!', '#ffcc44'));
+                                SFX.play('bounce');
+                            }
+                        }
+                    }
+                }
+
                 if (finishPlatRef && player.onGround &&
                     Math.abs((player.y + player.H) - finishPlatRef.y) <= 2 &&
                     player.x + player.W > finishPlatRef.x + 4 &&
@@ -12459,6 +12606,7 @@ function gameUpdate() {
                 for (const ft of floatTexts) ft.draw(camY);
                 if (state === STATE.PLAY) drawTrailParticles(camY);
                 if (state === STATE.PLAY || state === STATE.DEAD) _drawRemotePlayers(camY);
+                if (drakon && drakon.alive) drakon.draw(camY);
                 if (state === STATE.PLAY || state === STATE.DEAD) player.draw(camY);
                 // Magic portal flash overlay
                 if (portalFlashAlpha > 0) {
