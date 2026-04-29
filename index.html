@@ -6073,7 +6073,7 @@ await Promise.race([
                 player.vx += (dx / dist) * BH_STRENGTH;
                 player.vy += (dy / dist) * BH_STRENGTH;
                 // Extra suck only in the visual core (inescapable zone)
-                const coreRadius = bhR * 3.5;
+                const coreRadius = bhR * 2.0;
                 if (dist < coreRadius) {
                     player.vx += (dx / dist) * BH_STRENGTH * 2.0;
                     player.vy += (dy / dist) * BH_STRENGTH * 2.0;
