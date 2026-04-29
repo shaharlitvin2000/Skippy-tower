@@ -3259,33 +3259,53 @@ await Promise.race([
                 this.t = 0;
                 this.speed = 1.8;
                 this.alive = true;
-                this.riding = false; // true when player grabbed it
+                this.riding = false;
+                this.ridingT = 0; // 0=flying 1=fully vertical, lerps on grab
                 this.N = 7;
                 this.SEG = 22;
             }
-            // Flying mode: horizontal segments with sine wave
-            segX(i) { return this.riding ? this.x + Math.sin(this.t - i * 0.5) * 10 : this.x - this.dir * i * this.SEG; }
-            segY(i) { return this.riding ? this.y + i * this.SEG               : this.y + Math.sin(this.t - i * 0.55) * 14; }
-            update() { // called only when not riding
+            // Lerp between flying (horizontal) and riding (vertical) orientations
+            segX(i) {
+                const flyX = this.x - this.dir * i * this.SEG;
+                const rideX = this.x + Math.sin(this.t - i * 0.5) * 10;
+                return flyX + (rideX - flyX) * this.ridingT;
+            }
+            segY(i) {
+                const flyY = this.y + Math.sin(this.t - i * 0.55) * 14;
+                const rideY = this.y + i * this.SEG;
+                return flyY + (rideY - flyY) * this.ridingT;
+            }
+            update() {
                 this.t += 0.11;
                 this.x += this.dir * this.speed;
                 if ((this.dir === 1 && this.x > BASE_W + 160) ||
                     (this.dir === -1 && this.x < -160)) this.alive = false;
             }
-            riseUp() { // called every frame while riding
+            riseUp() {
                 this.t += 0.11;
                 this.y -= 1.8;
+                if (this.ridingT < 1) this.ridingT = Math.min(1, this.ridingT + 0.055); // ~18 frames to fully flip
             }
             draw(camY) {
                 const N = this.N;
+                const rT = this.ridingT;
                 ctx.save();
-                // Body segments tail→neck (drawn first so head is on top)
+                // Riding glow aura around body
+                if (rT > 0.1) {
+                    ctx.globalAlpha = rT * 0.35;
+                    drawGlow(ctx, '#ffcc44', this.segX(3), this.segY(3) - camY, 40, 60);
+                    ctx.globalAlpha = 1;
+                }
+                // Body segments tail→neck
                 for (let i = N - 1; i >= 0; i--) {
                     const sx = this.segX(i), sy = this.segY(i) - camY;
                     if (sy < -80 || sy > BASE_H + 80) continue;
                     const r = Math.max(5, 13 - i * 0.9);
+                    const brightness = rT > 0 ? 0.15 : 0;
                     const bg = ctx.createRadialGradient(sx - 2, sy - 2, 1, sx, sy, r);
-                    bg.addColorStop(0, '#ff7744'); bg.addColorStop(0.55, '#cc1100'); bg.addColorStop(1, '#770000');
+                    bg.addColorStop(0, rT > 0.5 ? '#ffaa55' : '#ff7744');
+                    bg.addColorStop(0.55, '#cc1100');
+                    bg.addColorStop(1, '#770000');
                     ctx.fillStyle = bg;
                     ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 1.2;
@@ -3293,15 +3313,8 @@ await Promise.race([
                     if (i > 0 && i < N - 1) {
                         const sh = 5 + Math.sin(this.t - i * 0.4) * 2;
                         ctx.fillStyle = '#ffaa22';
-                        // Spines: sideways when flying, upward when riding
-                        const spx = this.riding ? sx : sx;
-                        const spy = this.riding ? sy : sy;
-                        const spDx = this.riding ? -sh : 0;
-                        const spDy = this.riding ? 0 : -sh;
                         ctx.beginPath();
-                        ctx.moveTo(spx - 3, spy - r);
-                        ctx.lineTo(spx + spDx, spy + spDy - r);
-                        ctx.lineTo(spx + 3, spy - r);
+                        ctx.moveTo(sx - 3, sy - r); ctx.lineTo(sx, sy - r - sh); ctx.lineTo(sx + 3, sy - r);
                         ctx.closePath(); ctx.fill();
                     }
                 }
@@ -12101,6 +12114,14 @@ function gameUpdate() {
                 // Prev on ground tracking
                 const wasOnGround = player.onGround;
                 const visible = platforms.filter(p => Math.abs(p.y - player.y) < BASE_H * 2);
+                // Pre-position riding player so platform collision in update() never fires
+                if (ridingDrakon && drakon && drakon.alive) {
+                    player.x = drakon.x - player.W / 2;
+                    player.y = drakon.y - 18 - player.H;
+                    player.vy = -8;
+                    player.vx = 0;
+                    player.onGround = false;
+                }
                 const _hjWasActive = player.powerHighJump > 0;
                 player.update(keys, visible, touch);
                 if (_hjWasActive && player.powerHighJump === 0) {
@@ -12392,21 +12413,30 @@ function gameUpdate() {
                             }
                         }
                     } else if (ridingDrakon) {
-                        // Steer left/right with input, drift toward screen center
+                        // Steer left/right, drift toward horizontal center
                         const goLeft  = keys.left  || touch.left;
                         const goRight = keys.right || touch.right;
-                        const centerPull = (BASE_W / 2 - drakon.x) * 0.025;
+                        const centerPull = (BASE_W / 2 - drakon.x) * 0.03;
                         if (goLeft)       drakon.x -= 3.2;
                         else if (goRight) drakon.x += 3.2;
                         else              drakon.x += centerPull;
                         drakon.x = Math.max(WALL_W + 20, Math.min(BASE_W - WALL_W - 20, drakon.x));
                         drakon.riseUp();
-                        // Place player just below head
+                        // Snap player right above head (after player.update already ran)
                         player.x = drakon.x - player.W / 2;
-                        player.y = drakon.y - 32 - player.H;
+                        player.y = drakon.y - 18 - player.H;
                         player.vy = 0; player.vx = 0;
                         player.onGround = false;
                         jumpStartY = player.y;
+                        // Festive particles while rising
+                        if (Math.random() < 0.4) {
+                            const cols = ['#ffcc44','#ff4422','#ff88ff','#44ffaa'];
+                            particles.push(new Particle(
+                                drakon.x + rnd(-18, 18), drakon.y + rnd(0, 60),
+                                rnd(-1.5, 1.5), rnd(0.5, 2.5),
+                                rndInt(18, 35), cols[rndInt(0, cols.length - 1)], rndInt(2, 4)
+                            ));
+                        }
                         // Exit: 120 meters climbed
                         if (drakonRideStartY - player.y >= 1200) {
                             ridingDrakon = false; drakon.alive = false; drakon = null;
