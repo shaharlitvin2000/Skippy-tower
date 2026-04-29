@@ -6106,6 +6106,76 @@ await Promise.race([
                 ctx.strokeStyle = 'rgba(0,200,255,0.35)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.moveTo(WALL_W, 0); ctx.lineTo(WALL_W, BASE_H); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(BASE_W - WALL_W, 0); ctx.lineTo(BASE_W - WALL_W, BASE_H); ctx.stroke();
+            } else if (themeIdx === 3) {
+                // Chinese Festival — red lacquered pillars with gold trim + swaying lanterns
+                const camInt = Math.floor(cam);
+                const t3 = Date.now() / 1000;
+                // Red lacquered panels
+                const panH = 50;
+                for (const [bx, bw] of [[0, WALL_W], [BASE_W - WALL_W, WALL_W]]) {
+                    for (let row = -1; row < BASE_H / panH + 2; row++) {
+                        const worldRow = Math.floor(camInt / panH) + row;
+                        const wy = worldRow * panH - camInt;
+                        ctx.fillStyle = worldRow % 2 === 0 ? '#7a1212' : '#991818';
+                        ctx.fillRect(bx, wy, bw, panH + 1);
+                    }
+                    // Gold horizontal bands
+                    const bandSpacing = 50;
+                    const bS = Math.floor(camInt / bandSpacing) - 1;
+                    const bE = bS + Math.ceil(BASE_H / bandSpacing) + 2;
+                    for (let bi = bS; bi <= bE; bi++) {
+                        const by = bi * bandSpacing - camInt;
+                        ctx.save();
+                        ctx.fillStyle = '#b8841a'; ctx.globalAlpha = 0.8;
+                        ctx.fillRect(bx, by - 2, bw, 5);
+                        ctx.fillStyle = '#ffe570'; ctx.globalAlpha = 0.35;
+                        ctx.fillRect(bx, by - 1, bw, 2);
+                        ctx.restore();
+                    }
+                    // Swaying lanterns
+                    const lantSpacing = 160;
+                    const lS = Math.floor(camInt / lantSpacing) - 1;
+                    const lE = lS + Math.ceil(BASE_H / lantSpacing) + 2;
+                    for (let li = lS; li <= lE; li++) {
+                        const rng = seededRandom(li * 4567 + (bx > BASE_W / 2 ? 999 : 1));
+                        const ly = li * lantSpacing + rng() * 70 - camInt;
+                        if (ly < -40 || ly > BASE_H + 40) continue;
+                        const lx = bx + bw / 2;
+                        const swing = Math.sin(t3 * 0.9 + li * 1.7) * 3.5;
+                        // String
+                        ctx.save(); ctx.strokeStyle = '#b8841a'; ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+                        ctx.beginPath(); ctx.moveTo(lx, ly - 14); ctx.lineTo(lx + swing, ly - 1); ctx.stroke();
+                        ctx.restore();
+                        // Glow
+                        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                        ctx.globalAlpha = 0.28 + 0.10 * Math.sin(t3 * 2.5 + li * 1.1);
+                        const lg = ctx.createRadialGradient(lx + swing, ly + 6, 0, lx + swing, ly + 6, 16);
+                        lg.addColorStop(0, '#ffcc44'); lg.addColorStop(1, 'transparent');
+                        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(lx + swing, ly + 6, 16, 0, Math.PI*2); ctx.fill();
+                        ctx.restore();
+                        // Body
+                        const lCol = rng() > 0.45 ? '#cc1111' : '#aa3311';
+                        ctx.save(); ctx.fillStyle = lCol; ctx.globalAlpha = 0.92;
+                        ctx.beginPath(); ctx.ellipse(lx + swing, ly + 6, 6, 10, 0, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#ffe066'; ctx.globalAlpha = 0.65;
+                        ctx.beginPath(); ctx.ellipse(lx + swing, ly + 6, 2.5, 4, 0, 0, Math.PI*2); ctx.fill();
+                        // Tassel
+                        ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.55;
+                        ctx.beginPath(); ctx.moveTo(lx + swing, ly + 16); ctx.lineTo(lx + swing, ly + 22); ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+                // Gold inner-edge glow
+                for (let i = 0; i < 9; i++) {
+                    const fade = (1 - i / 9) * (1 - i / 9);
+                    ctx.strokeStyle = `rgba(210,160,20,${(fade * 0.55).toFixed(3)})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(WALL_W - i, 0); ctx.lineTo(WALL_W - i, BASE_H); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(BASE_W - WALL_W + i, 0); ctx.lineTo(BASE_W - WALL_W + i, BASE_H); ctx.stroke();
+                }
+                ctx.strokeStyle = 'rgba(255,210,50,0.45)'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(WALL_W, 0); ctx.lineTo(WALL_W, BASE_H); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(BASE_W - WALL_W, 0); ctx.lineTo(BASE_W - WALL_W, BASE_H); ctx.stroke();
             } else {
                 // Inner edge glow for other themes
                 for (let i = 0; i < 6; i++) {
@@ -12214,7 +12284,7 @@ function gameUpdate() {
                     }
                     if (festivalWind.active) {
                         festivalWind.alpha = Math.min(1, festivalWind.alpha + 0.018);
-                        player.vx += festivalWind.dir * 0.13;
+                        player.vx += festivalWind.dir * 0.17;
                         if (lastRunHigh >= festivalWind.untilM) {
                             festivalWind.active = false;
                             festivalWind.nextM = lastRunHigh + 200 + rndInt(-30, 30);
@@ -12794,8 +12864,7 @@ function gameUpdate() {
 
             // ─── DRAW ───────────────────────────────
             ctx.save();
-            const _windDrift = (currentTheme === 3 && state === STATE.PLAY) ? festivalWindDriftX : 0;
-            ctx.translate(shakeX + _windDrift, shakeY);
+            ctx.translate(shakeX, shakeY);
 
             if (state === STATE.MAIN) {
                 // Main menu: draw animated background + snowflakes
