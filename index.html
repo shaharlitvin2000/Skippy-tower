@@ -12426,6 +12426,8 @@ function gameUpdate() {
                 drawBackground(0);
                 for (const s of snowflakes) s.draw();
             } else {
+                drawBackground(camY);
+                for (const p of platforms) p.draw(camY);
                 // Draw crown above finish platform in level mode
                 if (finishPlatRef) {
                     const fsy = finishPlatRef.y - camY;
