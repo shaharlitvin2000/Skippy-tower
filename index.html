@@ -5995,8 +5995,8 @@ await Promise.race([
         //  BLACK HOLES (Space theme only)
         // ─────────────────────────────────────────────
         const BH_SPACING = 2600;
-        const BH_PULL_RADIUS = 320;
-        const BH_STRENGTH = 0.09;
+        const BH_PULL_RADIUS = 520;
+        const BH_STRENGTH = 0.07;
 
         function _bhSlots(camY) {
             const { BASE_Y, APEX_Y } = getBgRange();
@@ -6064,15 +6064,14 @@ await Promise.race([
                 const dx = bhX - pcx, dy = worldY - pcy;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist > BH_PULL_RADIUS || dist < 1) continue;
-                // Apply gravitational pull from full pull radius
-                const force = BH_STRENGTH * Math.pow((BH_PULL_RADIUS - dist) / BH_PULL_RADIUS, 1.5);
-                player.vx += (dx / dist) * force;
-                player.vy += (dy / dist) * force;
-                // Extra strong suck when close to core
+                // Constant pull force regardless of distance — equally strong near and far
+                player.vx += (dx / dist) * BH_STRENGTH;
+                player.vy += (dy / dist) * BH_STRENGTH;
+                // Extra suck only in the visual core (inescapable zone)
                 const coreRadius = bhR * 3.5;
                 if (dist < coreRadius) {
-                    player.vx += (dx / dist) * BH_STRENGTH * 2.5;
-                    player.vy += (dy / dist) * BH_STRENGTH * 2.5;
+                    player.vx += (dx / dist) * BH_STRENGTH * 2.0;
+                    player.vy += (dy / dist) * BH_STRENGTH * 2.0;
                     insideCore = true; // only count death timer when inside the visual core
                 }
             }
@@ -7019,7 +7018,7 @@ await Promise.race([
             ctx.shadowBlur = 0;
             // Points
             ctx.textAlign = 'right'; ctx.font = 'bold 14px monospace';
-            ctx.fillStyle = '#aabbff';
+            ctx.fillStyle = '#ffd700';
             ctx.fillText(`⬡ ${lockerPoints} pts`, BASE_W - 12, 36);
 
             // ── SKINS / TRAILS tabs ──
@@ -7305,7 +7304,7 @@ await Promise.race([
             ctx.shadowBlur = 0;
             // Points
             ctx.textAlign = 'right'; ctx.font = 'bold 14px monospace';
-            ctx.fillStyle = '#aabbff';
+            ctx.fillStyle = '#ffd700';
             ctx.fillText(`⬡ ${lockerPoints} pts`, BASE_W - 12, 36);
 
             // Items list — bundles get a taller card
@@ -12238,7 +12237,7 @@ function gameUpdate() {
                         SFX.play('coin');
                         addPoints(1);
                         runPointsEarned += 1;
-                        floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '+1 ◆', '#55ccff'));
+                        floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '+1 ◆', '#ffd700'));
                         for (let i = 0; i < 10; i++) {
                             particles.push(new Particle(
                                 c.x + rnd(-6, 6), c.y,
@@ -12553,15 +12552,15 @@ function gameUpdate() {
                 ctx.shadowBlur = 0;
             }
 
-            ctx.fillStyle = cornerAnimBonus ? 'rgba(10,8,30,0.92)' : 'rgba(6,10,28,0.92)';
+            ctx.fillStyle = cornerAnimBonus ? 'rgba(30,20,0,0.92)' : 'rgba(20,15,0,0.92)';
             ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 10); ctx.fill();
-            ctx.strokeStyle = cornerAnimBonus ? 'rgba(180,100,255,0.85)' : 'rgba(60,160,255,0.7)';
+            ctx.strokeStyle = cornerAnimBonus ? 'rgba(255,180,0,0.85)' : 'rgba(255,215,0,0.7)';
             ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 10); ctx.stroke();
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.font = 'bold 15px monospace';
-            ctx.fillStyle = cornerAnimBonus ? '#bb88ff' : '#55aaff';
+            ctx.fillStyle = cornerAnimBonus ? '#ffcc44' : '#ffd700';
             const bonusTxt = cornerAnimBonus ? ' ×1.5!' : '';
             ctx.fillText(`⬡ ${displayPts}  (+${earned}${bonusTxt})`, boxX + boxW/2, boxY + boxH/2);
             ctx.restore();
