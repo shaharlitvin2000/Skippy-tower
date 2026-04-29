@@ -3252,7 +3252,7 @@ await Promise.race([
         //  DRAKON — Festival level flying dragon
         // ─────────────────────────────────────────────
         class Drakon {
-            constructor(dir, spawnY) {
+            constructor(dir, spawnY, color = 'red') {
                 this.dir = dir; // 1 = L→R, -1 = R→L (flying mode only)
                 this.x = dir === 1 ? -140 : BASE_W + 140;
                 this.y = spawnY;
@@ -3263,6 +3263,8 @@ await Promise.race([
                 this.ridingT = 0; // 0=flying 1=fully vertical, lerps on grab
                 this.N = 7;
                 this.SEG = 22;
+                this.color = color; // 'red' | 'green'
+                this.riseSpeed = color === 'green' ? 6.0 : 3.0;
             }
             // Lerp between flying (horizontal) and riding (vertical) orientations
             segX(i) {
@@ -3283,8 +3285,8 @@ await Promise.race([
             }
             riseUp() {
                 this.t += 0.11;
-                this.y -= 3.0;
-                if (this.ridingT < 1) this.ridingT = Math.min(1, this.ridingT + 0.055); // ~18 frames to fully flip
+                this.y -= this.riseSpeed;
+                if (this.ridingT < 1) this.ridingT = Math.min(1, this.ridingT + 0.055);
             }
             draw(camY) {
                 const N = this.N;
@@ -3303,12 +3305,16 @@ await Promise.race([
                     const r = Math.max(5, 13 - i * 0.9);
                     const brightness = rT > 0 ? 0.15 : 0;
                     const bg = ctx.createRadialGradient(sx - 2, sy - 2, 1, sx, sy, r);
-                    bg.addColorStop(0, rT > 0.5 ? '#ffaa55' : '#ff7744');
-                    bg.addColorStop(0.55, '#cc1100');
-                    bg.addColorStop(1, '#770000');
+                    if (this.color === 'green') {
+                        bg.addColorStop(0, rT > 0.5 ? '#88ff88' : '#44ee66');
+                        bg.addColorStop(0.55, '#118833'); bg.addColorStop(1, '#063a12');
+                    } else {
+                        bg.addColorStop(0, rT > 0.5 ? '#ffaa55' : '#ff7744');
+                        bg.addColorStop(0.55, '#cc1100'); bg.addColorStop(1, '#770000');
+                    }
                     ctx.fillStyle = bg;
                     ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 1.2;
+                    ctx.strokeStyle = this.color === 'green' ? '#aaff44' : '#ffcc33'; ctx.lineWidth = 1.2;
                     ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
                     if (i > 0 && i < N - 1) {
                         const sh = 5 + Math.sin(this.t - i * 0.4) * 2;
@@ -3321,25 +3327,29 @@ await Promise.race([
                 // Head at segment 0
                 const hx = this.segX(0), hy = this.segY(0) - camY;
                 const hg = ctx.createRadialGradient(hx, hy - 4, 2, hx, hy, 14);
-                hg.addColorStop(0, '#ff6622'); hg.addColorStop(1, '#aa1100');
+                if (this.color === 'green') {
+                    hg.addColorStop(0, '#66ff88'); hg.addColorStop(1, '#115522');
+                } else {
+                    hg.addColorStop(0, '#ff6622'); hg.addColorStop(1, '#aa1100');
+                }
                 ctx.fillStyle = hg;
                 ctx.beginPath(); ctx.arc(hx, hy, 14, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#ffcc33'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = this.color === 'green' ? '#aaff44' : '#ffcc33'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(hx, hy, 14, 0, Math.PI * 2); ctx.stroke();
                 // Snout direction: forward when flying, upward when riding
                 const sd = this.riding ? 0 : this.dir; // used for snout/flame/eye/horn offsets
                 const snx = this.riding ? hx         : hx + sd * 16;
                 const sny = this.riding ? hy - 16    : hy + 3;
-                ctx.fillStyle = '#dd3300';
+                ctx.fillStyle = this.color === 'green' ? '#228833' : '#dd3300';
                 ctx.beginPath(); ctx.ellipse(snx, sny, this.riding ? 7 : 10, this.riding ? 10 : 7, 0, 0, Math.PI * 2); ctx.fill();
                 // Flame
                 const fl = 0.7 + 0.3 * Math.sin(this.t * 4);
                 ctx.globalAlpha = fl;
-                ctx.fillStyle = '#ffaa00';
+                ctx.fillStyle = this.color === 'green' ? '#88ff44' : '#ffaa00';
                 const fx = this.riding ? hx + Math.sin(this.t * 3) * 4 : hx + sd * 28;
                 const fy = this.riding ? hy - 32 : hy - 2;
                 ctx.beginPath(); ctx.ellipse(fx, fy, this.riding ? 5 : 8, this.riding ? 8 : 5, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#ff4400';
+                ctx.fillStyle = this.color === 'green' ? '#22dd00' : '#ff4400';
                 ctx.beginPath(); ctx.ellipse(fx, this.riding ? fy - 8 : fy, this.riding ? 4 : 5, this.riding ? 6 : 4, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
                 // Eye
@@ -3350,12 +3360,11 @@ await Promise.race([
                 ctx.fillStyle = '#000';
                 ctx.beginPath(); ctx.arc(ex + (this.riding ? 0 : sd), ey, 2.5, 0, Math.PI * 2); ctx.fill();
                 // Horn: upward always
-                ctx.fillStyle = '#ffe055';
+                ctx.fillStyle = this.color === 'green' ? '#ccff66' : '#ffe055';
                 ctx.beginPath();
                 ctx.moveTo(hx - 4, hy - 12); ctx.lineTo(hx, hy - 28); ctx.lineTo(hx + 4, hy - 12);
                 ctx.closePath(); ctx.fill();
-                // Whiskers: out to sides when riding, forward when flying
-                ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = this.color === 'green' ? '#aaff44' : '#ffcc44'; ctx.lineWidth = 1.5;
                 if (this.riding) {
                     ctx.beginPath(); ctx.moveTo(hx - 6, hy - 6); ctx.lineTo(hx - 20, hy - 10); ctx.stroke();
                     ctx.beginPath(); ctx.moveTo(hx + 6, hy - 6); ctx.lineTo(hx + 20, hy - 10); ctx.stroke();
@@ -3738,7 +3747,8 @@ await Promise.race([
         let portalFlashAlpha = 0;
         // Fossil Canyon wind gust state (level 2 mechanic)
         let canyonWind = { vx: 0, vy: 0, timer: 0, next: 160, active: false, duration: 0 };
-        let drakon = null, drakonTimer = 200, ridingDrakon = false, drakonRideStartY = 0;
+        let drakon = null, ridingDrakon = false, drakonRideStartY = 0;
+        let drakonRedNext = 230, drakonGreenNext = 400; // meter milestones for spawning
         let prevOnGround = false;
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
@@ -3852,7 +3862,8 @@ await Promise.race([
             rockTimer = 999; ghostTimer = 999; powerupTimer = rndInt(80, 160);
             lastCoinMilestone = 0;
             magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
-            drakon = null; drakonTimer = rndInt(150, 280); ridingDrakon = false; drakonRideStartY = 0;
+            drakon = null; ridingDrakon = false; drakonRideStartY = 0;
+            drakonRedNext = rndInt(200, 260); drakonGreenNext = rndInt(370, 430);
         }
 
         function initTutorial() {
@@ -12261,7 +12272,15 @@ function gameUpdate() {
                         const sp = plat.spikes[si];
                         const hazard = { x: plat.x + sp.offset, y: plat.y - 10, w: sp.width, h: 5 };
                         if (rectsOverlap(pr, hazard)) {
-                            if (invincible || ridingDrakon) break;
+                            if (invincible) break;
+                            if (ridingDrakon) {
+                                // Dragon absorbs spike: dragon disappears, player survives with iframes
+                                ridingDrakon = false;
+                                if (drakon) { drakon.alive = false; drakon = null; }
+                                player.iframes = 60;
+                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ffcc44'));
+                                break;
+                            }
                             if (shielded) {
                                 player.powerShield = 0;
                                 player.iframes = 90;
@@ -12395,22 +12414,40 @@ function gameUpdate() {
                 }
                 // ── FESTIVAL DRAKON ──
                 if (currentTheme === 3 && !tutorialMode) {
+                    const _aboveFinish = finishPlatRef && player.y < finishPlatRef.y;
+                    // Dismount if 5m (50px) above finish line
+                    if (ridingDrakon && finishPlatRef && player.y < finishPlatRef.y - 50) {
+                        ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; }
+                    }
                     if (!drakon || !drakon.alive) {
                         if (drakon) { drakon = null; ridingDrakon = false; }
-                        drakonTimer--;
-                        if (drakonTimer <= 0) {
-                            drakonTimer = rndInt(160, 280);
-                            const targetY = player.y - BASE_H * 0.55;
-                            const candidates = [];
-                            for (let dy = -100; dy <= 100; dy += 20) {
-                                const testY = targetY + dy;
-                                const near = platforms.some(p => Math.abs(p.y - testY) < 50);
-                                if (!near) candidates.push(testY);
+                        const h = lastRunHigh;
+                        // Don't spawn above finish line
+                        if (!_aboveFinish) {
+                            let spawnColor = null;
+                            // Green every ~400m (takes priority)
+                            if (h >= drakonGreenNext) {
+                                drakonGreenNext = h + rndInt(370, 430);
+                                drakonRedNext = Math.max(drakonRedNext, h + rndInt(200, 260)); // skip red
+                                spawnColor = 'green';
                             }
-                            if (candidates.length > 0) {
-                                const sy = candidates[Math.floor(Math.random() * candidates.length)];
-                                const dir = Math.random() < 0.5 ? 1 : -1;
-                                drakon = new Drakon(dir, sy);
+                            // Red every ~230m
+                            else if (h >= drakonRedNext) {
+                                drakonRedNext = h + rndInt(200, 260);
+                                spawnColor = 'red';
+                            }
+                            if (spawnColor) {
+                                const targetY = player.y - BASE_H * 0.55;
+                                const candidates = [];
+                                for (let dy = -100; dy <= 100; dy += 20) {
+                                    const testY = targetY + dy;
+                                    const near = platforms.some(p => Math.abs(p.y - testY) < 50);
+                                    if (!near) candidates.push(testY);
+                                }
+                                if (candidates.length > 0) {
+                                    const sy = candidates[Math.floor(Math.random() * candidates.length)];
+                                    drakon = new Drakon(Math.random() < 0.5 ? 1 : -1, sy, spawnColor);
+                                }
                             }
                         }
                     } else if (ridingDrakon) {
@@ -12460,13 +12497,15 @@ function gameUpdate() {
                             drakonRideStartY = player.y;
                             drakon.riding = true;
                             player.vy = 0;
-                            floatTexts.push(new FloatText(player.x + 11, player.y - 16, '🐉 DRAKON!', '#ffcc44'));
+                            const isGreen = drakon.color === 'green';
+                            floatTexts.push(new FloatText(player.x + 11, player.y - 16, isGreen ? '🐉 ×2 DRAKON!' : '🐉 DRAKON!', isGreen ? '#44ff88' : '#ffcc44'));
                             SFX.play('powerup');
-                            // Big golden burst
+                            // Big burst
                             for (let i = 0; i < 28; i++) {
                                 const angle = (i / 28) * Math.PI * 2;
                                 const spd = rnd(3, 9);
-                                const cols = ['#ffcc44','#ff4422','#ff88ff','#ffffff','#ff9900'];
+                                const cols = isGreen ? ['#44ff88','#88ff44','#ccff66','#ffffff','#22dd00']
+                                                     : ['#ffcc44','#ff4422','#ff88ff','#ffffff','#ff9900'];
                                 particles.push(new Particle(
                                     player.x + player.W / 2, player.y + player.H / 2,
                                     Math.cos(angle) * spd, Math.sin(angle) * spd,
