@@ -12214,7 +12214,7 @@ function gameUpdate() {
                     }
                     if (festivalWind.active) {
                         festivalWind.alpha = Math.min(1, festivalWind.alpha + 0.018);
-                        player.vx += festivalWind.dir * 0.22;
+                        player.vx += festivalWind.dir * 0.13;
                         if (lastRunHigh >= festivalWind.untilM) {
                             festivalWind.active = false;
                             festivalWind.nextM = lastRunHigh + 200 + rndInt(-30, 30);
@@ -12466,7 +12466,7 @@ function gameUpdate() {
                         if (drakon) { drakon = null; ridingDrakon = false; }
                         const h = lastRunHigh;
                         // Don't spawn above finish line
-                        if (!_aboveFinish && h >= drakonCooldownUntil) {
+                        if (!_aboveFinish && h >= drakonCooldownUntil && !festivalWind.active) {
                             let spawnColor = null;
                             // Green every ~400m (takes priority)
                             if (h >= drakonGreenNext) {
