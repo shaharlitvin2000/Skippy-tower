@@ -5994,7 +5994,7 @@ await Promise.race([
         // ─────────────────────────────────────────────
         const BH_SPACING = 2600;
         const BH_PULL_RADIUS = 480;
-        const BH_STRENGTH = 0.26;
+        const BH_STRENGTH = 0.16;
 
         function _bhSlots(camY) {
             const { BASE_Y, APEX_Y } = getBgRange();
@@ -6069,8 +6069,8 @@ await Promise.race([
                 // Extra strong suck when close to core
                 const coreRadius = bhR * 3.5;
                 if (dist < coreRadius) {
-                    player.vx += (dx / dist) * BH_STRENGTH * 6;
-                    player.vy += (dy / dist) * BH_STRENGTH * 6;
+                    player.vx += (dx / dist) * BH_STRENGTH * 4;
+                    player.vy += (dy / dist) * BH_STRENGTH * 4;
                     insideCore = true; // only count death timer when inside the visual core
                 }
             }
@@ -12428,6 +12428,7 @@ function gameUpdate() {
             } else {
                 drawBackground(camY);
                 for (const p of platforms) p.draw(camY);
+                drawBlackHoles(camY);
                 // Draw crown above finish platform in level mode
                 if (finishPlatRef) {
                     const fsy = finishPlatRef.y - camY;
