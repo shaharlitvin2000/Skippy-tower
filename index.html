@@ -12366,34 +12366,45 @@ function gameUpdate() {
 
                 const pr = player.rect();
 
-                // Platform spike hazards
+                // Platform spike hazards — swept collision handles any speed
                 for (const plat of visible) {
                     for (let si = plat.spikes.length - 1; si >= 0; si--) {
                         const sp = plat.spikes[si];
-                        const _sweep = Math.max(0, Math.ceil(player.vy)); // extend upward for fast-falling players
-                        const hazard = { x: plat.x + sp.offset, y: plat.y - 10 - _sweep, w: sp.width, h: 5 + _sweep };
-                        if (rectsOverlap(pr, hazard)) {
-                            if (invincible) break;
-                            if (ridingDrakon && drakon) {
-                                if (drakon.color === 'green') break; // green = full immunity
-                                // Red: dragon breaks, spike destroyed, player survives
-                                ridingDrakon = false; drakon.alive = false; drakon = null;
-                                drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
-                                plat.spikes.splice(si, 1);
-                                player.iframes = 60;
-                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ff9922'));
-                                break;
-                            }
-                            if (shielded) {
-                                player.powerShield = 0;
-                                player.iframes = 90;
-                                plat.spikes.splice(si, 1);
-                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#9966ff'));
-                            } else {
-                                handleDeath();
-                            }
+                        // Swept X: cover both current and previous horizontal position
+                        const spikeL = plat.x + sp.offset;
+                        const spikeR = spikeL + sp.width;
+                        const xMin = Math.min(pr.x, pr.x - player.vx);
+                        const xMax = Math.max(pr.x + pr.w, pr.x + pr.w - player.vx);
+                        if (xMin >= spikeR || xMax <= spikeL) continue;
+                        // Swept Y: check if player path crossed spike zone this frame
+                        const spikeTop = plat.y - 26;
+                        const spikeBot = plat.y - 2;
+                        const currFeetY = pr.y + pr.h;
+                        const prevFeetY = currFeetY - player.vy;
+                        const minFeet = Math.min(prevFeetY, currFeetY);
+                        const maxFeet = Math.max(prevFeetY, currFeetY);
+                        if (minFeet > spikeBot || maxFeet < spikeTop) continue;
+                        // Hit!
+                        if (invincible) break;
+                        if (ridingDrakon && drakon) {
+                            if (drakon.color === 'green') break; // green = full immunity
+                            // Red: dragon breaks, spike destroyed, player survives with brief grace
+                            ridingDrakon = false; drakon.alive = false; drakon = null;
+                            drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
+                            plat.spikes.splice(si, 1);
+                            player.iframes = 12;
+                            floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ff9922'));
                             break;
                         }
+                        if (shielded) {
+                            player.powerShield = 0;
+                            player.iframes = 90;
+                            plat.spikes.splice(si, 1);
+                            floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#9966ff'));
+                        } else {
+                            handleDeath();
+                        }
+                        break;
                     }
                     if (state !== STATE.PLAY) break;
                 }
@@ -12516,7 +12527,7 @@ function gameUpdate() {
                             ridingDrakon = false; drakon.alive = false; drakon = null;
                             drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
                             ghosts = ghosts.filter(x => x !== g);
-                            player.iframes = 60;
+                            player.iframes = 12;
                             floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, '💨', '#ff9922'));
                             continue;
                         }
@@ -12531,6 +12542,7 @@ function gameUpdate() {
                     if (ridingDrakon && finishPlatRef && player.y < finishPlatRef.y - 50) {
                         ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; }
                         drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
+                        player.iframes = 0;
                     }
                     if (!drakon || !drakon.alive) {
                         if (drakon) { drakon = null; ridingDrakon = false; }
@@ -12605,6 +12617,7 @@ function gameUpdate() {
                             ridingDrakon = false;
                             drakon.riding = false;
                             drakonCooldownUntil = lastRunHigh + rndInt(150, 250);
+                            player.iframes = 0;
                             player.vy = -5;
                             floatTexts.push(new FloatText(player.x + 11, player.y - 16, _isGreen ? '+240m!' : '+120m!', _isGreen ? '#44ff88' : '#ffcc44'));
                             SFX.play('powerup');
