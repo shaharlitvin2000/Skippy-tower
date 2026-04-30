@@ -11270,12 +11270,15 @@ function _drawMpHostEndBtn() {
             if (isMultiplayerGame) {
                 if (isRoomHost) {
                     const endY = 322;
-                    ctx.fillStyle = 'rgba(40,8,8,0.9)';
+                    const endDisabled = mpEndTriggered;
+                    ctx.globalAlpha = endDisabled ? 0.35 : 1;
+                    ctx.fillStyle = endDisabled ? 'rgba(30,30,30,0.7)' : 'rgba(40,8,8,0.9)';
                     ctx.beginPath(); ctx.roundRect(btnX, endY, btnW, btnH, 12); ctx.fill();
-                    ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.lineWidth = 2;
+                    ctx.strokeStyle = endDisabled ? 'rgba(120,120,120,0.4)' : 'rgba(255,60,60,0.7)'; ctx.lineWidth = 2;
                     ctx.beginPath(); ctx.roundRect(btnX, endY, btnW, btnH, 12); ctx.stroke();
-                    ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#ff6666';
-                    ctx.fillText('⏹  END GAME', cx, endY + btnH / 2);
+                    ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = endDisabled ? '#888888' : '#ff6666';
+                    ctx.fillText(endDisabled ? '⏹  ENDING SOON…' : '⏹  END GAME', cx, endY + btnH / 2);
+                    ctx.globalAlpha = 1;
                 }
                 const leaveY = isRoomHost ? 392 : 322;
                 const leaveH = 46;
@@ -12453,8 +12456,8 @@ function menuAction(sx, sy) {
                     return;
                 }
                 if (isMultiplayerGame) {
-                    // HOST only: END GAME button at y=322
-                    if (isRoomHost && sy >= 322 && sy <= 376 && sx >= btnX && sx <= btnX + btnW) {
+                    // HOST only: END GAME button at y=322 — disabled once countdown started
+                    if (isRoomHost && !mpEndTriggered && sy >= 322 && sy <= 376 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click');
                         mpEndGameConfirm = true;
                         return;
@@ -12762,7 +12765,7 @@ function gameUpdate() {
                     if (fishTimer <= 0) {
                         fishTimer = rndInt(100, 220);
                         const h = lastRunHigh;
-                        if (h >= 150 && h <= 250 && fishes.length < 8) {
+                        if (h >= 80 && h <= 250 && fishes.length < 8) {
                             const candidates = platforms.filter(p =>
                                 p.y < player.y - BASE_H * 1.6 &&
                                 p.y > player.y - BASE_H * 2.8 &&
