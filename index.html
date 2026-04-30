@@ -6623,7 +6623,7 @@ await Promise.race([
             }
         }
 
-        let bhCaptureTimer = 0; // frames the player has spent inside any BH pull radius
+        let bhCaptureTimer = 0; // kept for reset compatibility (no longer used for death timer)
 
         function applyBlackHolePull() {
             if (currentTheme !== 5 || state !== STATE.PLAY) return;
@@ -6645,13 +6645,8 @@ await Promise.race([
                     insideCore = true; // only count death timer when inside the visual core
                 }
             }
-            // Death timer: builds inside core, resets quickly once you escape
-            if (insideCore) {
-                bhCaptureTimer++;
-                if (bhCaptureTimer >= 60) { bhCaptureTimer = 0; handleDeath(); }
-            } else {
-                bhCaptureTimer = Math.max(0, bhCaptureTimer - 5);
-            }
+            // Instant death on entering the visual core
+            if (insideCore) { handleDeath(); }
         }
 
         //  HUD
