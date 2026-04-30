@@ -1306,6 +1306,7 @@ await Promise.race([
         let prevBestOnDeath = 0; // stored for record screen display
         function handleDeath() {
             if (player.powerHighJump > 0) return;
+            if (portalTimer > 0 || portalLiftFrames > 0) return;
             if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } drakonCooldownUntil = lastRunHigh + rndInt(150, 250); }
             if (isMultiplayerGame) { _mpRespawn(); return; }
             SFX.play('death');
@@ -2117,42 +2118,71 @@ await Promise.race([
 
                 } else if (themeIdx === 2) {
                     if (this.isBouncy) {
-                        // ── OCEAN: jellyfish bounce pad ──
-                        const pulse = 0.60 + 0.40 * Math.abs(Math.sin(t * 2.8 + px * 0.04));
+                        // ── OCEAN: jellyfish trampoline bounce pad ──
+                        const bouncePulse = 0.55 + 0.45 * Math.abs(Math.sin(t * 3.5 + px * 0.04));
                         const nDomes = Math.max(2, Math.floor(pw / 22));
-                        // Translucent bell domes
+
+                        // Outer glow halo
                         ctx.save();
                         ctx.globalCompositeOperation = 'lighter';
-                        ctx.globalAlpha = 0.22 * pulse;
-                        const jGlow = ctx.createRadialGradient(px+pw/2, sy, 0, px+pw/2, sy, pw*0.6);
-                        jGlow.addColorStop(0, 'rgba(140,80,255,0.6)');
+                        ctx.globalAlpha = 0.30 * bouncePulse;
+                        const jGlow = ctx.createRadialGradient(px+pw/2, sy, 0, px+pw/2, sy, pw*0.7);
+                        jGlow.addColorStop(0, 'rgba(80,220,255,0.7)');
+                        jGlow.addColorStop(0.5, 'rgba(140,80,255,0.4)');
                         jGlow.addColorStop(1, 'transparent');
                         ctx.fillStyle = jGlow;
-                        ctx.beginPath(); ctx.arc(px+pw/2, sy, pw*0.6, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(px+pw/2, sy, pw*0.7, 0, Math.PI*2); ctx.fill();
                         ctx.restore();
-                        ctx.save(); ctx.globalAlpha = 0.55 + 0.20 * pulse;
+
+                        // Jellyfish bell domes (more saturated, more bounce-like)
+                        ctx.save(); ctx.globalAlpha = 0.72 + 0.18 * bouncePulse;
                         for (let di = 0; di < nDomes; di++) {
                             const dcx = px + (di + 0.5) * pw / nDomes;
-                            const dr2 = (ph * 0.85) * pulse;
-                            ctx.fillStyle = `rgba(160,100,255,${(0.30 * pulse).toFixed(2)})`;
+                            const dr2 = (ph * 0.95) * bouncePulse;
+                            // Bell gradient
+                            const bellGrd = ctx.createRadialGradient(dcx - dr2*0.2, sy + ph*0.2, dr2*0.1, dcx, sy + ph*0.5, dr2);
+                            bellGrd.addColorStop(0, `rgba(120,230,255,${(0.55*bouncePulse).toFixed(2)})`);
+                            bellGrd.addColorStop(0.5, `rgba(100,100,255,${(0.38*bouncePulse).toFixed(2)})`);
+                            bellGrd.addColorStop(1, `rgba(60,40,180,${(0.12*bouncePulse).toFixed(2)})`);
+                            ctx.fillStyle = bellGrd;
                             ctx.beginPath();
                             ctx.arc(dcx, sy + ph*0.5, dr2, Math.PI, 0, false);
                             ctx.closePath(); ctx.fill();
-                            // Tentacle hints below
-                            ctx.strokeStyle = 'rgba(180,120,255,0.25)'; ctx.lineWidth = 0.8;
-                            for (let ti = 0; ti < 3; ti++) {
-                                const tx2 = dcx + (ti - 1) * dr2 * 0.5;
+                            // Tentacles (thicker, more wavy)
+                            ctx.strokeStyle = 'rgba(100,200,255,0.45)'; ctx.lineWidth = 1.2;
+                            for (let ti = 0; ti < 4; ti++) {
+                                const tx2 = dcx + (ti - 1.5) * dr2 * 0.42;
                                 ctx.beginPath();
                                 ctx.moveTo(tx2, sy + ph);
-                                ctx.quadraticCurveTo(tx2 + Math.sin(t*2+ti)*3, sy+ph+6, tx2, sy+ph+10);
+                                ctx.quadraticCurveTo(tx2 + Math.sin(t*3.2+ti*1.1)*5, sy+ph+7, tx2 + Math.sin(t*2+ti)*2, sy+ph+13);
                                 ctx.stroke();
                             }
                         }
-                        // Top shimmer line
-                        ctx.strokeStyle = 'rgba(200,160,255,0.70)'; ctx.lineWidth = 1.8;
-                        ctx.beginPath(); ctx.moveTo(px+4, sy+1); ctx.lineTo(px+pw-4, sy+1); ctx.stroke();
-                        ctx.globalAlpha = 0.18 * pulse; ctx.lineWidth = 7;
-                        ctx.beginPath(); ctx.moveTo(px, sy); ctx.lineTo(px+pw, sy); ctx.stroke();
+                        // Solid launch surface at top (trampoline look)
+                        const surfGrd = ctx.createLinearGradient(px, sy-3, px, sy+4);
+                        surfGrd.addColorStop(0, 'rgba(160,240,255,0.95)');
+                        surfGrd.addColorStop(1, 'rgba(80,160,255,0.55)');
+                        ctx.fillStyle = surfGrd;
+                        ctx.globalAlpha = 1;
+                        ctx.beginPath(); ctx.roundRect(px+1, sy-3, pw-2, 6, 3); ctx.fill();
+                        ctx.strokeStyle = 'rgba(200,255,255,0.90)'; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.moveTo(px+4, sy-1); ctx.lineTo(px+pw-4, sy-1); ctx.stroke();
+                        ctx.restore();
+
+                        // Upward bounce arrows (animated, same style as generic bouncy)
+                        ctx.save();
+                        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                        for (let i = 0; i < 3; i++) {
+                            const travel = ((t * 1.8 + i * 0.38) % 1);
+                            const ay = sy - 8 - i * 6 - travel * 14;
+                            const alpha = travel < 0.65 ? (1.0 - travel * 0.6) : (1.0 - travel * 0.6) * ((1 - travel) / 0.35);
+                            ctx.globalAlpha = Math.max(0, alpha) * 0.85;
+                            ctx.strokeStyle = '#88eeff';
+                            ctx.lineWidth = 2.2;
+                            const arX = px + pw / 2;
+                            ctx.beginPath(); ctx.moveTo(arX, ay + 7); ctx.lineTo(arX, ay); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(arX - 5, ay + 5); ctx.lineTo(arX, ay); ctx.lineTo(arX + 5, ay + 5); ctx.stroke();
+                        }
                         ctx.restore();
 
                     } else {
@@ -3065,6 +3095,220 @@ await Promise.race([
         }
 
         // ─────────────────────────────────────────────
+        //  OCEAN FISH ENEMY
+        // ─────────────────────────────────────────────
+        class Fish {
+            constructor(platX, platW, platY) {
+                this.platX = platX; this.platW = platW;
+                this.startX = platX + platW / 2;
+                this.baseY = platY - 30;
+                this.x = this.startX;
+                this.displayY = this.baseY;
+                this.dir = Math.random() < 0.5 ? 1 : -1;
+                this.speed = rnd(1.1, 1.9);
+                this.range = platW / 2 + 32;
+                this.bob = rnd(0, Math.PI * 2);
+                this.W = 46; this.H = 24;
+            }
+            update(slow = 1) {
+                this.bob += 0.055 * slow;
+                this.x += this.dir * this.speed * slow;
+                this.displayY = this.baseY + Math.sin(this.bob) * 4;
+                if (this.x > this.startX + this.range) { this.x = this.startX + this.range; this.dir = -1; }
+                if (this.x < this.startX - this.range) { this.x = this.startX - this.range; this.dir = 1; }
+            }
+            rect() { return { x: this.x - this.W/2, y: this.displayY - this.H/2, w: this.W, h: this.H }; }
+            draw(camY) {
+                const sy = this.displayY - camY;
+                if (sy < -60 || sy > BASE_H + 60) return;
+                ctx.save();
+                ctx.translate(this.x, sy);
+                if (this.dir < 0) ctx.scale(-1, 1);
+                // Glow
+                const grd = ctx.createRadialGradient(0, 0, 2, 0, 0, this.W * 0.7);
+                grd.addColorStop(0, 'rgba(255,160,50,0.28)');
+                grd.addColorStop(1, 'transparent');
+                ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0, 0, this.W * 0.7, 0, Math.PI * 2); ctx.fill();
+                // Tail
+                ctx.fillStyle = '#e86010';
+                ctx.beginPath();
+                ctx.moveTo(-this.W/2 + 5, 0);
+                ctx.lineTo(-this.W/2 - 12, -9);
+                ctx.lineTo(-this.W/2 - 12, 9);
+                ctx.closePath(); ctx.fill();
+                // Body
+                const bodyGrd = ctx.createLinearGradient(-this.W/2+4, -this.H/2, this.W/2-4, this.H/2);
+                bodyGrd.addColorStop(0, '#ffaa44');
+                bodyGrd.addColorStop(0.4, '#ff7822');
+                bodyGrd.addColorStop(1, '#cc4400');
+                ctx.fillStyle = bodyGrd;
+                ctx.beginPath();
+                ctx.ellipse(2, 0, this.W/2 - 2, this.H/2 - 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // White stripes
+                ctx.globalAlpha = 0.38;
+                ctx.fillStyle = '#fff';
+                for (let i = 0; i < 3; i++) {
+                    const sx2 = -6 + i * 8;
+                    ctx.beginPath();
+                    ctx.ellipse(sx2, 0, 2, this.H/2 - 3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                // Dorsal fin
+                ctx.fillStyle = '#ff9933';
+                ctx.beginPath();
+                ctx.moveTo(-2, -this.H/2 + 2);
+                ctx.lineTo(4, -this.H/2 - 12);
+                ctx.lineTo(12, -this.H/2 + 2);
+                ctx.closePath(); ctx.fill();
+                // Pectoral fin
+                ctx.fillStyle = '#ffbb55';
+                ctx.beginPath();
+                ctx.ellipse(4, 4, 7, 4, 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                // Eye
+                ctx.fillStyle = '#111';
+                ctx.beginPath(); ctx.arc(this.W/2 - 9, -3, 4.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(this.W/2 - 8, -4, 1.8, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        //  OCEAN WALL PLANT (launcher)
+        // ─────────────────────────────────────────────
+        class SeaPlant {
+            constructor(side, y) {
+                this.side = side;   // 'left' | 'right'
+                this.y = y;         // bottom anchor Y
+                this.reach = 38;    // how far it sticks out from wall
+                this.h = 52;        // total height of plant
+                this.baseX = side === 'left' ? WALL_W : BASE_W - WALL_W;
+                this.bob = Math.random() * Math.PI * 2;
+                this.cooldown = 0;  // frames until it can launch again
+            }
+            get dir() { return this.side === 'left' ? 1 : -1; }
+            rect() {
+                const x = this.side === 'left' ? this.baseX : this.baseX - this.reach;
+                return { x, y: this.y - this.h, w: this.reach, h: this.h };
+            }
+            update() {
+                this.bob += 0.038;
+                if (this.cooldown > 0) this.cooldown--;
+            }
+            draw(camY) {
+                const sy = this.y - camY;
+                if (sy < -100 || sy > BASE_H + 100) return;
+                const bx = this.baseX;
+                const d = this.dir;
+                const wave = Math.sin(this.bob);
+
+                ctx.save();
+
+                // Wide glow behind plant
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalAlpha = 0.20 + 0.12 * Math.abs(wave);
+                const gGrd = ctx.createRadialGradient(
+                    bx + d * this.reach * 0.5, sy - this.h * 0.55, 4,
+                    bx + d * this.reach * 0.5, sy - this.h * 0.55, this.reach * 1.1
+                );
+                gGrd.addColorStop(0, '#ff44ee');
+                gGrd.addColorStop(1, 'transparent');
+                ctx.fillStyle = gGrd;
+                ctx.beginPath();
+                ctx.arc(bx + d * this.reach * 0.5, sy - this.h * 0.55, this.reach * 1.1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1;
+
+                // Main stem — thick curved stalk
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                const tipX = bx + d * (this.reach - 2) + wave * 3;
+                const tipY = sy - this.h + wave * 5;
+                const ctrlX = bx + d * this.reach * 0.65;
+                const ctrlY = sy - this.h * 0.55;
+
+                // Shadow stroke
+                ctx.strokeStyle = 'rgba(120,0,90,0.45)';
+                ctx.lineWidth = 13;
+                ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
+
+                // Main stem gradient stroke
+                const stemGrd = ctx.createLinearGradient(bx, sy, tipX, tipY);
+                stemGrd.addColorStop(0, '#cc00aa');
+                stemGrd.addColorStop(0.5, '#ff22cc');
+                stemGrd.addColorStop(1, '#ff88ee');
+                ctx.strokeStyle = stemGrd;
+                ctx.lineWidth = 9;
+                ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
+
+                // Bright core
+                ctx.strokeStyle = 'rgba(255,200,255,0.55)';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
+
+                // Tentacles / fronds at the tip
+                const numT = 7;
+                for (let i = 0; i < numT; i++) {
+                    const frac = i / (numT - 1);
+                    const spread = Math.PI * 0.9;
+                    // Angle: fan out upward and to the side
+                    const baseAngle = this.side === 'left'
+                        ? -Math.PI * 0.85 + frac * spread
+                        : -Math.PI * 0.15 - frac * spread;
+                    const wv = Math.sin(this.bob * 1.4 + i * 0.9) * 6;
+                    const tLen = 14 + (i % 2 === 0 ? 5 : 0);
+                    const tx2 = tipX + Math.cos(baseAngle) * tLen + wv;
+                    const ty2 = tipY + Math.sin(baseAngle) * tLen;
+                    const col = i % 3 === 0 ? '#ff33cc' : i % 3 === 1 ? '#ff99ee' : '#cc00ff';
+                    ctx.strokeStyle = col;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.quadraticCurveTo(
+                        tipX + Math.cos(baseAngle) * tLen * 0.5 + wv * 0.6,
+                        tipY + Math.sin(baseAngle) * tLen * 0.5,
+                        tx2, ty2
+                    );
+                    ctx.stroke();
+                    // Dot at tentacle tip
+                    ctx.fillStyle = col;
+                    ctx.beginPath(); ctx.arc(tx2, ty2, 2.5, 0, Math.PI * 2); ctx.fill();
+                }
+
+                // Glowing bulb at stem tip
+                const bulbPulse = 0.75 + 0.25 * Math.abs(wave);
+                const bGrd2 = ctx.createRadialGradient(tipX - 1, tipY - 1, 1, tipX, tipY, 8 * bulbPulse);
+                bGrd2.addColorStop(0, '#ffffff');
+                bGrd2.addColorStop(0.3, '#ffaaff');
+                bGrd2.addColorStop(1, 'rgba(255,80,220,0)');
+                ctx.fillStyle = bGrd2;
+                ctx.beginPath(); ctx.arc(tipX, tipY, 8 * bulbPulse, 0, Math.PI * 2); ctx.fill();
+
+                // Small launch-indicator arrows pointing upward (shows it's a launcher)
+                if (this.cooldown === 0) {
+                    const arX = tipX;
+                    const t2 = Date.now() / 1000;
+                    for (let i = 0; i < 2; i++) {
+                        const travel = ((t2 * 1.6 + i * 0.5) % 1);
+                        const ay = tipY - 6 - i * 8 - travel * 12;
+                        const alpha = travel < 0.6 ? (0.9 - travel * 0.5) : (0.9 - travel * 0.5) * ((1 - travel) / 0.4);
+                        ctx.globalAlpha = Math.max(0, alpha);
+                        ctx.strokeStyle = '#ffccff';
+                        ctx.lineWidth = 2;
+                        ctx.lineCap = 'round';
+                        ctx.beginPath(); ctx.moveTo(arX, ay + 6); ctx.lineTo(arX, ay); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(arX - 4, ay + 4); ctx.lineTo(arX, ay); ctx.lineTo(arX + 4, ay + 4); ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        // ─────────────────────────────────────────────
         //  POWER-UPS
         // ─────────────────────────────────────────────
         const POWERUP_TYPES = [
@@ -3080,7 +3324,12 @@ await Promise.race([
                 this.x = x; this.y = y;
                 const _isMagic = currentTheme === 4;
                 const _pool = POWERUP_TYPES.filter(t => t.id !== 'portal' || (_isMagic && Math.random() < 0.50));
-                this.type = _pool[rndInt(0, _pool.length - 1)];
+                // In the first 70 meters, heavily bias toward HIGH JUMP (~70% chance)
+                if (lastRunHigh <= 70 && Math.random() < 0.70) {
+                    this.type = POWERUP_TYPES.find(t => t.id === 'highjump');
+                } else {
+                    this.type = _pool[rndInt(0, _pool.length - 1)];
+                }
                 this.bob = rnd(0, Math.PI * 2);
                 this.alive = true;
                 this.size = 16;
@@ -3729,6 +3978,7 @@ await Promise.race([
         let wasFalling = false;
         let lastRunHigh = 0;
         let _hjLaunchY = 0; // player.y when HIGH JUMP powerup was collected
+        let portalLiftFrames = 0; // frames of portal-launch protection remaining
         let lastPointMilestone = 0;
         let lastCoinMilestone = 0; // tracks 50m coin spawns
         let runPointsEarned = 0;    // points earned this run (for display)
@@ -3755,6 +4005,14 @@ await Promise.race([
         let festivalWind = { active: false, dir: 0, nextM: 200, untilM: 0, alpha: 0 };
         let festivalWindDriftX = 0;
         let prevOnGround = false;
+        // Ocean theme fish enemies + drunk effect
+        let fishes = [];
+        let fishTimer = 0;
+        let drunkTimer = 0;   // frames remaining (720 = 12s)
+        let drunkPhase = 0;   // sin-wave phase for screen wobble
+        // Ocean wall plant launcher
+        let seaPlant = null;
+        let seaPlantTriggered = false; // true once spawned (one per run)
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
         // ── Hidden reset — call window.__icyReset() from browser console ──
@@ -3839,8 +4097,9 @@ await Promise.race([
                 }
             }
             crystals = [];
-            rocks = []; ghosts = []; book = new MagicBook();
+            rocks = []; ghosts = []; fishes = []; book = new MagicBook();
             powerups = []; coins = []; floatTexts = [];
+            fishTimer = rndInt(300, 500); drunkTimer = 0; drunkPhase = 0;
             // Attach a coin to ~30% of moving platforms (not bouncy, not spiked, no overlap)
             for (const plat of platforms) {
                 if (plat.moving && !plat.isBouncy && plat.spikes.length === 0 && _worldRng() < 0.30) {
@@ -3856,7 +4115,7 @@ await Promise.race([
                 const earlyPlats = platforms.filter(p =>
                     p.y < player.y - BASE_H * 0.5 &&
                     p.y > player.y - BASE_H * 1.4 &&
-                    p.spikes.length === 0 && !p.isFinish
+                    p.spikes.length === 0 && !p.isFinish && !p.isGhost
                 );
                 const shuffled = earlyPlats.sort(() => _worldRng() - 0.5).slice(0, 2);
                 for (const ep of shuffled) {
@@ -3866,13 +4125,15 @@ await Promise.race([
             // No enemies pre-spawned — they appear as you climb
             rockTimer = 999; ghostTimer = 999; powerupTimer = rndInt(80, 160);
             lastCoinMilestone = 0;
-            magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
+            magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0; portalLiftFrames = 0;
             drakon = null; ridingDrakon = false; drakonRideStartY = 0;
             drakonRedNext = rndInt(200, 260); drakonGreenNext = rndInt(370, 430);
             drakonCooldownUntil = 0;
             lastRunHigh = 0; lastCoinMilestone = 0;
             festivalWind = { active: false, dir: 0, nextM: rndInt(180, 220), untilM: 0, alpha: 0 };
             festivalWindDriftX = 0;
+            fishes = []; fishTimer = rndInt(300, 500); drunkTimer = 0; drunkPhase = 0;
+            seaPlant = null; seaPlantTriggered = false;
         }
 
         function initTutorial() {
@@ -3908,9 +4169,11 @@ await Promise.race([
                 Object.assign(new PowerUp(platforms[5].x + platforms[5].w/2, platforms[5].y - 24), { type: POWERUP_TYPES.find(t=>t.id==='highjump') }),
             ];
             coins = [];
-            rocks = []; ghosts = [];
+            rocks = []; ghosts = []; fishes = [];
             rockTimer = 999999; ghostTimer = 999999; powerupTimer = 999999;
-            magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0;
+            fishTimer = 999999; drunkTimer = 0; drunkPhase = 0;
+            seaPlant = null; seaPlantTriggered = false;
+            magicPortalReady = false; portalPlatRef = null; portalTimer = 0; portalFlashAlpha = 0; portalLiftFrames = 0;
         }
 
         function updateCamera() {
@@ -3948,6 +4211,15 @@ await Promise.race([
                 shakeX = rndInt(-I, I); shakeY = rndInt(-I / 2, I / 2);
             } else {
                 shakeX = Math.floor(shakeX * 0.5); shakeY = Math.floor(shakeY * 0.5);
+            }
+            // Drunk wobble: slow sin-wave sway on top of existing shake
+            if (drunkTimer > 0) {
+                drunkPhase += 0.07;
+                const fadeIn = Math.min(1, (720 - drunkTimer) / 30);
+                const fadeOut = Math.min(1, drunkTimer / 60);
+                const intensity = Math.min(fadeIn, fadeOut);
+                shakeX += Math.round(Math.sin(drunkPhase) * 11 * intensity);
+                shakeY += Math.round(Math.cos(drunkPhase * 0.6) * 5 * intensity);
             }
         }
 
@@ -8299,7 +8571,7 @@ await Promise.race([
             // Clear carried power-ups
             player.powerSpeed = 0; player.powerHighJump = 0;
             player.powerShield = 0; player.powerSlow = 0;
-            magicPortalReady = false; if (portalPlatRef) { portalPlatRef.isPortal = false; portalPlatRef = null; } portalTimer = 0; portalFlashAlpha = 0;
+            magicPortalReady = false; if (portalPlatRef) { portalPlatRef.isPortal = false; portalPlatRef = null; } portalTimer = 0; portalFlashAlpha = 0; portalLiftFrames = 0; drunkTimer = 0; drunkPhase = 0; seaPlant = null; seaPlantTriggered = false;
             camY = player.y - BASE_H + 200; camYVel = 0;
             highestY = player.y; jumpStartY = player.y; bestJumpStartY = player.y;
             highestLandedPlatY = player.y;
@@ -12251,6 +12523,7 @@ function gameUpdate() {
                         player.vx = 0;
                         player.onGround = false;
                         portalFlashAlpha = 1;
+                        portalLiftFrames = 90; // ~1.5s death protection after portal launch
                         SFX.play('powerup');
                         // Burst particles
                         for (let i = 0; i < 30; i++) {
@@ -12269,6 +12542,8 @@ function gameUpdate() {
                 if (portalTimer === 0 && portalFlashAlpha > 0) {
                     portalFlashAlpha = Math.max(0, portalFlashAlpha - 0.04);
                 }
+                // Count down portal lift protection
+                if (portalLiftFrames > 0) portalLiftFrames--;
 
                 updateCamera();
                 if (player.y < highestY) highestY = player.y;
@@ -12350,10 +12625,53 @@ function gameUpdate() {
                 const shielded = player.powerShield > 0;
                 const invincible = player.iframes > 0;
 
+                // Drunk control drift
+                if (drunkTimer > 0) {
+                    drunkTimer--;
+                    player.vx += (Math.random() - 0.5) * 2.2;
+                }
+
+                // ── OCEAN FISH spawning ──
+                if (currentTheme === 2 && !tutorialMode) {
+                    fishTimer--;
+                    if (fishTimer <= 0) {
+                        fishTimer = rndInt(320, 600);
+                        const h = lastRunHigh;
+                        if (h >= 150 && h <= 250 && fishes.length < 3) {
+                            const candidates = platforms.filter(p =>
+                                p.y < player.y - BASE_H * 1.6 &&
+                                p.y > player.y - BASE_H * 2.8 &&
+                                !p.isGhost && !p.isPortal && !p.isBouncy && p.spikes.length === 0 &&
+                                p.w >= 60 &&
+                                !(finishPlatRef && p.y <= finishPlatRef.y) &&
+                                p.y > TOWER_TOP
+                            );
+                            if (candidates.length > 0) {
+                                const plat = candidates[rndInt(0, candidates.length - 1)];
+                                fishes.push(new Fish(plat.x, plat.w, plat.y));
+                            }
+                        }
+                    }
+
+                    // ── OCEAN WALL PLANT spawning (once per run, ~150m) ──
+                    if (!seaPlantTriggered && lastRunHigh >= 130 && lastRunHigh <= 175) {
+                        seaPlantTriggered = true;
+                        const plantSide = Math.random() < 0.5 ? 'left' : 'right';
+                        // Place slightly above current player view
+                        const plantY = player.y - BASE_H * 1.1 - rnd(60, 200);
+                        // Don't place above finish line
+                        if (!finishPlatRef || plantY > finishPlatRef.y) {
+                            seaPlant = new SeaPlant(plantSide, plantY);
+                        }
+                    }
+                    if (seaPlant) seaPlant.update();
+                }
+
                 // Update all
                 for (const p of visible) p.update();
                 for (const r of rocks) r.update(visible, slowFactor);
                 for (const g of ghosts) g.update(slowFactor);
+                for (const f of fishes) f.update(slowFactor);
                 book.update();
                 for (const c of crystals) c.update();
                 for (const p of particles) p.update();
@@ -12362,6 +12680,7 @@ function gameUpdate() {
                 // Cull
                 rocks = rocks.filter(r => r.alive);
                 ghosts = ghosts.filter(g => Math.abs(g.y - player.y) < BASE_H * 3);
+                fishes = fishes.filter(f => Math.abs(f.displayY - player.y) < BASE_H * 4);
                 particles = particles.filter(p => p.life > 0);
 
                 const pr = player.rect();
@@ -12535,6 +12854,55 @@ function gameUpdate() {
                         else { handleDeath(); break; }
                     }
                 }
+                // ── OCEAN FISH collision ──
+                if (currentTheme === 2) {
+                    for (const f of fishes) {
+                        const fr = f.rect();
+                        const shrunk = { x: fr.x + 5, y: fr.y + 4, w: fr.w - 10, h: fr.h - 8 };
+                        if (rectsOverlap(pr, shrunk)) {
+                            if (invincible) continue;
+                            if (shielded) {
+                                SFX.play('shield');
+                                player.powerShield = 0;
+                                player.iframes = 90;
+                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 10, 'SHIELD!', '#9966ff'));
+                            } else {
+                                drunkTimer = 720; // 12 seconds
+                                player.iframes = 60;
+                                floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 16, '🐠 DIZZY!', '#44ddff'));
+                                SFX.play('bounce');
+                            }
+                        }
+                    }
+
+                    // ── OCEAN WALL PLANT collision / launch ──
+                    if (seaPlant && seaPlant.cooldown === 0) {
+                        if (rectsOverlap(pr, seaPlant.rect())) {
+                            // Launch height: 60m with HIGH JUMP, else 40m (in pixels × 10px/m)
+                            const launchPx = player.powerHighJump > 0 ? 600 : 400;
+                            // vy = -sqrt(2 * GRAVITY * launchPx) for correct ballistic height
+                            player.vy = -Math.sqrt(2 * GRAVITY * launchPx);
+                            player.onGround = false;
+                            jumpStartY = player.y; // reset fall-death tracker from launch point
+                            seaPlant.cooldown = 120; // 2s before it can fire again
+                            SFX.play('bounce');
+                            floatTexts.push(new FloatText(
+                                player.x + player.W / 2, player.y - 20,
+                                player.powerHighJump > 0 ? '🌿 +60m!' : '🌿 +40m!',
+                                '#ff88ee'
+                            ));
+                            // Launch particles
+                            for (let i = 0; i < 14; i++) {
+                                particles.push(new Particle(
+                                    player.x + player.W / 2 + rnd(-8, 8), player.y,
+                                    rnd(-2.5, 2.5), rnd(-4, -0.5),
+                                    rndInt(18, 32), i % 2 === 0 ? '#ff55cc' : '#cc00ff', rndInt(2, 4)
+                                ));
+                            }
+                        }
+                    }
+                }
+
                 // ── FESTIVAL DRAKON ──
                 if (currentTheme === 3 && !tutorialMode) {
                     const _aboveFinish = finishPlatRef && player.y < finishPlatRef.y;
@@ -12899,6 +13267,8 @@ function gameUpdate() {
                 }
                 for (const r of rocks) r.draw(camY);
                 for (const g of ghosts) g.draw(camY);
+                if (seaPlant) seaPlant.draw(camY);
+                for (const f of fishes) f.draw(camY);
                 book.draw(camY);
                 for (const pu of powerups) pu.draw(camY);
                 for (const c of coins) c.draw(camY);
@@ -12913,6 +13283,24 @@ function gameUpdate() {
                     ctx.save();
                     ctx.globalAlpha = portalFlashAlpha * 0.75;
                     ctx.fillStyle = '#cc00ff';
+                    ctx.fillRect(0, 0, BASE_W, BASE_H);
+                    ctx.restore();
+                }
+                // Drunk / dizzy overlay (ocean fish hit)
+                if (drunkTimer > 0) {
+                    const fadeIn = Math.min(1, (720 - drunkTimer) / 20);
+                    const fadeOut = Math.min(1, drunkTimer / 45);
+                    const alpha = Math.min(fadeIn, fadeOut) * 0.28;
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#22aaff';
+                    ctx.fillRect(0, 0, BASE_W, BASE_H);
+                    // Vignette rings
+                    ctx.globalAlpha = alpha * 0.8;
+                    const vg = ctx.createRadialGradient(BASE_W/2, BASE_H/2, BASE_H*0.2, BASE_W/2, BASE_H/2, BASE_H*0.8);
+                    vg.addColorStop(0, 'transparent');
+                    vg.addColorStop(1, 'rgba(0,80,180,0.6)');
+                    ctx.fillStyle = vg;
                     ctx.fillRect(0, 0, BASE_W, BASE_H);
                     ctx.restore();
                 }
