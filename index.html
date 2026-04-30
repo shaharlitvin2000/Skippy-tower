@@ -1479,6 +1479,13 @@ await Promise.race([
                         this.swayFreq  = 0.55 + Math.abs(Math.sin(x * 0.31 + y * 0.23)) * 0.45;
                     }
                 }
+                // Forest spider web
+                this.hasWeb = false;
+                const WEB_START_Y = BASE_H - 120 - 200; // 20m above base
+                if (currentTheme === 1 && !this.special && !this.isBouncy && !this.moving && y < WEB_START_Y) {
+                    const hw = Math.abs(Math.sin(x * 0.4711 + y * 0.2939));
+                    this.hasWeb = hw < 0.38; // ~38% of forest platforms get a web
+                }
                 // Clock tower (infinite mode) platform properties
                 this.gearDir = 0;   // -1=left  0=static  +1=right
                 this.gearSpeed = 0; // rotation speed (rad/s)
@@ -2114,6 +2121,57 @@ await Promise.race([
                             ctx.beginPath(); ctx.moveTo(px + 4, sy + 1); ctx.lineTo(px + pw - 4, sy + 1); ctx.stroke();
                             ctx.restore();
                         }
+                    }
+
+                    // ── Spider web on top of platform ──
+                    if (this.hasWeb) {
+                        ctx.save();
+                        const webPulse = 0.7 + 0.3 * Math.abs(Math.sin(t * 0.9 + px * 0.03));
+                        const wH = 22, wX = px + 3, wW = pw - 6, wCy = sy - wH * 0.5;
+                        const wCx = px + pw / 2;
+                        // Faint sticky glow behind web
+                        ctx.globalCompositeOperation = 'lighter';
+                        ctx.globalAlpha = 0.07 * webPulse;
+                        const wGlow = ctx.createRadialGradient(wCx, wCy, 0, wCx, wCy, pw * 0.6);
+                        wGlow.addColorStop(0, 'rgba(220,220,200,0.8)');
+                        wGlow.addColorStop(1, 'transparent');
+                        ctx.fillStyle = wGlow;
+                        ctx.fillRect(wX - 6, sy - wH - 4, wW + 12, wH + 10);
+                        ctx.globalCompositeOperation = 'source-over';
+                        // Web threads
+                        ctx.globalAlpha = 0.62 * webPulse;
+                        ctx.strokeStyle = 'rgba(230,230,210,0.88)';
+                        ctx.lineWidth = 0.8;
+                        ctx.lineCap = 'round';
+                        // Radial spokes from center
+                        const nSpokes = Math.max(5, Math.floor(wW / 14));
+                        for (let i = 0; i < nSpokes; i++) {
+                            const sx2 = wX + (i / (nSpokes - 1)) * wW;
+                            ctx.beginPath(); ctx.moveTo(wCx, sy); ctx.lineTo(sx2, sy - wH); ctx.stroke();
+                        }
+                        // Horizontal concentric arcs (3 rings)
+                        for (let ring = 1; ring <= 3; ring++) {
+                            const ry = sy - wH * (ring / 3.3);
+                            const rw = wW * (ring / 3.3) * 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(wCx - rw, ry);
+                            ctx.quadraticCurveTo(wCx, ry - wH * 0.08 * ring, wCx + rw, ry);
+                            ctx.stroke();
+                        }
+                        // Anchor threads from corners and middle bottom
+                        ctx.lineWidth = 0.7; ctx.globalAlpha = 0.45 * webPulse;
+                        ctx.strokeStyle = 'rgba(200,200,180,0.7)';
+                        [[px + 2, sy], [px + pw * 0.5, sy], [px + pw - 2, sy]].forEach(([ax, ay]) => {
+                            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax + (wCx - ax) * 0.35, ay - wH); ctx.stroke();
+                        });
+                        // Little spider in center
+                        ctx.globalAlpha = 0.80;
+                        const spX = wCx + Math.sin(t * 0.4) * 4, spY = wCy + Math.cos(t * 0.3) * 3;
+                        ctx.fillStyle = '#1a1a10';
+                        ctx.beginPath(); ctx.ellipse(spX, spY, 3.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#2a2a18';
+                        ctx.beginPath(); ctx.arc(spX, spY - 2.5, 2, 0, Math.PI * 2); ctx.fill();
+                        ctx.restore();
                     }
 
                 } else if (themeIdx === 2) {
@@ -2786,6 +2844,7 @@ await Promise.race([
                 this.justLanded = false;
                 this.landCooldown = 0;  // frames to wait before auto-jumping again
                 this.landPause = 0;     // frames to freeze horizontal movement after landing
+                this.inWeb = false;     // touching a forest spider web
             }
             rect() { return { x: this.x, y: this.y, w: this.W, h: this.H }; }
             jump(bounceMult = 1.0) {
@@ -2811,9 +2870,9 @@ await Promise.race([
                 let acc = 0;
                 if (keys['left'] || touch.left) { acc = -1; this.facing = -1; }
                 if (keys['right'] || touch.right) { acc = 1; this.facing = 1; }
-                const maxSpd = this.powerSpeed > 0 ? 5 : 3.5;
-                this.vx += acc * (this.powerSpeed > 0 ? 0.55 : 0.4);
-                this.vx *= this.onGround ? 0.70 : 0.86;
+                const maxSpd = (this.powerSpeed > 0 ? 5 : 3.5) * (this.inWeb ? 0.35 : 1.0);
+                this.vx += acc * (this.powerSpeed > 0 ? 0.55 : 0.4) * (this.inWeb ? 0.3 : 1.0);
+                this.vx *= this.onGround ? 0.70 : (this.inWeb ? 0.72 : 0.86);
                 this.vx = clamp(this.vx, -maxSpd, maxSpd);
                 this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0);
                 this.vy = clamp(this.vy, -25, MAX_FALL);
@@ -2825,6 +2884,7 @@ await Promise.race([
                 const wasGround = this.onGround;
                 this.onGround = false;
                 this.justLanded = false;
+                this.inWeb = false; // reset each frame; set below if touching a web
                 let landedOnSpecial = false;
                 let landedOnBouncy = false;
                 let landedPlatRef = null;
@@ -2847,6 +2907,13 @@ await Promise.race([
                             if (plat.special) landedOnSpecial = true;
                             if (plat.isBouncy) landedOnBouncy = true;
                             landedPlatRef = plat;
+                        }
+                    }
+                    // Spider web zone: rect above platform
+                    if (plat.hasWeb) {
+                        const wr = { x: plat.x + 2, y: plat.y - 22, w: plat.w - 4, h: 22 };
+                        if (rectsOverlap({ x: this.x, y: this.y, w: this.W, h: this.H }, wr)) {
+                            this.inWeb = true;
                         }
                     }
                 }
@@ -3001,6 +3068,24 @@ await Promise.race([
                 if (!this.onGround && this.vy < -3) {
                     ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = C.ICE_SHINE;
                     dot(cx + this.facing * 5 + rnd(-2, 2), sy + 7 + rnd(-1, 2), 2);
+                    ctx.restore();
+                }
+
+                // Web slow: draw sticky thread lines over player
+                if (this.inWeb) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6);
+                    ctx.strokeStyle = 'rgba(220,220,200,0.85)';
+                    ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+                    const threadPts = [
+                        [[sx+3, sy+2],[sx+9, sy+14]],
+                        [[sx+14, sy+1],[sx+8, sy+18]],
+                        [[sx+18, sy+6],[sx+12, sy+22]],
+                        [[sx+5, sy+10],[sx+16, sy+24]],
+                    ];
+                    for (const [p1, p2] of threadPts) {
+                        ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+                    }
                     ctx.restore();
                 }
             }
