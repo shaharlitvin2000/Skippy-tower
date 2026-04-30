@@ -2127,8 +2127,8 @@ await Promise.race([
                         ctx.globalCompositeOperation = 'lighter';
                         ctx.globalAlpha = 0.30 * bouncePulse;
                         const jGlow = ctx.createRadialGradient(px+pw/2, sy, 0, px+pw/2, sy, pw*0.7);
-                        jGlow.addColorStop(0, 'rgba(80,220,255,0.7)');
-                        jGlow.addColorStop(0.5, 'rgba(140,80,255,0.4)');
+                        jGlow.addColorStop(0, 'rgba(50,255,140,0.7)');
+                        jGlow.addColorStop(0.5, 'rgba(20,200,100,0.4)');
                         jGlow.addColorStop(1, 'transparent');
                         ctx.fillStyle = jGlow;
                         ctx.beginPath(); ctx.arc(px+pw/2, sy, pw*0.7, 0, Math.PI*2); ctx.fill();
@@ -2141,15 +2141,15 @@ await Promise.race([
                             const dr2 = (ph * 0.95) * bouncePulse;
                             // Bell gradient
                             const bellGrd = ctx.createRadialGradient(dcx - dr2*0.2, sy + ph*0.2, dr2*0.1, dcx, sy + ph*0.5, dr2);
-                            bellGrd.addColorStop(0, `rgba(120,230,255,${(0.55*bouncePulse).toFixed(2)})`);
-                            bellGrd.addColorStop(0.5, `rgba(100,100,255,${(0.38*bouncePulse).toFixed(2)})`);
-                            bellGrd.addColorStop(1, `rgba(60,40,180,${(0.12*bouncePulse).toFixed(2)})`);
+                            bellGrd.addColorStop(0, `rgba(100,255,180,${(0.55*bouncePulse).toFixed(2)})`);
+                            bellGrd.addColorStop(0.5, `rgba(20,180,90,${(0.38*bouncePulse).toFixed(2)})`);
+                            bellGrd.addColorStop(1, `rgba(10,100,50,${(0.12*bouncePulse).toFixed(2)})`);
                             ctx.fillStyle = bellGrd;
                             ctx.beginPath();
                             ctx.arc(dcx, sy + ph*0.5, dr2, Math.PI, 0, false);
                             ctx.closePath(); ctx.fill();
                             // Tentacles (thicker, more wavy)
-                            ctx.strokeStyle = 'rgba(100,200,255,0.45)'; ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = 'rgba(60,220,130,0.55)'; ctx.lineWidth = 1.2;
                             for (let ti = 0; ti < 4; ti++) {
                                 const tx2 = dcx + (ti - 1.5) * dr2 * 0.42;
                                 ctx.beginPath();
@@ -2160,12 +2160,12 @@ await Promise.race([
                         }
                         // Solid launch surface at top (trampoline look)
                         const surfGrd = ctx.createLinearGradient(px, sy-3, px, sy+4);
-                        surfGrd.addColorStop(0, 'rgba(160,240,255,0.95)');
-                        surfGrd.addColorStop(1, 'rgba(80,160,255,0.55)');
+                        surfGrd.addColorStop(0, 'rgba(120,255,180,0.95)');
+                        surfGrd.addColorStop(1, 'rgba(30,160,80,0.55)');
                         ctx.fillStyle = surfGrd;
                         ctx.globalAlpha = 1;
                         ctx.beginPath(); ctx.roundRect(px+1, sy-3, pw-2, 6, 3); ctx.fill();
-                        ctx.strokeStyle = 'rgba(200,255,255,0.90)'; ctx.lineWidth = 1.5;
+                        ctx.strokeStyle = 'rgba(180,255,220,0.90)'; ctx.lineWidth = 1.5;
                         ctx.beginPath(); ctx.moveTo(px+4, sy-1); ctx.lineTo(px+pw-4, sy-1); ctx.stroke();
                         ctx.restore();
 
@@ -2177,7 +2177,7 @@ await Promise.race([
                             const ay = sy - 8 - i * 6 - travel * 14;
                             const alpha = travel < 0.65 ? (1.0 - travel * 0.6) : (1.0 - travel * 0.6) * ((1 - travel) / 0.35);
                             ctx.globalAlpha = Math.max(0, alpha) * 0.85;
-                            ctx.strokeStyle = '#88eeff';
+                            ctx.strokeStyle = '#55ffaa';
                             ctx.lineWidth = 2.2;
                             const arX = px + pw / 2;
                             ctx.beginPath(); ctx.moveTo(arX, ay + 7); ctx.lineTo(arX, ay); ctx.stroke();
@@ -3806,7 +3806,9 @@ await Promise.race([
                     bouncyCounter = 0;
                     nextBouncy = (currentTheme === 5 || currentLevel === 5)
                         ? rndInt(20, 32)
-                        : rndInt(8, 12);
+                        : currentTheme === 2
+                            ? rndInt(4, 7)
+                            : rndInt(8, 12);
                 }
                 // Magic theme: ~40% chance to spawn a ghost platform beside the real one
                 // Skip if real platform is moving (ghost must be static and at exact same position)
@@ -12758,9 +12760,9 @@ function gameUpdate() {
                 if (currentTheme === 2 && !tutorialMode) {
                     fishTimer--;
                     if (fishTimer <= 0) {
-                        fishTimer = rndInt(160, 320);
+                        fishTimer = rndInt(100, 220);
                         const h = lastRunHigh;
-                        if (h >= 150 && h <= 250 && fishes.length < 6) {
+                        if (h >= 150 && h <= 250 && fishes.length < 8) {
                             const candidates = platforms.filter(p =>
                                 p.y < player.y - BASE_H * 1.6 &&
                                 p.y > player.y - BASE_H * 2.8 &&
