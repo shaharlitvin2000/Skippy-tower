@@ -12994,11 +12994,13 @@ function gameUpdate() {
                 }
                 // ── OCEAN FISH collision ──
                 if (currentTheme === 2) {
-                    for (const f of fishes) {
+                    for (let fi = fishes.length - 1; fi >= 0; fi--) {
+                        const f = fishes[fi];
                         const fr = f.rect();
                         const shrunk = { x: fr.x + 5, y: fr.y + 4, w: fr.w - 10, h: fr.h - 8 };
                         if (rectsOverlap(pr, shrunk)) {
                             if (invincible) continue;
+                            fishes.splice(fi, 1);
                             if (shielded) {
                                 SFX.play('shield');
                                 player.powerShield = 0;
