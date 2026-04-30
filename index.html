@@ -2867,11 +2867,11 @@ await Promise.race([
                 // AUTO-JUMP: skip on special (tutorial end) platform
                 if (this.justLanded && this.landCooldown <= 0 && !landedOnSpecial && portalTimer <= 0) {
                     this.landCooldown = 10;
-                    this.jump(landedOnBouncy ? 2.4 : 1.0);
+                    this.jump(landedOnBouncy ? 1.75 : 1.0);
                 }
                 // Manual jump
                 if ((keys['jump'] || touch.jump) && this.onGround && this.landCooldown <= 0) {
-                    this.jump(landedOnBouncy ? 2.4 : 1.0);
+                    this.jump(landedOnBouncy ? 1.75 : 1.0);
                 }
                 if (Math.abs(this.vx) > 0.5) this.animTick++;
                 if (this.landShake > 0) this.landShake--;
@@ -3240,53 +3240,77 @@ await Promise.race([
                     y: (1-t3)*(1-t3)*sy  + 2*(1-t3)*t3*ctrlY + t3*t3*tipY
                 });
 
-                // ── Green leaves along the stem ──
-                const leafDefs = [
-                    { t: 0.28, side: 1,  len: 22, w: 9,  col: '#33cc44', shadow: '#1a7722' },
-                    { t: 0.28, side: -1, len: 18, w: 7,  col: '#44dd55', shadow: '#1a8822' },
-                    { t: 0.55, side: 1,  len: 26, w: 10, col: '#22bb33', shadow: '#145c1a' },
-                    { t: 0.55, side: -1, len: 20, w: 8,  col: '#55ee66', shadow: '#229933' },
-                    { t: 0.78, side: 1,  len: 20, w: 8,  col: '#33dd44', shadow: '#1a8822' },
-                    { t: 0.78, side: -1, len: 16, w: 6,  col: '#44ee55', shadow: '#22aa33' },
+                // ── Sea leaves / kelp fronds along the stem ──
+                const seaLeafDefs = [
+                    { t: 0.20, side:  1, len: 28, w: 5, phase: 0.0, col: '#1aaa66', mid: '#22cc77', tip: '#55ffaa' },
+                    { t: 0.22, side: -1, len: 22, w: 4, phase: 1.2, col: '#138855', mid: '#1aaa66', tip: '#44ddaa' },
+                    { t: 0.45, side:  1, len: 32, w: 6, phase: 0.7, col: '#0d9955', mid: '#1ec877', tip: '#66ffbb' },
+                    { t: 0.47, side: -1, len: 26, w: 5, phase: 2.1, col: '#117744', mid: '#1aaa66', tip: '#44ee99' },
+                    { t: 0.70, side:  1, len: 24, w: 5, phase: 1.5, col: '#1aaa66', mid: '#22cc77', tip: '#55ffaa' },
+                    { t: 0.72, side: -1, len: 18, w: 4, phase: 0.3, col: '#0d9955', mid: '#1ec877', tip: '#44ddaa' },
                 ];
-                for (const lf of leafDefs) {
+                for (const lf of seaLeafDefs) {
                     const pt = qPt(lf.t);
-                    const wv2 = Math.sin(this.bob * 1.1 + lf.t * 8) * 4 * lf.side;
-                    // Leaf grows outward perpendicular to stem direction, plus upward tilt
-                    const leafAngle = lf.side * d > 0
-                        ? -Math.PI * 0.35 + wv2 * 0.06
-                        : -Math.PI * 0.65 + wv2 * 0.06;
-                    const lx = pt.x + Math.cos(leafAngle) * lf.len + wv2;
-                    const ly = pt.y + Math.sin(leafAngle) * lf.len;
+                    // Kelp sways: two-frequency wave for organic feel
+                    const sway = Math.sin(this.bob * 1.3 + lf.phase) * 7 + Math.sin(this.bob * 2.1 + lf.phase * 1.7) * 3;
+                    // Leaf base angle: reaches upward and outward from stem
+                    const baseAngle = this.side === 'left'
+                        ? (lf.side > 0 ? -Math.PI * 0.30 : -Math.PI * 0.70)
+                        : (lf.side > 0 ? -Math.PI * 0.30 : -Math.PI * 0.70);
                     ctx.save();
                     ctx.translate(pt.x, pt.y);
-                    ctx.rotate(leafAngle);
-                    // Leaf shape: fat ellipse tapering to tip
-                    const leafGrd = ctx.createLinearGradient(0, 0, lf.len, 0);
-                    leafGrd.addColorStop(0, lf.shadow);
-                    leafGrd.addColorStop(0.4, lf.col);
-                    leafGrd.addColorStop(1, '#aaffaa');
-                    ctx.fillStyle = leafGrd;
+                    // Rotate by base angle + gentle sway
+                    ctx.rotate(baseAngle + sway * 0.022 * lf.side * d);
+
+                    // Kelp frond: long sinuous ribbon with undulating edges
+                    const L = lf.len;
+                    const W = lf.w;
+                    const swayAmt = sway * 0.35;
+                    // Draw ribbon as a filled bezier with wavy top edge
+                    const kGrd = ctx.createLinearGradient(0, 0, L, 0);
+                    kGrd.addColorStop(0,   lf.col);
+                    kGrd.addColorStop(0.35, lf.mid);
+                    kGrd.addColorStop(0.75, lf.tip);
+                    kGrd.addColorStop(1,   'rgba(120,255,180,0.3)');
+                    ctx.globalAlpha = 0.92;
+                    ctx.fillStyle = kGrd;
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
+                    // Upper undulating edge
                     ctx.bezierCurveTo(
-                        lf.len * 0.3,  -lf.w + wv2 * 0.3,
-                        lf.len * 0.7,  -lf.w * 0.6,
-                        lf.len + wv2,   0
+                        L * 0.25, -W + swayAmt,
+                        L * 0.55, -W * 1.2 - swayAmt * 0.5,
+                        L * 0.80, -W * 0.7 + swayAmt * 0.8
                     );
                     ctx.bezierCurveTo(
-                        lf.len * 0.7,   lf.w * 0.6,
-                        lf.len * 0.3,   lf.w - wv2 * 0.3,
-                        0,              0
+                        L * 0.90, -W * 0.3,
+                        L * 0.96,  0,
+                        L,         W * 0.15  // tapered tip
+                    );
+                    // Lower edge back
+                    ctx.bezierCurveTo(
+                        L * 0.75,  W * 0.6 + swayAmt * 0.3,
+                        L * 0.40,  W * 0.5 - swayAmt * 0.6,
+                        0,         0
                     );
                     ctx.fill();
-                    // Midrib vein
-                    ctx.strokeStyle = 'rgba(10,80,10,0.5)';
-                    ctx.lineWidth = 1;
+                    // Midrib line (vein)
+                    ctx.globalAlpha = 0.50;
+                    ctx.strokeStyle = lf.col;
+                    ctx.lineWidth = 0.9;
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
-                    ctx.lineTo(lf.len * 0.85 + wv2 * 0.5, 0);
+                    ctx.bezierCurveTo(L * 0.30, -W * 0.3 + swayAmt * 0.3, L * 0.65, -W * 0.4, L * 0.95, 0);
                     ctx.stroke();
+                    // Subtle translucent sheen
+                    ctx.globalAlpha = 0.18;
+                    ctx.strokeStyle = '#ccffee';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(L * 0.1, -W * 0.3);
+                    ctx.bezierCurveTo(L * 0.35, -W * 0.9 + swayAmt * 0.2, L * 0.60, -W * 0.85, L * 0.78, -W * 0.4);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
                     ctx.restore();
                 }
 
@@ -12630,7 +12654,7 @@ function gameUpdate() {
                 }
 
                 // Fall-death: die if you fall 30 meters (300px) from where the jump started
-                if (!player.onGround && player.y - jumpStartY >= 300) { handleDeath(); return; }
+                if (!player.onGround && player.y - jumpStartY >= 500) { handleDeath(); return; }
                 // Award 1 point per 40 meters climbed (not in tutorial)
                 if (!tutorialMode) {
                     const milestone = Math.floor(lastRunHigh / 40);
@@ -12949,18 +12973,18 @@ function gameUpdate() {
                     // ── OCEAN WALL PLANT collision / launch ──
                     if (seaPlant && seaPlant.cooldown === 0) {
                         if (rectsOverlap(pr, seaPlant.rect())) {
-                            // Launch height: 60m with HIGH JUMP, else 40m (in pixels × 10px/m)
-                            const launchPx = player.powerHighJump > 0 ? 600 : 400;
-                            // vy = -sqrt(2 * GRAVITY * launchPx) for correct ballistic height
+                            // Launch height: HIGH JUMP → 70m, else 40m
+                            const hasHJ = player.powerHighJump > 0;
+                            const launchPx = hasHJ ? 700 : 400;
                             player.vy = -Math.sqrt(2 * GRAVITY * launchPx);
                             player.onGround = false;
                             jumpStartY = player.y; // reset fall-death tracker from launch point
-                            seaPlant.cooldown = 120; // 2s before it can fire again
+                            seaPlant.cooldown = 120;
                             SFX.play('bounce');
                             floatTexts.push(new FloatText(
                                 player.x + player.W / 2, player.y - 20,
-                                player.powerHighJump > 0 ? '🌿 +60m!' : '🌿 +40m!',
-                                '#ff88ee'
+                                hasHJ ? '🌿 +70m!' : '🌿 +40m!',
+                                hasHJ ? '#66ffaa' : '#ff88ee'
                             ));
                             // Launch particles
                             for (let i = 0; i < 14; i++) {
@@ -13356,6 +13380,20 @@ function gameUpdate() {
                     ctx.fillStyle = '#cc00ff';
                     ctx.fillRect(0, 0, BASE_W, BASE_H);
                     ctx.restore();
+                }
+                // Fall-danger darkness — bottom of screen darkens as you fall toward death
+                if (!player.onGround && state === STATE.PLAY) {
+                    const fallDist = player.y - jumpStartY; // px fallen since last jump
+                    if (fallDist > 150) { // start fading in at 15m, full at ~45m
+                        const danger = Math.min(1, (fallDist - 150) / 350);
+                        ctx.save();
+                        const fg = ctx.createLinearGradient(0, BASE_H * 0.45, 0, BASE_H);
+                        fg.addColorStop(0, 'transparent');
+                        fg.addColorStop(1, `rgba(0,0,0,${(danger * 0.82).toFixed(2)})`);
+                        ctx.fillStyle = fg;
+                        ctx.fillRect(0, 0, BASE_W, BASE_H);
+                        ctx.restore();
+                    }
                 }
                 // Drunk / dizzy overlay (ocean fish hit)
                 if (drunkTimer > 0) {
