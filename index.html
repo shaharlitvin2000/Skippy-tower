@@ -3104,77 +3104,123 @@ await Promise.race([
             constructor(platX, platW, platY) {
                 this.platX = platX; this.platW = platW;
                 this.startX = platX + platW / 2;
-                this.baseY = platY - 30;
+                this.baseY = platY - 28;
                 this.x = this.startX;
                 this.displayY = this.baseY;
                 this.dir = Math.random() < 0.5 ? 1 : -1;
-                this.speed = rnd(1.1, 1.9);
+                this.speed = rnd(0.7, 1.4);
                 this.range = platW / 2 + 32;
                 this.bob = rnd(0, Math.PI * 2);
-                this.W = 46; this.H = 24;
+                this.R = 18; // puffer radius
+                this.W = this.R * 2 + 14; this.H = this.R * 2;
+                // Random spot pattern seed
+                this.spotSeed = Math.random() * 100;
             }
             update(slow = 1) {
-                this.bob += 0.055 * slow;
+                this.bob += 0.04 * slow;
                 this.x += this.dir * this.speed * slow;
-                this.displayY = this.baseY + Math.sin(this.bob) * 4;
+                this.displayY = this.baseY + Math.sin(this.bob * 0.7) * 3;
                 if (this.x > this.startX + this.range) { this.x = this.startX + this.range; this.dir = -1; }
                 if (this.x < this.startX - this.range) { this.x = this.startX - this.range; this.dir = 1; }
             }
-            rect() { return { x: this.x - this.W/2, y: this.displayY - this.H/2, w: this.W, h: this.H }; }
+            rect() { return { x: this.x - this.R - 4, y: this.displayY - this.R, w: this.R * 2 + 8, h: this.R * 2 }; }
             draw(camY) {
                 const sy = this.displayY - camY;
-                if (sy < -60 || sy > BASE_H + 60) return;
+                if (sy < -70 || sy > BASE_H + 70) return;
+                const R = this.R;
                 ctx.save();
                 ctx.translate(this.x, sy);
                 if (this.dir < 0) ctx.scale(-1, 1);
+
                 // Glow
-                const grd = ctx.createRadialGradient(0, 0, 2, 0, 0, this.W * 0.7);
-                grd.addColorStop(0, 'rgba(255,160,50,0.28)');
-                grd.addColorStop(1, 'transparent');
-                ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0, 0, this.W * 0.7, 0, Math.PI * 2); ctx.fill();
-                // Tail
-                ctx.fillStyle = '#e86010';
+                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, R * 1.6);
+                glow.addColorStop(0, 'rgba(255,220,80,0.30)');
+                glow.addColorStop(1, 'transparent');
+                ctx.fillStyle = glow;
+                ctx.beginPath(); ctx.arc(0, 0, R * 1.6, 0, Math.PI * 2); ctx.fill();
+
+                // Tail fin (small, fan-shaped)
+                ctx.fillStyle = '#c8a020';
                 ctx.beginPath();
-                ctx.moveTo(-this.W/2 + 5, 0);
-                ctx.lineTo(-this.W/2 - 12, -9);
-                ctx.lineTo(-this.W/2 - 12, 9);
+                ctx.moveTo(-R + 2, 0);
+                ctx.lineTo(-R - 10, -8);
+                ctx.lineTo(-R - 14, 0);
+                ctx.lineTo(-R - 10, 8);
                 ctx.closePath(); ctx.fill();
-                // Body
-                const bodyGrd = ctx.createLinearGradient(-this.W/2+4, -this.H/2, this.W/2-4, this.H/2);
-                bodyGrd.addColorStop(0, '#ffaa44');
-                bodyGrd.addColorStop(0.4, '#ff7822');
-                bodyGrd.addColorStop(1, '#cc4400');
-                ctx.fillStyle = bodyGrd;
-                ctx.beginPath();
-                ctx.ellipse(2, 0, this.W/2 - 2, this.H/2 - 2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                // White stripes
-                ctx.globalAlpha = 0.38;
-                ctx.fillStyle = '#fff';
-                for (let i = 0; i < 3; i++) {
-                    const sx2 = -6 + i * 8;
-                    ctx.beginPath();
-                    ctx.ellipse(sx2, 0, 2, this.H/2 - 3, 0, 0, Math.PI * 2);
-                    ctx.fill();
+
+                // Body — round inflated puffer shape
+                const bGrd = ctx.createRadialGradient(-R * 0.2, -R * 0.25, R * 0.1, 0, 0, R);
+                bGrd.addColorStop(0, '#ffe880');
+                bGrd.addColorStop(0.45, '#f0c030');
+                bGrd.addColorStop(0.80, '#c88010');
+                bGrd.addColorStop(1, '#7a5008');
+                ctx.fillStyle = bGrd;
+                ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+
+                // Brown spots
+                const ss = this.spotSeed;
+                const spotData = [
+                    { x: -4, y: -6, r: 3.5 }, { x: 6, y: -3, r: 2.8 },
+                    { x: -2, y:  5, r: 3.0 }, { x: 7,  y:  5, r: 2.2 },
+                    { x:-8,  y:  1, r: 2.5 }, { x: 2,  y: -9, r: 2.0 },
+                ];
+                ctx.fillStyle = 'rgba(100,60,0,0.55)';
+                for (const sp of spotData) {
+                    ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2); ctx.fill();
                 }
-                ctx.globalAlpha = 1;
-                // Dorsal fin
-                ctx.fillStyle = '#ff9933';
+
+                // White belly patch
+                ctx.fillStyle = 'rgba(255,255,240,0.55)';
                 ctx.beginPath();
-                ctx.moveTo(-2, -this.H/2 + 2);
-                ctx.lineTo(4, -this.H/2 - 12);
-                ctx.lineTo(12, -this.H/2 + 2);
-                ctx.closePath(); ctx.fill();
-                // Pectoral fin
-                ctx.fillStyle = '#ffbb55';
-                ctx.beginPath();
-                ctx.ellipse(4, 4, 7, 4, 0.4, 0, Math.PI * 2);
+                ctx.ellipse(0, R * 0.35, R * 0.55, R * 0.38, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Eye
-                ctx.fillStyle = '#111';
-                ctx.beginPath(); ctx.arc(this.W/2 - 9, -3, 4.5, 0, Math.PI * 2); ctx.fill();
+
+                // Spines all around body
+                const nSpines = 20;
+                ctx.strokeStyle = '#d4a020';
+                ctx.lineCap = 'round';
+                for (let i = 0; i < nSpines; i++) {
+                    const ang = (i / nSpines) * Math.PI * 2;
+                    // Skip belly area (bottom)
+                    if (Math.sin(ang) > 0.7) continue;
+                    const spLen = i % 3 === 0 ? 7 : i % 3 === 1 ? 5 : 4;
+                    ctx.lineWidth = i % 3 === 0 ? 1.4 : 1.0;
+                    ctx.strokeStyle = i % 3 === 0 ? '#8a6010' : '#c8a020';
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(ang) * (R - 2), Math.sin(ang) * (R - 2));
+                    ctx.lineTo(Math.cos(ang) * (R + spLen), Math.sin(ang) * (R + spLen));
+                    ctx.stroke();
+                }
+
+                // Small dorsal fin
+                ctx.fillStyle = '#b88010';
+                ctx.beginPath();
+                ctx.moveTo(-3, -R + 1);
+                ctx.lineTo(1, -R - 7);
+                ctx.lineTo(6, -R + 1);
+                ctx.closePath(); ctx.fill();
+
+                // Small pectoral fin
+                ctx.fillStyle = 'rgba(200,160,20,0.70)';
+                ctx.beginPath();
+                ctx.ellipse(R * 0.2, R * 0.1, 7, 4, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye — big round puffer eye
                 ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(this.W/2 - 8, -4, 1.8, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(R - 6, -R * 0.25, 5.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#111';
+                ctx.beginPath(); ctx.arc(R - 5.5, -R * 0.25, 3.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(R - 4.5, -R * 0.35, 1.2, 0, Math.PI * 2); ctx.fill();
+
+                // Pursed mouth
+                ctx.strokeStyle = '#7a5008';
+                ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(R - 1, R * 0.15, 3, 0.2, Math.PI - 0.2);
+                ctx.stroke();
+
                 ctx.restore();
             }
         }
@@ -3217,7 +3263,7 @@ await Promise.race([
                     bx + d * this.reach * 0.5, sy - this.h * 0.55, 4,
                     bx + d * this.reach * 0.5, sy - this.h * 0.55, this.reach * 1.1
                 );
-                gGrd.addColorStop(0, '#ff44ee');
+                gGrd.addColorStop(0, '#22ee88');
                 gGrd.addColorStop(1, 'transparent');
                 ctx.fillStyle = gGrd;
                 ctx.beginPath();
@@ -3315,21 +3361,21 @@ await Promise.race([
                 }
 
                 // Shadow stroke for stem
-                ctx.strokeStyle = 'rgba(120,0,90,0.45)';
+                ctx.strokeStyle = 'rgba(0,80,30,0.45)';
                 ctx.lineWidth = 13;
                 ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
 
                 // Main stem gradient stroke
                 const stemGrd = ctx.createLinearGradient(bx, sy, tipX, tipY);
-                stemGrd.addColorStop(0, '#cc00aa');
-                stemGrd.addColorStop(0.5, '#ff22cc');
-                stemGrd.addColorStop(1, '#ff88ee');
+                stemGrd.addColorStop(0, '#116633');
+                stemGrd.addColorStop(0.5, '#22aa55');
+                stemGrd.addColorStop(1, '#55dd88');
                 ctx.strokeStyle = stemGrd;
                 ctx.lineWidth = 9;
                 ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
 
                 // Bright core
-                ctx.strokeStyle = 'rgba(255,200,255,0.55)';
+                ctx.strokeStyle = 'rgba(180,255,220,0.55)';
                 ctx.lineWidth = 3;
                 ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
 
@@ -3345,7 +3391,7 @@ await Promise.race([
                     const tLen = 14 + (i % 2 === 0 ? 5 : 0);
                     const tx2 = tipX + Math.cos(baseAngle) * tLen + wv;
                     const ty2 = tipY + Math.sin(baseAngle) * tLen;
-                    const col = i % 3 === 0 ? '#ff33cc' : i % 3 === 1 ? '#ff99ee' : '#cc00ff';
+                    const col = i % 3 === 0 ? '#22dd77' : i % 3 === 1 ? '#55ffaa' : '#11aa55';
                     ctx.strokeStyle = col;
                     ctx.lineWidth = 2.5;
                     ctx.beginPath();
@@ -3364,8 +3410,8 @@ await Promise.race([
                 const bulbPulse = 0.75 + 0.25 * Math.abs(wave);
                 const bGrd2 = ctx.createRadialGradient(tipX - 1, tipY - 1, 1, tipX, tipY, 8 * bulbPulse);
                 bGrd2.addColorStop(0, '#ffffff');
-                bGrd2.addColorStop(0.3, '#ffaaff');
-                bGrd2.addColorStop(1, 'rgba(255,80,220,0)');
+                bGrd2.addColorStop(0.3, '#aaffcc');
+                bGrd2.addColorStop(1, 'rgba(0,200,100,0)');
                 ctx.fillStyle = bGrd2;
                 ctx.beginPath(); ctx.arc(tipX, tipY, 8 * bulbPulse, 0, Math.PI * 2); ctx.fill();
 
@@ -3378,7 +3424,7 @@ await Promise.race([
                         const ay = tipY - 6 - i * 8 - travel * 12;
                         const alpha = travel < 0.6 ? (0.9 - travel * 0.5) : (0.9 - travel * 0.5) * ((1 - travel) / 0.4);
                         ctx.globalAlpha = Math.max(0, alpha);
-                        ctx.strokeStyle = '#ffccff';
+                        ctx.strokeStyle = '#aaffcc';
                         ctx.lineWidth = 2;
                         ctx.lineCap = 'round';
                         ctx.beginPath(); ctx.moveTo(arX, ay + 6); ctx.lineTo(arX, ay); ctx.stroke();
@@ -12712,9 +12758,9 @@ function gameUpdate() {
                 if (currentTheme === 2 && !tutorialMode) {
                     fishTimer--;
                     if (fishTimer <= 0) {
-                        fishTimer = rndInt(320, 600);
+                        fishTimer = rndInt(160, 320);
                         const h = lastRunHigh;
-                        if (h >= 150 && h <= 250 && fishes.length < 3) {
+                        if (h >= 150 && h <= 250 && fishes.length < 6) {
                             const candidates = platforms.filter(p =>
                                 p.y < player.y - BASE_H * 1.6 &&
                                 p.y > player.y - BASE_H * 2.8 &&
@@ -12970,7 +13016,7 @@ function gameUpdate() {
                         if (rectsOverlap(pr, seaPlant.rect())) {
                             // Launch height: HIGH JUMP → 70m, else 40m
                             const hasHJ = player.powerHighJump > 0;
-                            const launchPx = hasHJ ? 700 : 400;
+                            const launchPx = hasHJ ? 850 : 550;
                             player.vy = -Math.sqrt(2 * GRAVITY * launchPx);
                             player.onGround = false;
                             jumpStartY = player.y; // reset fall-death tracker from launch point
