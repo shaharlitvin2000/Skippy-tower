@@ -2580,8 +2580,9 @@ await Promise.race([
                     for (const sp of this.spikes) {
                         const spikeH = 26;
                         const center = this.x + sp.offset + sp.width * 0.5;
-                        const vLeft  = center - sp.width;
-                        const vRight = center + sp.width;
+                        // vLeft/vRight match the collision box (spikeL = offset, spikeR = offset+width)
+                        const vLeft  = center - sp.width * 0.52;
+                        const vRight = center + sp.width * 0.52;
                         const [dr, dg, db] = hexToRgb(C.DANGER);
                         const [hr, hg, hb] = hexToRgb(C.DANGER_HIGHLIGHT);
                         const dangerPulse = 0.55 + 0.45 * Math.sin(t * 3.5 + center * 0.07);
@@ -2648,30 +2649,32 @@ await Promise.race([
                             ctx.restore();
 
                         } else if (themeIdx === 2) {
-                            // ── Ocean: sea urchin ──
-                            const ur = sp.width * 0.76;
-                            const ux = center, uy = sy - ur * 0.62;
+                            // ── Ocean: sea urchin — sized to match collision box ──
+                            // collision: X = spikeL..spikeR (width=sp.width), Y = plat.y-26..plat.y-2
+                            const ur = sp.width * 0.52; // radius fits within collision half-width (sp.width*0.5)
+                            const ux = center, uy = sy - ur - 2; // body sits just above platform
                             ctx.save();
-                            ctx.fillStyle = 'rgba(0,0,0,0.45)';
-                            ctx.beginPath(); ctx.arc(ux+2,uy+2,ur,0,Math.PI*2); ctx.fill();
+                            ctx.fillStyle = 'rgba(0,0,0,0.40)';
+                            ctx.beginPath(); ctx.arc(ux+1,uy+2,ur,0,Math.PI*2); ctx.fill();
                             const uGrd = ctx.createRadialGradient(ux-ur*0.25,uy-ur*0.25,ur*0.1,ux,uy,ur);
                             uGrd.addColorStop(0,`rgb(${Math.min(255,dr+45)},${Math.min(255,dg+25)},${Math.min(255,db+25)})`);
                             uGrd.addColorStop(0.6,`rgb(${dr},${dg},${db})`);
                             uGrd.addColorStop(1,`rgb(${Math.max(0,dr-50)},${Math.max(0,dg-30)},${Math.max(0,db-30)})`);
                             ctx.fillStyle = uGrd;
                             ctx.beginPath(); ctx.arc(ux,uy,ur,0,Math.PI*2); ctx.fill();
-                            const nSpines = 16;
+                            // Spines — shorter so they stay near the collision zone
+                            const nSpines = 14;
                             for (let si2=0; si2<nSpines; si2++) {
                                 const ang = (si2/nSpines)*Math.PI*2;
-                                const spLen = si2%3===0 ? 11 : si2%3===1 ? 7 : 5;
+                                const spLen = si2%3===0 ? 6 : si2%3===1 ? 4 : 3;
                                 ctx.strokeStyle = si2%3===0 ? `rgb(${hr},${hg},${hb})` : `rgb(${dr},${dg},${db})`;
-                                ctx.lineWidth = si2%3===0 ? 1.5 : 1.0; ctx.lineCap='round'; ctx.globalAlpha=0.90;
+                                ctx.lineWidth = si2%3===0 ? 1.4 : 0.9; ctx.lineCap='round'; ctx.globalAlpha=0.90;
                                 ctx.beginPath();
-                                ctx.moveTo(ux+Math.cos(ang)*ur*0.76, uy+Math.sin(ang)*ur*0.76);
+                                ctx.moveTo(ux+Math.cos(ang)*ur*0.75, uy+Math.sin(ang)*ur*0.75);
                                 ctx.lineTo(ux+Math.cos(ang)*(ur+spLen), uy+Math.sin(ang)*(ur+spLen));
                                 ctx.stroke();
                             }
-                            ctx.globalAlpha=0.40; ctx.fillStyle=`rgb(${hr},${hg},${hb})`;
+                            ctx.globalAlpha=0.38; ctx.fillStyle=`rgb(${hr},${hg},${hb})`;
                             ctx.beginPath(); ctx.arc(ux-ur*0.30,uy-ur*0.30,ur*0.28,0,Math.PI*2); ctx.fill();
                             ctx.restore();
 
@@ -2864,11 +2867,11 @@ await Promise.race([
                 // AUTO-JUMP: skip on special (tutorial end) platform
                 if (this.justLanded && this.landCooldown <= 0 && !landedOnSpecial && portalTimer <= 0) {
                     this.landCooldown = 10;
-                    this.jump(landedOnBouncy ? 1.75 : 1.0);
+                    this.jump(landedOnBouncy ? 2.4 : 1.0);
                 }
                 // Manual jump
                 if ((keys['jump'] || touch.jump) && this.onGround && this.landCooldown <= 0) {
-                    this.jump(landedOnBouncy ? 1.75 : 1.0);
+                    this.jump(landedOnBouncy ? 2.4 : 1.0);
                 }
                 if (Math.abs(this.vx) > 0.5) this.animTick++;
                 if (this.landShake > 0) this.landShake--;
@@ -3231,7 +3234,63 @@ await Promise.race([
                 const ctrlX = bx + d * this.reach * 0.65;
                 const ctrlY = sy - this.h * 0.55;
 
-                // Shadow stroke
+                // Helper: point along the quadratic curve at t∈[0,1]
+                const qPt = (t3) => ({
+                    x: (1-t3)*(1-t3)*bx + 2*(1-t3)*t3*ctrlX + t3*t3*tipX,
+                    y: (1-t3)*(1-t3)*sy  + 2*(1-t3)*t3*ctrlY + t3*t3*tipY
+                });
+
+                // ── Green leaves along the stem ──
+                const leafDefs = [
+                    { t: 0.28, side: 1,  len: 22, w: 9,  col: '#33cc44', shadow: '#1a7722' },
+                    { t: 0.28, side: -1, len: 18, w: 7,  col: '#44dd55', shadow: '#1a8822' },
+                    { t: 0.55, side: 1,  len: 26, w: 10, col: '#22bb33', shadow: '#145c1a' },
+                    { t: 0.55, side: -1, len: 20, w: 8,  col: '#55ee66', shadow: '#229933' },
+                    { t: 0.78, side: 1,  len: 20, w: 8,  col: '#33dd44', shadow: '#1a8822' },
+                    { t: 0.78, side: -1, len: 16, w: 6,  col: '#44ee55', shadow: '#22aa33' },
+                ];
+                for (const lf of leafDefs) {
+                    const pt = qPt(lf.t);
+                    const wv2 = Math.sin(this.bob * 1.1 + lf.t * 8) * 4 * lf.side;
+                    // Leaf grows outward perpendicular to stem direction, plus upward tilt
+                    const leafAngle = lf.side * d > 0
+                        ? -Math.PI * 0.35 + wv2 * 0.06
+                        : -Math.PI * 0.65 + wv2 * 0.06;
+                    const lx = pt.x + Math.cos(leafAngle) * lf.len + wv2;
+                    const ly = pt.y + Math.sin(leafAngle) * lf.len;
+                    ctx.save();
+                    ctx.translate(pt.x, pt.y);
+                    ctx.rotate(leafAngle);
+                    // Leaf shape: fat ellipse tapering to tip
+                    const leafGrd = ctx.createLinearGradient(0, 0, lf.len, 0);
+                    leafGrd.addColorStop(0, lf.shadow);
+                    leafGrd.addColorStop(0.4, lf.col);
+                    leafGrd.addColorStop(1, '#aaffaa');
+                    ctx.fillStyle = leafGrd;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(
+                        lf.len * 0.3,  -lf.w + wv2 * 0.3,
+                        lf.len * 0.7,  -lf.w * 0.6,
+                        lf.len + wv2,   0
+                    );
+                    ctx.bezierCurveTo(
+                        lf.len * 0.7,   lf.w * 0.6,
+                        lf.len * 0.3,   lf.w - wv2 * 0.3,
+                        0,              0
+                    );
+                    ctx.fill();
+                    // Midrib vein
+                    ctx.strokeStyle = 'rgba(10,80,10,0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(lf.len * 0.85 + wv2 * 0.5, 0);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Shadow stroke for stem
                 ctx.strokeStyle = 'rgba(120,0,90,0.45)';
                 ctx.lineWidth = 13;
                 ctx.beginPath(); ctx.moveTo(bx, sy); ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY); ctx.stroke();
@@ -3255,7 +3314,6 @@ await Promise.race([
                 for (let i = 0; i < numT; i++) {
                     const frac = i / (numT - 1);
                     const spread = Math.PI * 0.9;
-                    // Angle: fan out upward and to the side
                     const baseAngle = this.side === 'left'
                         ? -Math.PI * 0.85 + frac * spread
                         : -Math.PI * 0.15 - frac * spread;
@@ -3274,7 +3332,6 @@ await Promise.race([
                         tx2, ty2
                     );
                     ctx.stroke();
-                    // Dot at tentacle tip
                     ctx.fillStyle = col;
                     ctx.beginPath(); ctx.arc(tx2, ty2, 2.5, 0, Math.PI * 2); ctx.fill();
                 }
@@ -12524,6 +12581,7 @@ function gameUpdate() {
                         player.onGround = false;
                         portalFlashAlpha = 1;
                         portalLiftFrames = 90; // ~1.5s death protection after portal launch
+                        player.iframes = 90;   // invulnerability so spikes/ghosts above can't kill
                         SFX.play('powerup');
                         // Burst particles
                         for (let i = 0; i < 30; i++) {
@@ -12657,11 +12715,24 @@ function gameUpdate() {
                     if (!seaPlantTriggered && lastRunHigh >= 130 && lastRunHigh <= 175) {
                         seaPlantTriggered = true;
                         const plantSide = Math.random() < 0.5 ? 'left' : 'right';
-                        // Place slightly above current player view
-                        const plantY = player.y - BASE_H * 1.1 - rnd(60, 200);
-                        // Don't place above finish line
-                        if (!finishPlatRef || plantY > finishPlatRef.y) {
-                            seaPlant = new SeaPlant(plantSide, plantY);
+                        // Try up to 6 candidate Y positions, pick one that doesn't overlap a platform
+                        const reach = 38, plantH = 52;
+                        let chosenY = null;
+                        for (let attempt = 0; attempt < 6; attempt++) {
+                            const candidateY = player.y - BASE_H * 1.1 - rnd(60, 220);
+                            const rx = plantSide === 'left' ? WALL_W : BASE_W - WALL_W - reach;
+                            const pr2 = { x: rx, y: candidateY - plantH, w: reach, h: plantH };
+                            const overlaps = platforms.some(p =>
+                                pr2.x < p.x + p.w && pr2.x + pr2.w > p.x &&
+                                pr2.y < p.y + p.h + 4 && pr2.y + pr2.h > p.y - 20
+                            );
+                            if (!overlaps && (!finishPlatRef || candidateY > finishPlatRef.y)) {
+                                chosenY = candidateY;
+                                break;
+                            }
+                        }
+                        if (chosenY !== null) {
+                            seaPlant = new SeaPlant(plantSide, chosenY);
                         }
                     }
                     if (seaPlant) seaPlant.update();
@@ -12689,9 +12760,9 @@ function gameUpdate() {
                 for (const plat of visible) {
                     for (let si = plat.spikes.length - 1; si >= 0; si--) {
                         const sp = plat.spikes[si];
-                        // Swept X: cover both current and previous horizontal position
-                        const spikeL = plat.x + sp.offset;
-                        const spikeR = spikeL + sp.width;
+                        // Swept X — shrunk 2px on each side to match the narrowed visual
+                        const spikeL = plat.x + sp.offset + 2;
+                        const spikeR = plat.x + sp.offset + sp.width - 2;
                         const xMin = Math.min(pr.x, pr.x - player.vx);
                         const xMax = Math.max(pr.x + pr.w, pr.x + pr.w - player.vx);
                         if (xMin >= spikeR || xMax <= spikeL) continue;
