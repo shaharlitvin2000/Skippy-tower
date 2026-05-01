@@ -7340,7 +7340,7 @@ await Promise.race([
             const _stairY = [860, 740, 620, 500, 380, 260, 140, 20];
             for (let i = 0; i < 8; i++) {
                 const isLeft = i % 2 === 0;
-                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 90, _stairY[i], 90);
+                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 115, _stairY[i], 115);
                 sp.spikes = [];
                 _mp.push(sp);
             }
@@ -13457,6 +13457,16 @@ function gameUpdate() {
 
                 // ── Mirror Dimension update ──
                 if (mirrorDimActive) {
+                    // During entry transition: freeze player on floor, no input
+                    if (mirrorDimTransFrames > 0) {
+                        player.vx = 0; player.vy = 0;
+                        player.y = mirrorDimFloor.y - player.H;
+                        player.onGround = true;
+                        const _startCam = mirrorDimFloor.y - BASE_H + 60;
+                        camY += (_startCam - camY) * 0.18;
+                        mirrorDimTransFrames--;
+                        return;
+                    }
                     const dimKeys = { left: keys.right, right: keys.left, jump: keys.jump };
                     const dimTouch = { left: touch.right, right: touch.left, jump: touch.jump };
                     player.update(dimKeys, mirrorDimPlatforms, dimTouch);
@@ -13467,14 +13477,13 @@ function gameUpdate() {
                         player.vy = 0; player.vx = 0;
                     }
                     // Reaching the mirror at the top = exit (only reachable from P8 at y=20)
-                    if (mirrorDimTransFrames === 0 && player.y < -50) {
+                    if (player.y < -50) {
                         _exitMirrorDimension(); return;
                     }
                     // Scrolling camera follows player upward
                     const _dimTarget = player.y - BASE_H * 0.55;
                     camY += (_dimTarget - camY) * 0.10;
                     camY = Math.max(-280, camY);
-                    if (mirrorDimTransFrames > 0) mirrorDimTransFrames--;
                     return;
                 }
 
