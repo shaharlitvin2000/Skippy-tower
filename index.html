@@ -2123,13 +2123,17 @@ await Promise.race([
                         }
                     }
 
-                    // ── Spider web hanging above platform (3D look) ──
+                    // ── Spider web — matches the slowdown zone exactly (pw × 65px) ──
                     if (this.hasWeb) {
                         ctx.save();
-                        const wCx = px + pw * 0.46 + Math.sin(px * 0.17) * pw * 0.08;
-                        const wCy = sy - 30;
-                        const wR  = Math.min(pw * 0.44, 32);
-                        const sway = Math.sin(t * 0.55 + px * 0.03) * 1.8; // gentle breathing sway
+                        const zoneH = 65; // must match collision zone height
+                        const wCx = px + pw / 2;           // center of platform
+                        const wCy = sy - zoneH / 2;        // center of slowdown zone
+                        const wRx = pw / 2;                // horizontal radius = half platform width
+                        const wRy = zoneH / 2;             // vertical radius = half zone height
+                        const scY = wRy / wRx;             // squish factor for elliptical web
+                        const wR  = wRx;                   // use horizontal as base radius
+                        const sway = Math.sin(t * 0.55 + px * 0.03) * 1.8;
                         const webA = 0.60 + 0.14 * Math.abs(Math.sin(t * 0.65 + px * 0.02));
                         const nSpokes = 9;
 
@@ -2180,7 +2184,6 @@ await Promise.race([
                         ctx.restore();
 
                         // ── Main web (elliptical = foreshortened 3D circle) ──
-                        const scY = 0.52; // vertical squish ratio → looks like tilted circle
                         // Spokes
                         ctx.save();
                         ctx.globalAlpha = webA * 0.80;
