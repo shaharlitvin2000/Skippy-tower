@@ -7371,16 +7371,21 @@ await Promise.race([
         function _exitMirrorDimension() {
             platforms = mirrorDimReturnPlats;
             player.x = mirrorDimReturnX;
-            player.y = mirrorDimReturnY;
+            player.y = mirrorDimReturnY - 1000; // 100 meters higher (1000px)
             player.vy = -3; player.vx = 0;
             player.landCooldown = 0;
-            camY = mirrorDimReturnCamY;
+            camY = mirrorDimReturnCamY - 1000;
             player.iframes = 120;
+            player.powerShield = 120; // 2 seconds shield at 60fps
             mirrorDimActive = false;
             mirrorDimPlatforms = [];
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = -1;
             mirrorPortal = null;
             nextMirrorM = lastRunHigh + rndInt(150, 300);
+            // Reward: +10 points + height boost text
+            addPoints(10); runPointsEarned += 10;
+            floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 20, '+10 ◆', '#dd88ff'));
+            floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 50, '+100m ↑', '#aaffcc'));
             SFX.play('win');
         }
 
@@ -13597,7 +13602,7 @@ function gameUpdate() {
                         const pdy = mCY - (player.y + player.H / 2);
                         const dist = Math.sqrt(pdx * pdx + pdy * pdy);
                         if (dist < 220 && dist > 2) {
-                            const strength = Math.pow((220 - dist) / 220, 1.5) * 0.30;
+                            const strength = Math.pow((220 - dist) / 220, 1.5) * 0.10;
                             player.vx += (pdx / dist) * strength;
                             player.vy += (pdy / dist) * strength;
                         }
