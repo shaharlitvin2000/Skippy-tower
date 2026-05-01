@@ -582,6 +582,9 @@
         <div style="background:rgba(30,0,55,0.88); border:1.5px solid rgba(180,80,255,0.6); border-radius:20px; padding:5px 13px; font-family:'Orbitron','Courier New',monospace; font-size:12px; color:#dd88ff; text-shadow:0 0 8px rgba(200,80,255,0.6); white-space:nowrap; box-shadow:0 0 12px rgba(160,40,255,0.25);">
             👤 <span id="userTagName"></span>
         </div>
+        <div id="offlineBadge" style="display:none; background:rgba(60,0,0,0.88); border:1.5px solid rgba(255,80,80,0.6); border-radius:20px; padding:5px 11px; font-family:'Orbitron','Courier New',monospace; font-size:10px; color:#ff7777; white-space:nowrap; letter-spacing:1px;">
+            ✕ OFFLINE
+        </div>
         <button id="logoutBtn" style="background:rgba(40,0,20,0.88); border:1.5px solid rgba(255,80,80,0.5); border-radius:20px; padding:5px 12px; font-family:'Orbitron','Courier New',monospace; font-size:10px; color:#ff8888; cursor:pointer; letter-spacing:1px; white-space:nowrap; box-shadow:0 0 8px rgba(255,60,60,0.2);">
             ✕ LOGOUT
         </button>
@@ -658,12 +661,32 @@
             const _cache = {};
             const _MISS = Symbol('miss');
 
+            // ── localStorage mirror — offline persistence ─────────────────────
+            const _lsKey = (rawKey) => 'icyLS_v1:' + rawKey;
+            const _lsLoad = (rawKey) => {
+                try { const v = localStorage.getItem(_lsKey(rawKey)); return v !== null ? JSON.parse(v) : undefined; }
+                catch(e) { return undefined; }
+            };
+            const _lsSave = (rawKey, value) => {
+                try { localStorage.setItem(_lsKey(rawKey), JSON.stringify(value)); } catch(e) {}
+            };
+            const _lsDel = (rawKey) => {
+                try { localStorage.removeItem(_lsKey(rawKey)); } catch(e) {}
+            };
+
             const _adapter = {
 async get(rawKey) {
     if (_cache[rawKey] !== _MISS && rawKey in _cache) return _cache[rawKey];
 
+    // Fast offline path — skip all Firebase waits when there's no internet
+    if (!navigator.onLine || window._fbLoadFailed) {
+        const lsVal = _lsLoad(rawKey);
+        const val = lsVal !== undefined ? lsVal : null;
+        _cache[rawKey] = val;
+        return val;
+    }
+
     try {
-        // ⛔ לא מחכים לנצח ל-auth
         await Promise.race([
             _fbAuthReady,
             new Promise(res => setTimeout(res, 3000))
@@ -676,15 +699,22 @@ async get(rawKey) {
 
         const val = snap.exists ? snap.data().v : null;
         _cache[rawKey] = val;
+        // Mirror a non-null Firestore value to localStorage so next offline session has it
+        if (val !== null) _lsSave(rawKey, val);
         return val;
 
     } catch (e) {
         console.warn('[SaveSystem] get fallback:', e.message);
-        return _cache[rawKey] || null;
+        // Firestore failed — fall back to localStorage mirror
+        const lsVal = _lsLoad(rawKey);
+        const val = lsVal !== undefined ? lsVal : (_cache[rawKey] || null);
+        _cache[rawKey] = val;
+        return val;
     }
 },
                 async set(rawKey, value) {
                     _cache[rawKey] = value; // update cache immediately
+                    _lsSave(rawKey, value); // always persist locally for offline
                     try {
                         await _fbAuthReady;
                         await _fbDb.collection('kv').doc(_toId(rawKey)).set({ v: value, k: rawKey });
@@ -692,6 +722,7 @@ async get(rawKey) {
                 },
                 async remove(rawKey) {
                     delete _cache[rawKey];
+                    _lsDel(rawKey);
                     try {
                         await _fbAuthReady;
                         await _fbDb.collection('kv').doc(_toId(rawKey)).delete();
@@ -1314,6 +1345,14 @@ await Promise.race([
         function handleDeath() {
             if (player.powerHighJump > 0) return;
             if (portalTimer > 0 || portalLiftFrames > 0) return;
+            if (secondLifeActive) return;
+            if (currentMode === 'infinite' && secondLifeReady && !isMultiplayerGame) {
+                secondLifeReady = false;
+                secondLifeActive = true;
+                secondLifeAnimStart = Date.now();
+                SFX.play('powerup');
+                return;
+            }
             if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } drakonCooldownUntil = lastRunHigh + rndInt(150, 250); }
             if (isMultiplayerGame) { _mpRespawn(); return; }
             clearAllEffects();
@@ -1448,6 +1487,7 @@ await Promise.race([
         // ─────────────────────────────────────────────
         class Platform {
             constructor(x, y, w, moving = false, bouncy = false) {
+                this.id = Platform._nextId++;
                 this.x = x; this.y = y; this.w = w; this.h = 14;
                 this.moving = moving;
                 this.dir = _worldRng() < 0.5 ? -1 : 1;
@@ -1603,6 +1643,46 @@ await Promise.race([
                 const themeIdx = currentTheme;
                 const t = Date.now() / 1000;
                 const px = this.x, pw = this.w, ph = this.h;
+
+                // ── MIRROR PORTAL PLATFORM ──
+                if (this.isMirror) {
+                    const mCX = px + pw / 2;
+                    const pulse = 0.7 + 0.3 * Math.sin(t * 3.5);
+                    ctx.save();
+                    // Base glow
+                    const mg = ctx.createRadialGradient(mCX, sy, 0, mCX, sy, pw * 0.65);
+                    mg.addColorStop(0, `rgba(120,80,255,${0.35 + 0.15 * pulse})`);
+                    mg.addColorStop(1, 'rgba(40,0,120,0)');
+                    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mCX, sy, pw * 0.65, 0, Math.PI * 2); ctx.fill();
+                    // Platform body — dark shimmering mirror
+                    const platG = ctx.createLinearGradient(px, sy, px, sy + ph);
+                    platG.addColorStop(0, `rgba(180,140,255,${0.9 * pulse})`);
+                    platG.addColorStop(0.4, 'rgba(60,20,160,0.95)');
+                    platG.addColorStop(1, 'rgba(20,0,80,0.95)');
+                    ctx.fillStyle = platG;
+                    ctx.beginPath(); ctx.roundRect(px, sy, pw, ph, 4); ctx.fill();
+                    // Mirror shimmer lines
+                    ctx.globalAlpha = 0.4 * pulse;
+                    ctx.strokeStyle = '#cc99ff'; ctx.lineWidth = 1;
+                    for (let i = 0; i < 4; i++) {
+                        const lx = px + (pw / 5) * (i + 1) + Math.sin(t * 2 + i) * 3;
+                        ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx, sy + ph); ctx.stroke();
+                    }
+                    // Top glow rim
+                    ctx.globalAlpha = 0.85 * pulse;
+                    ctx.strokeStyle = `rgba(200,160,255,${pulse})`; ctx.lineWidth = 2.5;
+                    ctx.shadowColor = '#aa66ff'; ctx.shadowBlur = 10;
+                    ctx.beginPath(); ctx.moveTo(px + 4, sy + 1); ctx.lineTo(px + pw - 4, sy + 1); ctx.stroke();
+                    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+                    // "MIRROR" label
+                    ctx.font = 'bold 9px monospace'; ctx.fillStyle = `rgba(220,180,255,${pulse})`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText('✦ MIRROR ✦', mCX, sy + ph / 2);
+                    ctx.restore();
+                    // Draw spikes if any
+                    for (const sp of this.spikes) sp.draw(this, camY);
+                    return;
+                }
 
                 // ── MAGIC GHOST PLATFORM ──
                 if (this.isGhost) {
@@ -2953,6 +3033,8 @@ await Promise.race([
             }
         }
 
+        Platform._nextId = 0;
+
         // ─────────────────────────────────────────────
         //  PLAYER
         // ─────────────────────────────────────────────
@@ -3031,7 +3113,16 @@ await Promise.race([
                             this.y = r.y - this.H;
                             if (this.vy > 7) this.landShake = Math.floor(this.vy * 1.2);
                             this.vy = 0; this.onGround = true;
-                            if (!wasGround) { this.justLanded = true; this.landPause = 6; }
+                            if (!wasGround) {
+                                this.justLanded = true; this.landPause = 6;
+                                if (currentMode === 'infinite' && !plat.isFinish && !secondLifeActive && !mirrorDimActive) {
+                                    if (!secondLifeVisited.has(plat.id)) {
+                                        secondLifeVisited.add(plat.id);
+                                        secondLifeProgress = Math.min(200, secondLifeProgress + 1);
+                                        if (secondLifeProgress >= 200 && !secondLifeReady) secondLifeReady = true;
+                                    }
+                                }
+                            }
                             if (plat.y < highestLandedPlatY) highestLandedPlatY = plat.y;
                             if (plat.moving) this.x += plat.dir * plat.speed;
                             // Gear push: rotating gear surface drifts the player sideways
@@ -4203,8 +4294,8 @@ await Promise.race([
                 else if (state === STATE.WIN) { state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; }
                 else if (state === STATE.ONLINE) {
                     if (onlineScreen === 'loading') { /* can't cancel loading */ }
-                    else if (onlineScreen === 'main') { state = STATE.MAIN; }
-                    else if (onlineScreen === 'hostOptions') { onlineScreen = 'main'; }
+                    else if (onlineScreen === 'main') { state = STATE.MAIN; lobbyError = ''; }
+                    else if (onlineScreen === 'hostOptions') { onlineScreen = 'main'; lobbyError = ''; }
                     else if (onlineScreen === 'joinCode') { onlineScreen = 'main'; joinCodeError = ''; codeInputText = ''; }
                     else if (onlineScreen === 'quickMatch') { _onlineUnsubPublicRooms(); onlineScreen = 'main'; }
                     else if (onlineScreen === 'lobby') { _onlineLeaveRoom(false); }
@@ -4470,6 +4561,33 @@ await Promise.race([
         let seaPlantTriggered = false; // true once spawned (one per run)
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
+        // ── Mirror Dimension ──────────────────────────────────────────────────────
+        let mirrorPlatRef = null;        // Platform currently marked as mirror
+        let nextMirrorM = 0;             // Next meter at which mirror appears
+        let mirrorDimActive = false;     // Currently inside the dimension
+        let mirrorDimJumps = 0;          // Alternating zone crossings so far (0-8)
+        let mirrorDimLastSide = -1;      // -1=none, 0=left, 1=right
+        let mirrorDimExitReady = false;  // 8 jumps done → exit portal visible
+        let mirrorDimPlatforms = [];     // Platforms inside the dimension
+        let mirrorDimFloor = null, mirrorDimLeftPad = null, mirrorDimRightPad = null, mirrorDimCenterPad = null;
+        let mirrorDimReturnX = 0, mirrorDimReturnY = 0, mirrorDimReturnCamY = 0, mirrorDimReturnPlats = null;
+        let mirrorDimTransFrames = 0;    // Transition frames remaining
+        let mirrorDimTransDir = 0;       // 1=entering -1=exiting
+        const MIRROR_DIM_TRANS = 28;
+        const MIRROR_DIM_EXIT_Y = 320;
+        const MIRROR_DIM_EXIT_X = 480 / 2 - 60;
+        const MIRROR_DIM_EXIT_W = 120;
+        const MIRROR_DIM_EXIT_H = 40;
+        const MIRROR_DIM_CAM_Y = 50;
+
+        // ── Second Life (Clock mode meter) ──────────────────────────────────
+        let secondLifeVisited = new Set();   // platform IDs stepped on this run
+        let secondLifeProgress = 0;          // 0-200 unique platforms
+        let secondLifeReady = false;         // meter full — one revival available
+        let secondLifeActive = false;        // currently showing clock rewind animation
+        let secondLifeAnimStart = 0;         // Date.now() when animation began
+        const SECOND_LIFE_ANIM_DURATION = 2200; // ms
+
         // ── Hidden reset — call window.__icyReset() from browser console ──
         // Clears all player data for the currently logged-in user.
         window.__icyReset = async function() {
@@ -4591,6 +4709,12 @@ await Promise.race([
             festivalWindDriftX = 0;
             fishes = []; fishTimer = rndInt(300, 500); drunkTimer = 0; drunkPhase = 0;
             seaPlant = null; seaPlantTriggered = false;
+            Platform._nextId = 0;
+            secondLifeVisited = new Set(); secondLifeProgress = 0; secondLifeReady = false;
+            secondLifeActive = false; secondLifeAnimStart = 0;
+            mirrorPlatRef = null; nextMirrorM = rndInt(170, 230);
+            mirrorDimActive = false; mirrorDimJumps = 0; mirrorDimLastSide = -1;
+            mirrorDimExitReady = false; mirrorDimPlatforms = []; mirrorDimTransFrames = 0; mirrorDimTransDir = 0;
         }
 
         function initTutorial() {
@@ -7026,10 +7150,299 @@ await Promise.race([
             if (insideCore) { handleDeath(); }
         }
 
+        function _drawMirrorDimension() {
+            const t = Date.now() / 1000;
+            const cx = BASE_W / 2;
+
+            // Transition: ripple fade overlay
+            if (mirrorDimTransFrames > 0) {
+                const frac = mirrorDimTransFrames / MIRROR_DIM_TRANS;
+                const alpha = mirrorDimTransDir === 1 ? frac : (1 - frac);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                // White flash at start/end
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, BASE_W, BASE_H);
+                // Ripple ring
+                ctx.globalAlpha = alpha * 0.7;
+                ctx.strokeStyle = '#aa66ff'; ctx.lineWidth = 3 + (1 - frac) * 8;
+                const rr = (1 - frac) * BASE_W * 0.7 + 20;
+                ctx.beginPath(); ctx.arc(cx, BASE_H / 2, rr, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
+                if (!mirrorDimActive) return; // only show transition overlay when exiting
+            }
+
+            if (!mirrorDimActive) return;
+
+            // Dimension background — dark otherworldly void
+            const bg = ctx.createLinearGradient(0, 0, 0, BASE_H);
+            bg.addColorStop(0, '#060010');
+            bg.addColorStop(0.5, '#0d0025');
+            bg.addColorStop(1, '#060010');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Stars
+            ctx.save();
+            for (let i = 0; i < 60; i++) {
+                const sx = (Math.sin(i * 137.5 + 0.1) * 0.5 + 0.5) * BASE_W;
+                const sy = (Math.cos(i * 93.7) * 0.5 + 0.5) * BASE_H;
+                const a = 0.3 + 0.5 * Math.abs(Math.sin(t * 1.3 + i));
+                ctx.globalAlpha = a;
+                ctx.fillStyle = i % 5 === 0 ? '#cc88ff' : '#ffffff';
+                ctx.beginPath(); ctx.arc(sx, sy, i % 7 === 0 ? 2 : 1, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            // Draw dimension platforms
+            for (const p of mirrorDimPlatforms) {
+                const psy = p.y - MIRROR_DIM_CAM_Y;
+                if (psy < -20 || psy > BASE_H + 20) continue;
+                // Determine color: left pad = blue, right pad = red, floor = grey, center = gold
+                let col = '#334466';
+                if (p === mirrorDimLeftPad) col = '#2244aa';
+                else if (p === mirrorDimRightPad) col = '#aa2244';
+                else if (p === mirrorDimCenterPad) col = '#665500';
+                const platG = ctx.createLinearGradient(p.x, psy, p.x, psy + p.h);
+                platG.addColorStop(0, col + 'ee');
+                platG.addColorStop(1, col + '88');
+                ctx.fillStyle = platG;
+                ctx.beginPath(); ctx.roundRect(p.x, psy, p.w, p.h, 4); ctx.fill();
+                ctx.strokeStyle = p === mirrorDimLeftPad ? '#6699ff' : p === mirrorDimRightPad ? '#ff6699' : p === mirrorDimCenterPad ? '#ffdd66' : '#557799';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(p.x - 1, psy - 1, p.w + 2, p.h + 2, 4); ctx.stroke();
+            }
+
+            // Left/Right zone labels
+            ctx.save();
+            ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#4466cc'; ctx.globalAlpha = 0.6;
+            ctx.fillText('◄ LEFT', WALL_W + 50, 560 - MIRROR_DIM_CAM_Y);
+            ctx.fillStyle = '#cc4466';
+            ctx.fillText('RIGHT ►', BASE_W - WALL_W - 50, 560 - MIRROR_DIM_CAM_Y);
+            ctx.restore();
+
+            // Walls
+            ctx.save();
+            const wallG = ctx.createLinearGradient(0, 0, WALL_W, 0);
+            wallG.addColorStop(0, '#1a0040'); wallG.addColorStop(1, 'transparent');
+            ctx.fillStyle = wallG; ctx.fillRect(0, 0, WALL_W, BASE_H);
+            const wallR = ctx.createLinearGradient(BASE_W - WALL_W, 0, BASE_W, 0);
+            wallR.addColorStop(0, 'transparent'); wallR.addColorStop(1, '#1a0040');
+            ctx.fillStyle = wallR; ctx.fillRect(BASE_W - WALL_W, 0, WALL_W, BASE_H);
+            ctx.restore();
+
+            // Draw the player
+            player.draw(MIRROR_DIM_CAM_Y);
+
+            // Exit portal (after 8 jumps)
+            if (mirrorDimExitReady) {
+                const epSy = MIRROR_DIM_EXIT_Y - MIRROR_DIM_CAM_Y;
+                const epX = MIRROR_DIM_EXIT_X;
+                const epW = MIRROR_DIM_EXIT_W;
+                const epH = MIRROR_DIM_EXIT_H;
+                const pulse = 0.7 + 0.3 * Math.sin(t * 4);
+                ctx.save();
+                // Outer glow
+                const exitG = ctx.createRadialGradient(epX + epW / 2, epSy + epH / 2, 0, epX + epW / 2, epSy + epH / 2, 90);
+                exitG.addColorStop(0, `rgba(180,255,255,${0.25 * pulse})`);
+                exitG.addColorStop(1, 'rgba(80,200,255,0)');
+                ctx.fillStyle = exitG;
+                ctx.beginPath(); ctx.ellipse(epX + epW / 2, epSy + epH / 2, 90, 50, 0, 0, Math.PI * 2); ctx.fill();
+                // Portal body
+                const portalG = ctx.createLinearGradient(epX, epSy, epX, epSy + epH);
+                portalG.addColorStop(0, `rgba(180,255,255,${0.9 * pulse})`);
+                portalG.addColorStop(0.5, 'rgba(40,180,255,0.85)');
+                portalG.addColorStop(1, 'rgba(0,80,200,0.9)');
+                ctx.fillStyle = portalG;
+                ctx.beginPath(); ctx.roundRect(epX, epSy, epW, epH, 8); ctx.fill();
+                ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 18;
+                ctx.strokeStyle = `rgba(200,255,255,${pulse})`; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.roundRect(epX - 1, epSy - 1, epW + 2, epH + 2, 8); ctx.stroke();
+                ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+                ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#001122';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('★ EXIT ★', epX + epW / 2, epSy + epH / 2);
+                ctx.restore();
+            }
+
+            // Jump progress bar
+            ctx.save();
+            const bW = 180, bH = 14, bX = cx - bW / 2, bY = 22;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath(); ctx.roundRect(bX - 1, bY - 1, bW + 2, bH + 2, 6); ctx.fill();
+            ctx.fillStyle = '#1a0035';
+            ctx.beginPath(); ctx.roundRect(bX, bY, bW, bH, 5); ctx.fill();
+            const prog = Math.min(1, mirrorDimJumps / 8);
+            if (prog > 0) {
+                const fG = ctx.createLinearGradient(bX, bY, bX + bW * prog, bY);
+                fG.addColorStop(0, '#5533cc'); fG.addColorStop(1, '#bb66ff');
+                ctx.fillStyle = fG;
+                ctx.beginPath(); ctx.roundRect(bX, bY, bW * prog, bH, 5); ctx.fill();
+            }
+            ctx.strokeStyle = '#7744ee'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(bX - 1, bY - 1, bW + 2, bH + 2, 6); ctx.stroke();
+            // Labels
+            ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#cc99ff';
+            ctx.fillText(`JUMPS  ${mirrorDimJumps} / 8`, cx, bY + bH / 2);
+            ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(180,140,255,0.7)';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('— MIRROR DIMENSION —', cx, 52);
+            ctx.restore();
+        }
+
+        function _enterMirrorDimension() {
+            mirrorDimReturnX = player.x;
+            mirrorDimReturnY = player.y;
+            mirrorDimReturnCamY = camY;
+            mirrorDimReturnPlats = platforms;
+            mirrorDimFloor = new Platform(WALL_W, 670, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
+            mirrorDimLeftPad = new Platform(WALL_W, 580, 100); mirrorDimLeftPad.spikes = [];
+            mirrorDimRightPad = new Platform(BASE_W - WALL_W - 100, 580, 100); mirrorDimRightPad.spikes = [];
+            mirrorDimCenterPad = null;
+            mirrorDimPlatforms = [mirrorDimFloor, mirrorDimLeftPad, mirrorDimRightPad];
+            platforms = mirrorDimPlatforms;
+            player.x = BASE_W / 2 - player.W / 2;
+            player.y = mirrorDimFloor.y - player.H;
+            player.vy = 0; player.vx = 0; player.onGround = true; player.iframes = 30;
+            mirrorDimActive = true; mirrorDimJumps = 0; mirrorDimLastSide = -1; mirrorDimExitReady = false;
+            camY = MIRROR_DIM_CAM_Y;
+            mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = 1;
+            SFX.play('powerup');
+        }
+
+        function _exitMirrorDimension() {
+            platforms = mirrorDimReturnPlats;
+            player.x = mirrorDimReturnX;
+            player.y = mirrorDimReturnY;
+            player.vy = -3; player.vx = 0;
+            camY = mirrorDimReturnCamY;
+            player.iframes = 120;
+            mirrorDimActive = false;
+            mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = -1;
+            if (mirrorPlatRef) { mirrorPlatRef.isMirror = false; mirrorPlatRef = null; }
+            nextMirrorM = lastRunHigh + rndInt(150, 300);
+            SFX.play('win');
+        }
+
         //  HUD
         // ─────────────────────────────────────────────
+        function _drawSecondLifeAnim() {
+            if (!secondLifeActive) return;
+            const elapsed = Date.now() - secondLifeAnimStart;
+            const prog = Math.min(1, elapsed / SECOND_LIFE_ANIM_DURATION);
+            const cx = BASE_W / 2, cy = BASE_H / 2;
+            const r = 70;
+            ctx.save();
+
+            // Dark overlay that fades in then out
+            const overlayAlpha = prog < 0.5 ? prog * 2 * 0.72 : (1 - prog) * 2 * 0.72;
+            ctx.fillStyle = `rgba(0,0,10,${overlayAlpha})`;
+            ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // Clock face
+            const faceAlpha = overlayAlpha;
+            ctx.globalAlpha = faceAlpha;
+            const faceG = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            faceG.addColorStop(0, '#1a2a4a'); faceG.addColorStop(1, '#0a1020');
+            ctx.fillStyle = faceG;
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#5588ff'; ctx.lineWidth = 3;
+            ctx.shadowColor = '#4466cc'; ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Clock tick marks
+            ctx.strokeStyle = '#7aaaff'; ctx.lineWidth = 1.5;
+            for (let i = 0; i < 12; i++) {
+                const a = (i / 12) * Math.PI * 2;
+                const innerR = i % 3 === 0 ? r - 14 : r - 10;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4));
+                ctx.stroke();
+            }
+
+            // Clock hands spinning BACKWARDS  (negative angle = clockwise reverse)
+            const backSpin = -prog * Math.PI * 10; // fast reverse spin
+            // Minute hand
+            ctx.strokeStyle = '#aaccff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + Math.cos(Math.PI / 2 * 3 + backSpin * 3) * (r - 18), cy + Math.sin(Math.PI / 2 * 3 + backSpin * 3) * (r - 18));
+            ctx.stroke();
+            // Hour hand
+            ctx.strokeStyle = '#7799ee'; ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + Math.cos(Math.PI / 2 * 3 + backSpin) * (r - 32), cy + Math.sin(Math.PI / 2 * 3 + backSpin) * (r - 32));
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Center dot
+            ctx.fillStyle = '#ffffff'; ctx.globalAlpha = faceAlpha;
+            ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+
+            // "SECOND LIFE" text below clock
+            ctx.globalAlpha = faceAlpha;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.font = 'bold 18px monospace';
+            ctx.fillStyle = '#ffe066';
+            ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 14;
+            ctx.fillText('SECOND LIFE', cx, cy + r + 24);
+            ctx.shadowBlur = 0;
+            ctx.font = '13px monospace'; ctx.fillStyle = '#aaccff';
+            ctx.fillText('rewinding time...', cx, cy + r + 44);
+
+            ctx.restore();
+        }
+
         function drawHUD() {
             if (tutorialMode) return;
+            // ── Second Life meter (infinite/clock mode only) ──
+            if (currentMode === 'infinite') {
+                const mlW = 200, mlH = 10, mlX = BASE_W / 2 - mlW / 2, mlY = 10;
+                const frac = Math.min(1, secondLifeProgress / 200);
+                const t2 = Date.now() / 1000;
+                ctx.save();
+                // Track
+                ctx.fillStyle = 'rgba(0,0,0,0.45)';
+                ctx.beginPath(); ctx.roundRect(mlX - 1, mlY - 1, mlW + 2, mlH + 2, 5); ctx.fill();
+                ctx.fillStyle = '#1a2a4a';
+                ctx.beginPath(); ctx.roundRect(mlX, mlY, mlW, mlH, 4); ctx.fill();
+                // Fill
+                if (frac > 0) {
+                    const mCol = secondLifeReady
+                        ? `hsl(${45 + 15 * Math.sin(t2 * 4)},100%,${60 + 10 * Math.sin(t2 * 5)}%)`
+                        : '#5599ff';
+                    ctx.fillStyle = mCol;
+                    if (secondLifeReady) { ctx.shadowColor = '#ffdd00'; ctx.shadowBlur = 8; }
+                    ctx.beginPath(); ctx.roundRect(mlX, mlY, mlW * frac, mlH, 4); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                // Border
+                ctx.strokeStyle = secondLifeReady ? '#ffdd44' : '#335588';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.roundRect(mlX - 1, mlY - 1, mlW + 2, mlH + 2, 5); ctx.stroke();
+                // Clock icon + label
+                ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = secondLifeReady ? '#ffdd44' : '#5599ff';
+                ctx.fillText('⚙ SECOND LIFE', BASE_W / 2, mlY + mlH + 9);
+                // "READY!" pulse when full
+                if (secondLifeReady) {
+                    const pulse = 0.7 + 0.3 * Math.sin(t2 * 6);
+                    ctx.globalAlpha = pulse;
+                    ctx.font = 'bold 13px monospace';
+                    ctx.fillStyle = '#ffe066';
+                    ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 10;
+                    ctx.fillText('SECOND LIFE AVAILABLE', BASE_W / 2, mlY + mlH + 26);
+                    ctx.shadowBlur = 0;
+                }
+                ctx.restore();
+            }
             const hm = Math.max(0, Math.floor((BASE_H - 120 - player.y) / 10));
             // Real-time best: reflects current run immediately, no need to die first
             const effectiveBest = Math.max(getBest(), lastRunHigh);
@@ -9986,6 +10399,33 @@ function _drawMpHostEndBtn() {
                 ctx.fillText(b.icon + '  ' + b.label, cx, b.y + btnH / 2);
             });
 
+            // Offline warning overlay on buttons
+            if (!navigator.onLine) {
+                ctx.save();
+                ctx.globalAlpha = 0.55;
+                ctx.fillStyle = '#000010';
+                ctx.beginPath(); ctx.roundRect(btnX, 230, btnW, 202, 14); ctx.fill();
+                ctx.globalAlpha = 1;
+                const warnPulse = 0.75 + 0.25 * Math.sin(t * 3);
+                ctx.globalAlpha = warnPulse;
+                ctx.fillStyle = '#ff4444';
+                ctx.font = 'bold 13px Orbitron, monospace';
+                ctx.fillText('NO INTERNET', cx, 322);
+                ctx.font = '11px monospace'; ctx.fillStyle = '#ffaaaa';
+                ctx.fillText('Multiplayer not available offline', cx, 341);
+                ctx.globalAlpha = 1;
+                ctx.restore();
+            }
+
+            // Error message (e.g. offline attempt)
+            if (lobbyError && onlineScreen === 'main') {
+                ctx.save();
+                ctx.font = 'bold 12px monospace';
+                ctx.fillStyle = '#ff6666'; ctx.textAlign = 'center';
+                ctx.fillText(lobbyError, cx, 510);
+                ctx.restore();
+            }
+
             // BACK button
             const backY = 454;
             ctx.fillStyle = 'rgba(15,5,35,0.85)';
@@ -12599,6 +13039,12 @@ function menuAction(sx, sy) {
                 // ── main online menu ──────────────────────────────────────
                 if (onlineScreen === 'main') {
                     const btnW = 260, btnX = cx - btnW / 2;
+                    // Block all multiplayer actions when offline
+                    if (!navigator.onLine && (
+                        (sy >= 230 && sy <= 432 && sx >= btnX && sx <= btnX + btnW)
+                    )) {
+                        SFX.play('click'); lobbyError = 'NO INTERNET — cannot play online'; return;
+                    }
                     if (sy >= 230 && sy <= 288 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); onlineScreen = 'hostOptions'; return;
                     }
@@ -12609,7 +13055,7 @@ function menuAction(sx, sy) {
                         SFX.play('click'); _onlineSubPublicRooms(); onlineScreen = 'quickMatch'; return;
                     }
                     if (sy >= 454 && sy <= 494 && sx >= cx - 80 && sx <= cx + 80) {
-                        SFX.play('click'); state = STATE.MAIN; return;
+                        SFX.play('click'); lobbyError = ''; state = STATE.MAIN; return;
                     }
                     return;
                 }
@@ -12929,6 +13375,87 @@ function gameUpdate() {
     if (isMultiplayerGame && mpPausedByHost) return; 
     
     if (isMultiplayerGame && mpGameOver) return;
+
+                // ── Second Life revival check ──
+                if (secondLifeActive) {
+                    const elapsed = Date.now() - secondLifeAnimStart;
+                    if (elapsed >= SECOND_LIFE_ANIM_DURATION) {
+                        secondLifeActive = false;
+                        // Revive: land on a nearby safe platform
+                        const safeY = highestLandedPlatY;
+                        const nearPlats = platforms.filter(p => p.y > safeY - 300 && p.y < safeY + 600 && !p.isFinish);
+                        const revivePlat = nearPlats.reduce((best, p) => !best || Math.abs(p.y - safeY) < Math.abs(best.y - safeY) ? p : best, null);
+                        if (revivePlat) {
+                            player.x = revivePlat.x + revivePlat.w / 2 - player.W / 2;
+                            player.y = revivePlat.y - player.H;
+                        }
+                        player.vy = 0; player.vx = 0; player.onGround = true;
+                        player.iframes = 180;
+                        // Destroy spikes on all platforms within 600px of player
+                        for (const p of platforms) {
+                            if (Math.abs(p.y - player.y) < 600) p.spikes = [];
+                        }
+                        // Emit revival particles
+                        for (let i = 0; i < 20; i++) {
+                            const ang = (i / 20) * Math.PI * 2;
+                            particles.push(new Particle(
+                                player.x + player.W / 2, player.y + player.H / 2,
+                                Math.cos(ang) * rnd(3, 9), Math.sin(ang) * rnd(3, 9),
+                                rndInt(35, 55), '#ffdd44', rndInt(4, 7)
+                            ));
+                        }
+                        secondLifeProgress = 0; secondLifeVisited = new Set();
+                    }
+                    return; // freeze gameplay during animation
+                }
+
+                // ── Mirror Dimension update ──
+                if (mirrorDimActive) {
+                    // Use dimension-specific platforms for player
+                    const dimVisible = mirrorDimPlatforms;
+                    player.update(keys, dimVisible, touch);
+                    // Safety: if player falls off, respawn on floor
+                    if (player.y > BASE_H + 40) {
+                        player.x = BASE_W / 2 - player.W / 2;
+                        player.y = mirrorDimFloor.y - player.H;
+                        player.vy = 0; player.vx = 0;
+                    }
+                    // Track alternating side-crossing jumps
+                    if (player.justLanded) {
+                        const cx = player.x + player.W / 2;
+                        let side = -1;
+                        if (cx < BASE_W * 0.35) side = 0;
+                        else if (cx > BASE_W * 0.65) side = 1;
+                        if (side !== -1) {
+                            if (mirrorDimLastSide === -1) {
+                                mirrorDimLastSide = side;
+                            } else if (side !== mirrorDimLastSide) {
+                                mirrorDimJumps++;
+                                mirrorDimLastSide = side;
+                                if (mirrorDimJumps >= 8 && !mirrorDimExitReady) {
+                                    mirrorDimExitReady = true;
+                                    mirrorDimCenterPad = new Platform(BASE_W / 2 - 45, 530, 90);
+                                    mirrorDimCenterPad.spikes = [];
+                                    mirrorDimPlatforms.push(mirrorDimCenterPad);
+                                    SFX.play('coin');
+                                }
+                            }
+                        }
+                    }
+                    // Check exit portal touch
+                    if (mirrorDimExitReady && mirrorDimTransFrames === 0) {
+                        const ep = { x: MIRROR_DIM_EXIT_X, y: MIRROR_DIM_EXIT_Y, w: MIRROR_DIM_EXIT_W, h: MIRROR_DIM_EXIT_H };
+                        if (rectsOverlap({ x: player.x, y: player.y, w: player.W, h: player.H }, ep)) {
+                            _exitMirrorDimension();
+                        }
+                    }
+                    // Keep camera fixed in dimension
+                    camY = MIRROR_DIM_CAM_Y;
+                    // Tick transition
+                    if (mirrorDimTransFrames > 0) mirrorDimTransFrames--;
+                    return;
+                }
+
                 // Prev on ground tracking
                 const wasOnGround = player.onGround;
                 const visible = platforms.filter(p => Math.abs(p.y - player.y) < BASE_H * 2);
@@ -13002,7 +13529,45 @@ function gameUpdate() {
                 // Count down portal lift protection
                 if (portalLiftFrames > 0) portalLiftFrames--;
 
-                updateCamera();
+                // ── MIRROR PLATFORM: spawn + black hole pull ──
+                if (currentMode === 'infinite' && !mirrorDimActive) {
+                    if (mirrorPlatRef === null && lastRunHigh >= nextMirrorM) {
+                        const targetY = BASE_H - 120 - nextMirrorM * 10;
+                        const cands = platforms.filter(p =>
+                            !p.isFinish && !p.special && !p.isMirror && !p.moving &&
+                            p.spikes.length === 0 && Math.abs(p.y - targetY) < 600
+                        );
+                        if (cands.length > 0) {
+                            const ch = cands[Math.floor(cands.length / 2)];
+                            ch.isMirror = true; ch.spikes = []; mirrorPlatRef = ch;
+                        }
+                    }
+                    if (mirrorPlatRef) {
+                        const mCX = mirrorPlatRef.x + mirrorPlatRef.w / 2;
+                        const mCY = mirrorPlatRef.y - 7;
+                        const pdx = mCX - (player.x + player.W / 2);
+                        const pdy = mCY - (player.y + player.H / 2);
+                        const dist = Math.sqrt(pdx * pdx + pdy * pdy);
+                        if (dist < 280 && dist > 2) {
+                            const strength = Math.pow((280 - dist) / 280, 1.5) * 0.42;
+                            player.vx += (pdx / dist) * strength;
+                            player.vy += (pdy / dist) * strength;
+                        }
+                        if (dist < 200 && mirrorDimTransFrames === 0 && Math.random() < 0.12) {
+                            particles.push(new Particle(
+                                player.x + rnd(0, player.W), player.y + rnd(0, player.H),
+                                (pdx / dist) * rnd(1.5, 3.5), (pdy / dist) * rnd(1.5, 3.5),
+                                rndInt(18, 32), '#9966ff', rndInt(2, 4)
+                            ));
+                        }
+                        if (mirrorDimTransFrames === 0) {
+                            const pr = { x: player.x, y: player.y, w: player.W, h: player.H };
+                            if (rectsOverlap(pr, mirrorPlatRef.rect())) _enterMirrorDimension();
+                        }
+                    }
+                }
+
+                if (!mirrorDimActive) updateCamera();
                 if (player.y < highestY) highestY = player.y;
                 const _maxH = Math.floor((BASE_H - 120 - TOWER_TOP) / 10);
                 lastRunHigh = Math.min(Math.max(lastRunHigh, Math.floor((BASE_H - 120 - highestY) / 10)), _maxH);
@@ -13630,6 +14195,7 @@ function gameUpdate() {
                         SFX.play('win');
                         clearAllEffects();
                         player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
+                        secondLifeReady = false; secondLifeActive = false; secondLifeProgress = 0; secondLifeVisited = new Set();
                         state = STATE.WIN; hasActiveGame = false;
                         saveBest(LEVEL_GOALS[currentLevel]);
                         levelWins[currentLevel] = true; if (_playerStore) _playerStore.set('wins', levelWins);
@@ -13654,6 +14220,7 @@ function gameUpdate() {
                         SFX.play('win');
                         clearAllEffects();
                         player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
+                        secondLifeReady = false; secondLifeActive = false; secondLifeProgress = 0; secondLifeVisited = new Set();
                         state = STATE.WIN; hasActiveGame = false; saveBest(lastRunHigh);
                     }
                 }
@@ -13717,7 +14284,9 @@ function gameUpdate() {
         }
 
         const _userTagEl = document.getElementById('userTag');
+        const _offlineBadgeEl = document.getElementById('offlineBadge');
         let _lastUserTagState = null;
+        let _lastOfflineState = null;
         let _lastMusicState = null;
         let _musicDelayTimer = null;
 
@@ -13732,6 +14301,12 @@ function gameUpdate() {
             if (_wantTag !== _lastUserTagState) {
                 if (_userTagEl) _userTagEl.style.display = _wantTag;
                 _lastUserTagState = _wantTag;
+            }
+            // Offline badge — shown alongside user tag when no internet
+            const _wantOffline = (_wantTag === 'flex' && !navigator.onLine) ? 'flex' : 'none';
+            if (_wantOffline !== _lastOfflineState) {
+                if (_offlineBadgeEl) _offlineBadgeEl.style.display = _wantOffline;
+                _lastOfflineState = _wantOffline;
             }
             // Music: per-level track during play, menu track everywhere else
             const _wantMusic = (state === STATE.PLAY)
@@ -13804,6 +14379,28 @@ function gameUpdate() {
                 drawBackground(camY);
                 for (const p of platforms) p.draw(camY);
                 drawBlackHoles(camY);
+                // Draw mirror platform black hole pull effect
+                if (mirrorPlatRef && !mirrorDimActive) {
+                    const mpSY = mirrorPlatRef.y - camY;
+                    const mpCX = mirrorPlatRef.x + mirrorPlatRef.w / 2;
+                    if (mpSY > -150 && mpSY < BASE_H + 150) {
+                        const t_bh = Date.now() / 1000;
+                        ctx.save();
+                        // Spiral particle rings
+                        for (let ri = 0; ri < 3; ri++) {
+                            const ringR = 40 + ri * 30 + Math.sin(t_bh * 2 + ri) * 8;
+                            const rAlpha = (0.25 - ri * 0.06) * (0.6 + 0.4 * Math.sin(t_bh * 1.5 + ri));
+                            ctx.globalAlpha = rAlpha;
+                            ctx.strokeStyle = ri === 0 ? '#aa66ff' : ri === 1 ? '#7733cc' : '#441188';
+                            ctx.lineWidth = 2.5 - ri * 0.5;
+                            ctx.setLineDash([6, 8]);
+                            ctx.lineDashOffset = -t_bh * 40;
+                            ctx.beginPath(); ctx.arc(mpCX, mpSY, ringR, 0, Math.PI * 2); ctx.stroke();
+                        }
+                        ctx.setLineDash([]); ctx.globalAlpha = 1;
+                        ctx.restore();
+                    }
+                }
                 // Draw crown above finish platform in level mode
                 if (finishPlatRef) {
                     const fsy = finishPlatRef.y - camY;
@@ -13897,6 +14494,8 @@ function gameUpdate() {
                     ctx.restore();
                 }
                 if (state === STATE.PLAY) drawHUD();
+                if (secondLifeActive) _drawSecondLifeAnim();
+                if (mirrorDimActive || mirrorDimTransFrames > 0) _drawMirrorDimension();
                 if (isMultiplayerGame) _drawMpCountdown();
                 if (isMultiplayerGame) _drawMpHeightBar();
                 if (isMultiplayerGame) _drawMpMyHeight();
