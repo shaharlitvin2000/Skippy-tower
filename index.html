@@ -1343,6 +1343,7 @@ await Promise.race([
         }
 
         function handleDeath() {
+            if (mirrorDimActive) return;
             if (player.powerHighJump > 0) return;
             if (portalTimer > 0 || portalLiftFrames > 0) return;
             if (secondLifeActive) return;
@@ -7229,33 +7230,74 @@ await Promise.race([
             ctx.globalAlpha = 1;
             ctx.restore();
 
+            // ── Mirror portal entry decoration (top centre) ──
+            {
+                const mpX = cx, mpY = 130;
+                const mpW = 80, mpH = 110;
+                ctx.save();
+                // Frame glow
+                ctx.shadowColor = '#cc66ff'; ctx.shadowBlur = 22;
+                const frameG = ctx.createLinearGradient(mpX - mpW/2, mpY, mpX + mpW/2, mpY);
+                frameG.addColorStop(0, '#6622aa'); frameG.addColorStop(0.5, '#aa44ff'); frameG.addColorStop(1, '#6622aa');
+                ctx.strokeStyle = frameG; ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.roundRect(mpX - mpW/2, mpY, mpW, mpH, 10); ctx.stroke();
+                ctx.shadowBlur = 0;
+                // Mirror surface — shimmering silver gradient
+                const mirrorG = ctx.createLinearGradient(mpX - mpW/2 + 4, mpY + 4, mpX + mpW/2 - 4, mpY + mpH - 4);
+                mirrorG.addColorStop(0, `rgba(200,180,255,${0.18 + 0.08*Math.sin(t*2.1)})`);
+                mirrorG.addColorStop(0.4, `rgba(120,80,200,${0.5 + 0.1*Math.sin(t*1.7)})`);
+                mirrorG.addColorStop(1, `rgba(40,10,80,0.85)`);
+                ctx.fillStyle = mirrorG;
+                ctx.beginPath(); ctx.roundRect(mpX - mpW/2 + 4, mpY + 4, mpW - 8, mpH - 8, 8); ctx.fill();
+                // Swirl lines on mirror surface
+                ctx.save(); ctx.beginPath(); ctx.roundRect(mpX - mpW/2 + 4, mpY + 4, mpW - 8, mpH - 8, 8); ctx.clip();
+                for (let si = 0; si < 5; si++) {
+                    const sx = mpX + Math.sin(t * 0.9 + si * 1.2) * (mpW/2 - 10);
+                    const sy = mpY + mpH/2 + Math.cos(t * 0.7 + si * 0.8) * (mpH/2 - 15);
+                    const sr = 18 + si * 7;
+                    const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+                    sg.addColorStop(0, `rgba(220,200,255,${0.22 - si*0.03})`);
+                    sg.addColorStop(1, 'rgba(100,60,180,0)');
+                    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+                // Highlight streak
+                ctx.globalAlpha = 0.35 + 0.15*Math.sin(t*3);
+                ctx.strokeStyle = '#e8d8ff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(mpX - mpW/2 + 10, mpY + 12); ctx.lineTo(mpX - mpW/2 + 25, mpY + 12); ctx.stroke();
+                ctx.globalAlpha = 1;
+                // Label above
+                ctx.font = 'bold 9px monospace'; ctx.fillStyle = '#cc88ff';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                ctx.fillText('MIRROR', mpX, mpY - 4);
+                ctx.restore();
+            }
+
             // Draw dimension platforms
             for (const p of mirrorDimPlatforms) {
                 const psy = p.y - MIRROR_DIM_CAM_Y;
                 if (psy < -20 || psy > BASE_H + 20) continue;
-                // Determine color: left pad = blue, right pad = red, floor = grey, center = gold
                 let col = '#334466';
-                if (p === mirrorDimLeftPad) col = '#2244aa';
-                else if (p === mirrorDimRightPad) col = '#aa2244';
-                else if (p === mirrorDimCenterPad) col = '#665500';
+                if (p === mirrorDimCenterPad) col = '#665500';
                 const platG = ctx.createLinearGradient(p.x, psy, p.x, psy + p.h);
                 platG.addColorStop(0, col + 'ee');
                 platG.addColorStop(1, col + '88');
                 ctx.fillStyle = platG;
                 ctx.beginPath(); ctx.roundRect(p.x, psy, p.w, p.h, 4); ctx.fill();
-                ctx.strokeStyle = p === mirrorDimLeftPad ? '#6699ff' : p === mirrorDimRightPad ? '#ff6699' : p === mirrorDimCenterPad ? '#ffdd66' : '#557799';
-                ctx.lineWidth = 2;
+                const stroke = p === mirrorDimCenterPad ? '#ffdd66' : '#557799';
+                ctx.strokeStyle = stroke; ctx.lineWidth = p === mirrorDimCenterPad ? 2.5 : 2;
                 ctx.beginPath(); ctx.roundRect(p.x - 1, psy - 1, p.w + 2, p.h + 2, 4); ctx.stroke();
+                // Gold "LAND HERE" arrow on center pad
+                if (p === mirrorDimCenterPad) {
+                    const pulse = 0.7 + 0.3*Math.sin(t * 4);
+                    ctx.save();
+                    ctx.globalAlpha = pulse;
+                    ctx.fillStyle = '#ffdd44';
+                    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                    ctx.fillText('▼ LAND HERE ▼', p.x + p.w/2, psy - 4);
+                    ctx.restore();
+                }
             }
-
-            // Left/Right zone labels
-            ctx.save();
-            ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#4466cc'; ctx.globalAlpha = 0.6;
-            ctx.fillText('◄ LEFT', WALL_W + 50, 560 - MIRROR_DIM_CAM_Y);
-            ctx.fillStyle = '#cc4466';
-            ctx.fillText('RIGHT ►', BASE_W - WALL_W - 50, 560 - MIRROR_DIM_CAM_Y);
-            ctx.restore();
 
             // Walls
             ctx.save();
@@ -7269,37 +7311,6 @@ await Promise.race([
 
             // Draw the player
             player.draw(MIRROR_DIM_CAM_Y);
-
-            // Exit portal (after 8 jumps)
-            if (mirrorDimExitReady) {
-                const epSy = MIRROR_DIM_EXIT_Y - MIRROR_DIM_CAM_Y;
-                const epX = MIRROR_DIM_EXIT_X;
-                const epW = MIRROR_DIM_EXIT_W;
-                const epH = MIRROR_DIM_EXIT_H;
-                const pulse = 0.7 + 0.3 * Math.sin(t * 4);
-                ctx.save();
-                // Outer glow
-                const exitG = ctx.createRadialGradient(epX + epW / 2, epSy + epH / 2, 0, epX + epW / 2, epSy + epH / 2, 90);
-                exitG.addColorStop(0, `rgba(180,255,255,${0.25 * pulse})`);
-                exitG.addColorStop(1, 'rgba(80,200,255,0)');
-                ctx.fillStyle = exitG;
-                ctx.beginPath(); ctx.ellipse(epX + epW / 2, epSy + epH / 2, 90, 50, 0, 0, Math.PI * 2); ctx.fill();
-                // Portal body
-                const portalG = ctx.createLinearGradient(epX, epSy, epX, epSy + epH);
-                portalG.addColorStop(0, `rgba(180,255,255,${0.9 * pulse})`);
-                portalG.addColorStop(0.5, 'rgba(40,180,255,0.85)');
-                portalG.addColorStop(1, 'rgba(0,80,200,0.9)');
-                ctx.fillStyle = portalG;
-                ctx.beginPath(); ctx.roundRect(epX, epSy, epW, epH, 8); ctx.fill();
-                ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 18;
-                ctx.strokeStyle = `rgba(200,255,255,${pulse})`; ctx.lineWidth = 2.5;
-                ctx.beginPath(); ctx.roundRect(epX - 1, epSy - 1, epW + 2, epH + 2, 8); ctx.stroke();
-                ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-                ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#001122';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('★ EXIT ★', epX + epW / 2, epSy + epH / 2);
-                ctx.restore();
-            }
 
             // Jump progress bar
             ctx.save();
@@ -7320,7 +7331,7 @@ await Promise.race([
             // Labels
             ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillStyle = '#cc99ff';
-            ctx.fillText(`JUMPS  ${mirrorDimJumps} / 8`, cx, bY + bH / 2);
+            ctx.fillText(mirrorDimExitReady ? '★ LAND ON THE PAD! ★' : `BOUNCES  ${mirrorDimJumps} / 8`, cx, bY + bH / 2);
             ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(180,140,255,0.7)';
             ctx.textBaseline = 'alphabetic';
             ctx.fillText('— MIRROR DIMENSION —', cx, 52);
@@ -7332,11 +7343,11 @@ await Promise.race([
             mirrorDimReturnY = player.y;
             mirrorDimReturnCamY = camY;
             mirrorDimReturnPlats = platforms;
-            mirrorDimFloor = new Platform(WALL_W, 670, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
-            mirrorDimLeftPad = new Platform(WALL_W, 580, 100); mirrorDimLeftPad.spikes = [];
-            mirrorDimRightPad = new Platform(BASE_W - WALL_W - 100, 580, 100); mirrorDimRightPad.spikes = [];
+            mirrorDimFloor = new Platform(WALL_W, 690, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
+            mirrorDimLeftPad = null;
+            mirrorDimRightPad = null;
             mirrorDimCenterPad = null;
-            mirrorDimPlatforms = [mirrorDimFloor, mirrorDimLeftPad, mirrorDimRightPad];
+            mirrorDimPlatforms = [mirrorDimFloor];
             platforms = mirrorDimPlatforms;
             player.x = BASE_W / 2 - player.W / 2;
             player.y = mirrorDimFloor.y - player.H;
@@ -13457,32 +13468,27 @@ function gameUpdate() {
                         player.y = mirrorDimFloor.y - player.H;
                         player.vy = 0; player.vx = 0;
                     }
-                    // Track alternating side-crossing jumps
-                    if (player.justLanded) {
-                        const cx = player.x + player.W / 2;
-                        let side = -1;
-                        if (cx < BASE_W * 0.35) side = 0;
-                        else if (cx > BASE_W * 0.65) side = 1;
-                        if (side !== -1) {
-                            if (mirrorDimLastSide === -1) {
-                                mirrorDimLastSide = side;
-                            } else if (side !== mirrorDimLastSide) {
-                                mirrorDimJumps++;
-                                mirrorDimLastSide = side;
-                                if (mirrorDimJumps >= 8 && !mirrorDimExitReady) {
-                                    mirrorDimExitReady = true;
-                                    mirrorDimCenterPad = new Platform(BASE_W / 2 - 45, 530, 90);
-                                    mirrorDimCenterPad.spikes = [];
-                                    mirrorDimPlatforms.push(mirrorDimCenterPad);
-                                    SFX.play('coin');
-                                }
-                            }
+                    // Explicit auto-jump — always bounce when on ground
+                    if (player.onGround && player.landCooldown <= 0) {
+                        player.landCooldown = 6;
+                        player.jump(1.0);
+                    }
+                    // Count landings on floor toward the 8-jump goal
+                    if (player.justLanded && !mirrorDimExitReady) {
+                        mirrorDimJumps++;
+                        if (mirrorDimJumps >= 8) {
+                            mirrorDimExitReady = true;
+                            mirrorDimCenterPad = new Platform(BASE_W / 2 - 50, 570, 100);
+                            mirrorDimCenterPad.spikes = [];
+                            mirrorDimPlatforms.push(mirrorDimCenterPad);
+                            SFX.play('coin');
                         }
                     }
-                    // Check exit portal touch
-                    if (mirrorDimExitReady && mirrorDimTransFrames === 0) {
-                        const ep = { x: MIRROR_DIM_EXIT_X, y: MIRROR_DIM_EXIT_Y, w: MIRROR_DIM_EXIT_W, h: MIRROR_DIM_EXIT_H };
-                        if (rectsOverlap({ x: player.x, y: player.y, w: player.W, h: player.H }, ep)) {
+                    // Landing on center pad exits the dimension
+                    if (mirrorDimExitReady && mirrorDimCenterPad && mirrorDimTransFrames === 0 && player.justLanded) {
+                        const cp = mirrorDimCenterPad.rect();
+                        const pr = { x: player.x, y: player.y, w: player.W, h: player.H };
+                        if (rectsOverlap(pr, cp)) {
                             _exitMirrorDimension();
                         }
                     }
