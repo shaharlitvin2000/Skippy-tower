@@ -3008,7 +3008,7 @@ await Promise.race([
                 this.vx *= this.onGround ? 0.70 : (this.inWeb ? 0.72 : 0.86);
                 this.vx = clamp(this.vx, -maxSpd, maxSpd);
                 this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0);
-                if (this.inWeb) this.vy *= (this.vy > 0 ? 0.76 : 0.88); // web slows both directions; gentler going up
+                if (this.inWeb && this.vy > 0) this.vy *= 0.76; // web slows falling only — jump height unaffected
                 this.vy = clamp(this.vy, -25, MAX_FALL);
 
                 this.lastVy = this.vy;
@@ -3044,7 +3044,7 @@ await Promise.race([
                         }
                     }
                     // Spider web zone: wide area spanning full platform width + above
-                    if (plat.hasWeb && this.vy >= 0) {
+                    if (plat.hasWeb) {
                         const wr = { x: plat.x, y: plat.y - 45, w: plat.w, h: 45 };
                         if (rectsOverlap({ x: this.x, y: this.y, w: this.W, h: this.H }, wr)) {
                             this.inWeb = true;
