@@ -2126,75 +2126,78 @@ await Promise.race([
                     // ── Spider web — matches the slowdown zone exactly (pw × 65px) ──
                     if (this.hasWeb) {
                         ctx.save();
-                        const zoneH = 65; // must match collision zone height
-                        const wCx = px + pw / 2;           // center of platform
-                        const wCy = sy - zoneH / 2;        // center of slowdown zone
-                        const wRx = pw / 2;                // horizontal radius = half platform width
-                        const wRy = zoneH / 2;             // vertical radius = half zone height
-                        const scY = wRy / wRx;             // squish factor for elliptical web
-                        const wR  = wRx;                   // use horizontal as base radius
+                        const zoneH = 65;
+                        const wCx = px + pw / 2;
+                        const wCy = sy - zoneH / 2;
+                        const wRx = pw / 2;
+                        const wRy = zoneH / 2;
+                        const scY = wRy / wRx;
+                        const wR  = wRx;
                         const sway = Math.sin(t * 0.55 + px * 0.03) * 1.8;
-                        const webA = 0.60 + 0.14 * Math.abs(Math.sin(t * 0.65 + px * 0.02));
-                        const nSpokes = 9;
-
+                        const webA = 0.72 + 0.16 * Math.abs(Math.sin(t * 0.65 + px * 0.02));
+                        const nSpokes = 12;
                         ctx.lineCap = 'round';
 
-                        // ── 3D shadow layer — slightly offset, darker ──
+                        // ── Soft web-zone fog tint ──
                         ctx.save();
-                        ctx.globalAlpha = webA * 0.28;
-                        ctx.strokeStyle = 'rgba(30,20,10,0.9)';
-                        const shOx = 2.5, shOy = 3; // shadow offset
-                        // shadow spokes
+                        ctx.globalAlpha = 0.07;
+                        ctx.fillStyle = 'rgba(200,215,180,1)';
+                        ctx.fillRect(px, sy - zoneH, pw, zoneH);
+                        ctx.restore();
+
+                        // ── Anchor silks from platform top edge into web ──
+                        ctx.save();
+                        ctx.globalAlpha = webA * 0.55;
+                        ctx.strokeStyle = 'rgba(230,228,210,0.95)';
                         ctx.lineWidth = 1.1;
-                        for (let i = 0; i < nSpokes; i++) {
-                            const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.015;
+                        const anchors2 = [px + 6, px + pw * 0.28, px + pw * 0.5, px + pw * 0.72, px + pw - 6];
+                        for (const ax of anchors2) {
+                            const as2 = Math.sin(t * 0.55 + ax * 0.05) * 1.2;
                             ctx.beginPath();
-                            ctx.moveTo(wCx + shOx, wCy + shOy);
-                            ctx.lineTo(wCx + shOx + Math.cos(ang) * wR, wCy + shOy + Math.sin(ang) * wR * 0.55);
+                            ctx.moveTo(ax, sy);
+                            ctx.quadraticCurveTo(ax + as2 * 2, sy - zoneH * 0.55,
+                                wCx + (ax - wCx) * 0.55 + as2, wCy + wRy * 0.82);
                             ctx.stroke();
                         }
-                        // shadow rings
-                        ctx.lineWidth = 0.8;
-                        for (let ring = 1; ring <= 3; ring++) {
-                            const rF = ring / 3.5;
+                        ctx.restore();
+
+                        // ── Shadow pass ──
+                        ctx.save();
+                        ctx.globalAlpha = webA * 0.22;
+                        ctx.strokeStyle = 'rgba(20,14,6,0.85)';
+                        const shOx = 3, shOy = 4;
+                        ctx.lineWidth = 1.0;
+                        for (let i = 0; i < nSpokes; i++) {
+                            const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
+                            ctx.beginPath();
+                            ctx.moveTo(wCx + shOx, wCy + shOy);
+                            ctx.lineTo(wCx + shOx + Math.cos(ang) * wR, wCy + shOy + Math.sin(ang) * wR * scY);
+                            ctx.stroke();
+                        }
+                        for (let ring = 1; ring <= 4; ring++) {
+                            const rF = ring / 4.8;
+                            const sag = ring * 0.45;
                             ctx.beginPath();
                             for (let i = 0; i <= nSpokes; i++) {
-                                const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.015;
+                                const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
                                 const rx = wCx + shOx + Math.cos(ang) * wR * rF;
-                                const ry = wCy + shOy + Math.sin(ang) * wR * rF * 0.55;
+                                const ry = wCy + shOy + Math.sin(ang) * wR * rF * scY + sag;
                                 if (i === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
                             }
                             ctx.stroke();
                         }
                         ctx.restore();
 
-                        // ── Anchor silks to platform ──
+                        // ── Spokes ──
                         ctx.save();
-                        ctx.globalAlpha = webA * 0.42;
-                        ctx.strokeStyle = 'rgba(210,205,185,0.8)';
-                        ctx.lineWidth = 0.65;
-                        const anchors2 = [px + 4, px + pw * 0.5, px + pw - 4];
-                        for (const ax of anchors2) {
-                            const as2 = Math.sin(t * 0.6 + ax * 0.05) * 1.5;
-                            ctx.beginPath();
-                            ctx.moveTo(wCx + as2, wCy + wR * 0.85);
-                            ctx.quadraticCurveTo((wCx + ax) * 0.5 + as2 * 0.4, sy - 8, ax, sy);
-                            ctx.stroke();
-                        }
-                        ctx.restore();
-
-                        // ── Main web (elliptical = foreshortened 3D circle) ──
-                        // Spokes
-                        ctx.save();
-                        ctx.globalAlpha = webA * 0.80;
-                        ctx.lineWidth = 0.9;
                         for (let i = 0; i < nSpokes; i++) {
                             const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
                             const ex = Math.cos(ang) * wR;
                             const ey = Math.sin(ang) * wR * scY;
-                            // Bright spoke (catches light from top)
-                            const isTop = Math.sin(ang) < -0.3;
-                            ctx.strokeStyle = isTop ? 'rgba(240,238,220,0.95)' : 'rgba(190,185,165,0.80)';
+                            const isTop = Math.sin(ang) < -0.2;
+                            ctx.globalAlpha = webA * (isTop ? 0.90 : 0.68);
+                            ctx.strokeStyle = isTop ? 'rgba(248,245,228,1)' : 'rgba(195,192,172,0.85)';
+                            ctx.lineWidth = isTop ? 1.3 : 1.0;
                             ctx.beginPath();
                             ctx.moveTo(wCx, wCy);
                             ctx.lineTo(wCx + ex, wCy + ey);
@@ -2202,70 +2205,100 @@ await Promise.race([
                         }
                         ctx.restore();
 
-                        // Rings — curved segments with sagging and 3D shading
+                        // ── Rings with sag and per-arc shading ──
                         ctx.save();
-                        ctx.lineWidth = 0.75;
-                        for (let ring = 1; ring <= 4; ring++) {
-                            const rF = ring / 4.6;
-                            const sag = ring * 0.55; // lower rings sag more
-                            ctx.beginPath();
-                            for (let i = 0; i <= nSpokes; i++) {
-                                const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
-                                const rx = wCx + Math.cos(ang) * wR * rF;
-                                const ry = wCy + Math.sin(ang) * wR * rF * scY + sag;
-                                if (i === 0) ctx.moveTo(rx, ry);
-                                else {
-                                    const pAng = ((i - 0.5) / nSpokes) * Math.PI * 2 + sway * 0.012;
-                                    const cpx = wCx + Math.cos(pAng) * wR * rF * 0.94;
-                                    const cpy = wCy + Math.sin(pAng) * wR * rF * scY * 0.94 + sag * 0.7;
-                                    ctx.quadraticCurveTo(cpx, cpy, rx, ry);
-                                }
+                        for (let ring = 1; ring <= 5; ring++) {
+                            const rF = ring / 5.5;
+                            const sag = ring * 0.4;
+                            const isOuter = ring >= 4;
+                            ctx.lineWidth = isOuter ? 1.1 : 0.85;
+                            for (let i = 0; i < nSpokes; i++) {
+                                const ang0 = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
+                                const ang1 = ((i + 1) / nSpokes) * Math.PI * 2 + sway * 0.012;
+                                const midAng = (ang0 + ang1) / 2;
+                                const isLit = Math.sin(midAng) < -0.1;
+                                ctx.globalAlpha = webA * (isLit ? 0.88 - ring * 0.04 : 0.60 - ring * 0.04);
+                                ctx.strokeStyle = isLit ? 'rgba(245,242,225,0.95)' : 'rgba(170,165,145,0.80)';
+                                const x0 = wCx + Math.cos(ang0) * wR * rF;
+                                const y0 = wCy + Math.sin(ang0) * wR * rF * scY + sag;
+                                const x1 = wCx + Math.cos(ang1) * wR * rF;
+                                const y1 = wCy + Math.sin(ang1) * wR * rF * scY + sag;
+                                const cpx = wCx + Math.cos(midAng) * wR * rF * 0.90;
+                                const cpy = wCy + Math.sin(midAng) * wR * rF * scY * 0.90 + sag * 0.6;
+                                ctx.beginPath();
+                                ctx.moveTo(x0, y0);
+                                ctx.quadraticCurveTo(cpx, cpy, x1, y1);
+                                ctx.stroke();
                             }
-                            // Top arcs brighter (lit), bottom arcs dimmer (shadow)
-                            ctx.globalAlpha = webA * (0.75 - ring * 0.04);
-                            ctx.strokeStyle = ring <= 2 ? 'rgba(235,230,210,0.90)' : 'rgba(175,170,150,0.75)';
-                            ctx.stroke();
                         }
                         ctx.restore();
 
-                        // ── Dew drops on outer ring (3D spheres) ──
+                        // ── Dew drops on ring intersections ──
                         ctx.save();
-                        ctx.globalAlpha = webA * 0.65;
-                        for (let i = 0; i < nSpokes; i++) {
-                            const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
-                            const rF = 0.86;
-                            const dx = wCx + Math.cos(ang) * wR * rF;
-                            const dy = wCy + Math.sin(ang) * wR * rF * scY + 1.5;
-                            // Small drop with highlight
-                            ctx.fillStyle = 'rgba(180,220,255,0.55)';
-                            ctx.beginPath(); ctx.arc(dx, dy, 2.2, 0, Math.PI * 2); ctx.fill();
-                            ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                            ctx.beginPath(); ctx.arc(dx - 0.6, dy - 0.7, 0.8, 0, Math.PI * 2); ctx.fill();
+                        for (let ring = 2; ring <= 5; ring++) {
+                            const rF = ring / 5.5;
+                            const sag = ring * 0.4;
+                            const dropR = ring === 5 ? 2.8 : 1.8;
+                            for (let i = 0; i < nSpokes; i++) {
+                                if ((i + ring) % 2 !== 0) continue; // alternate to avoid overcrowding
+                                const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
+                                const dx = wCx + Math.cos(ang) * wR * rF;
+                                const dy = wCy + Math.sin(ang) * wR * rF * scY + sag;
+                                const shimmer = 0.5 + 0.4 * Math.abs(Math.sin(t * 1.4 + i * 1.1 + ring));
+                                ctx.globalAlpha = webA * 0.70 * shimmer;
+                                ctx.fillStyle = 'rgba(185,225,255,0.70)';
+                                ctx.beginPath(); ctx.arc(dx, dy, dropR, 0, Math.PI * 2); ctx.fill();
+                                ctx.globalAlpha = webA * 0.85 * shimmer;
+                                ctx.fillStyle = 'rgba(255,255,255,0.80)';
+                                ctx.beginPath(); ctx.arc(dx - dropR * 0.35, dy - dropR * 0.4, dropR * 0.38, 0, Math.PI * 2); ctx.fill();
+                            }
                         }
                         ctx.restore();
 
-                        // ── Spider dangling on silk ──
-                        const spDangle = 5 + Math.sin(t * 1.0 + px * 0.09) * 2.5;
-                        const spX = wCx + Math.sin(t * 0.45) * 3.5 + sway;
-                        const spY = wCy + wR * scY * 0.3 + spDangle;
-                        ctx.save(); ctx.globalAlpha = webA * 0.55; ctx.lineWidth = 0.55;
-                        ctx.strokeStyle = 'rgba(200,195,175,0.8)';
-                        ctx.beginPath(); ctx.moveTo(wCx, wCy - 2); ctx.lineTo(spX, spY - 4); ctx.stroke();
+                        // ── Spider dangling on silk thread ──
+                        const spDangle = 6 + Math.sin(t * 0.9 + px * 0.09) * 4;
+                        const spX = wCx + Math.sin(t * 0.40) * 5 + sway * 0.6;
+                        const spY = wCy + wR * scY * 0.25 + spDangle;
+                        // Silk thread
+                        ctx.save(); ctx.globalAlpha = webA * 0.70; ctx.lineWidth = 0.8;
+                        ctx.strokeStyle = 'rgba(220,218,200,0.90)';
+                        ctx.beginPath(); ctx.moveTo(wCx, wCy - 3); ctx.lineTo(spX, spY - 5); ctx.stroke();
                         ctx.restore();
-                        ctx.save(); ctx.globalAlpha = 0.92;
-                        // Body — ellipse with highlight for 3D
-                        const spGrd = ctx.createRadialGradient(spX - 1.2, spY - 1.5, 0.5, spX, spY, 4);
-                        spGrd.addColorStop(0, '#3a3820'); spGrd.addColorStop(1, '#0d0c08');
+                        // Spider body
+                        ctx.save(); ctx.globalAlpha = 0.95;
+                        const spGrd = ctx.createRadialGradient(spX - 1.5, spY - 2, 0.5, spX, spY, 5.5);
+                        spGrd.addColorStop(0, '#3d3a22'); spGrd.addColorStop(1, '#0e0c07');
                         ctx.fillStyle = spGrd;
-                        ctx.beginPath(); ctx.ellipse(spX, spY, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
-                        ctx.fillStyle = '#252310';
-                        ctx.beginPath(); ctx.arc(spX, spY - 3.5, 2.2, 0, Math.PI * 2); ctx.fill();
-                        ctx.strokeStyle = '#0a0908'; ctx.lineWidth = 0.65;
+                        ctx.beginPath(); ctx.ellipse(spX, spY, 5.5, 4, 0, 0, Math.PI * 2); ctx.fill();
+                        // Head
+                        const hGrd = ctx.createRadialGradient(spX - 0.8, spY - 4.5, 0.3, spX, spY - 4.5, 3);
+                        hGrd.addColorStop(0, '#302e18'); hGrd.addColorStop(1, '#0a0908');
+                        ctx.fillStyle = hGrd;
+                        ctx.beginPath(); ctx.arc(spX, spY - 4.5, 3, 0, Math.PI * 2); ctx.fill();
+                        // Red hourglass marking on abdomen
+                        ctx.fillStyle = 'rgba(200,40,20,0.85)';
+                        ctx.beginPath(); ctx.ellipse(spX, spY, 1.8, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+                        // Eyes
+                        ctx.fillStyle = 'rgba(220,255,80,0.90)';
+                        ctx.beginPath(); ctx.arc(spX - 1.3, spY - 5.2, 0.9, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(spX + 1.3, spY - 5.2, 0.9, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                        ctx.beginPath(); ctx.arc(spX - 1.6, spY - 5.5, 0.35, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(spX + 1.0, spY - 5.5, 0.35, 0, Math.PI * 2); ctx.fill();
+                        // Legs (4 each side)
+                        ctx.strokeStyle = '#0c0b07'; ctx.lineWidth = 0.8;
                         for (let li = 0; li < 4; li++) {
-                            const lA = (li / 3.5 - 0.12) * Math.PI;
+                            const lA = (li / 3.2 - 0.08) * Math.PI;
+                            const legSway = Math.sin(t * 2.2 + li * 0.9 + px * 0.01) * 0.15;
                             [-1, 1].forEach(s => {
-                                ctx.beginPath(); ctx.moveTo(spX, spY);
-                                ctx.lineTo(spX + s * Math.cos(lA) * 6, spY - Math.sin(lA) * 5); ctx.stroke();
+                                const kneeX = spX + s * Math.cos(lA + legSway) * 7;
+                                const kneeY = spY - Math.sin(lA) * 4 - 1;
+                                const tipX = spX + s * Math.cos(lA + legSway) * 12;
+                                const tipY = spY - Math.sin(lA) * 2 + 3;
+                                ctx.beginPath();
+                                ctx.moveTo(spX + s * 2.5, spY);
+                                ctx.quadraticCurveTo(kneeX, kneeY, tipX, tipY);
+                                ctx.stroke();
                             });
                         }
                         ctx.restore();
@@ -3705,51 +3738,116 @@ await Promise.race([
                 return { x: this.x - this.R, y: this.y - this.R * 1.8 + oy, w: this.R * 2, h: this.R * 2.2 };
             }
             draw(camY) {
-                const oy = Math.sin(this.bob) * 3;
+                const oy = Math.sin(this.bob) * 4;
                 const sy = this.y - camY + oy;
                 if (sy < -50 || sy > BASE_H + 50) return;
                 const t = Date.now() / 1000;
-                const pulse = 0.85 + 0.15 * Math.abs(Math.sin(this.bob));
+                const pulse = 0.90 + 0.10 * Math.abs(Math.sin(this.bob * 1.3));
+                const glowPulse = 0.7 + 0.3 * Math.abs(Math.sin(t * 2.2));
                 ctx.save();
-                // Glow
-                drawGlow(ctx, '#e05010', this.x, sy - this.R * 0.6, 28 * pulse, 60);
+
+                // Outer pick-up glow ring (pulsing to draw attention)
+                ctx.save();
+                ctx.globalAlpha = 0.18 * glowPulse;
+                const outerGrd = ctx.createRadialGradient(this.x, sy - this.R, 0, this.x, sy - this.R, this.R * 2.8);
+                outerGrd.addColorStop(0, '#ff8040');
+                outerGrd.addColorStop(0.5, '#ff4010');
+                outerGrd.addColorStop(1, 'rgba(200,30,0,0)');
+                ctx.fillStyle = outerGrd;
+                ctx.beginPath(); ctx.arc(this.x, sy - this.R, this.R * 2.8, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+
+                // Orbiting sparkles — signals collectibility
+                ctx.save();
+                for (let i = 0; i < 4; i++) {
+                    const sa = t * 1.8 + i * Math.PI / 2;
+                    const sr = this.R * 1.55 + Math.sin(t * 3 + i) * 3;
+                    const sx2 = this.x + Math.cos(sa) * sr;
+                    const sy2 = (sy - this.R * 0.7) + Math.sin(sa) * sr * 0.55;
+                    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4 + i);
+                    ctx.fillStyle = i % 2 === 0 ? '#ffe060' : '#ffffff';
+                    ctx.beginPath(); ctx.arc(sx2, sy2, 2.2, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
+
                 // Stem
-                const stemW = 9, stemH = 14;
+                const stemW = 9, stemH = 15;
                 const stemGrd = ctx.createLinearGradient(this.x - stemW, sy, this.x + stemW, sy);
-                stemGrd.addColorStop(0, '#ccc0a8'); stemGrd.addColorStop(0.4, '#f0e8d0'); stemGrd.addColorStop(1, '#b0a888');
+                stemGrd.addColorStop(0, '#c8bca4'); stemGrd.addColorStop(0.4, '#f5edd8'); stemGrd.addColorStop(1, '#aaa280');
                 ctx.fillStyle = stemGrd;
                 ctx.beginPath();
-                ctx.moveTo(this.x - stemW * 0.6, sy);
+                ctx.moveTo(this.x - stemW * 0.5, sy);
                 ctx.lineTo(this.x - stemW, sy - stemH);
                 ctx.lineTo(this.x + stemW, sy - stemH);
-                ctx.lineTo(this.x + stemW * 0.6, sy);
+                ctx.lineTo(this.x + stemW * 0.5, sy);
                 ctx.closePath(); ctx.fill();
+                // Stem highlight stripe
+                ctx.save(); ctx.globalAlpha = 0.35;
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(this.x - 1, sy - 2); ctx.lineTo(this.x - 1, sy - stemH + 2); ctx.stroke();
+                ctx.restore();
+
                 // Cap underside
-                ctx.fillStyle = '#e8b880';
-                ctx.beginPath(); ctx.ellipse(this.x, sy - stemH, this.R + 2, 5, 0, 0, Math.PI * 2); ctx.fill();
-                // Cap dome
-                const capGrd = ctx.createRadialGradient(this.x - this.R * 0.3, sy - stemH - this.R * 0.6, 2, this.x, sy - stemH - this.R * 0.3, this.R * 1.1);
-                capGrd.addColorStop(0, '#ff6030');
-                capGrd.addColorStop(0.5, '#cc2808');
-                capGrd.addColorStop(1, '#881408');
+                ctx.fillStyle = '#e8b070';
+                ctx.beginPath(); ctx.ellipse(this.x, sy - stemH, this.R + 3, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+
+                // Cap dome with richer gradient
+                const capGrd = ctx.createRadialGradient(
+                    this.x - this.R * 0.32, sy - stemH - this.R * 0.7, 1.5,
+                    this.x, sy - stemH - this.R * 0.2, this.R * 1.15);
+                capGrd.addColorStop(0,   '#ff7040');
+                capGrd.addColorStop(0.35,'#e83010');
+                capGrd.addColorStop(0.7, '#b01808');
+                capGrd.addColorStop(1,   '#701008');
                 ctx.fillStyle = capGrd;
-                ctx.beginPath(); ctx.ellipse(this.x, sy - stemH, this.R * pulse, this.R * 0.75 * pulse, 0, Math.PI, 0); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(this.x, sy - stemH, this.R * pulse, this.R * 0.78 * pulse, 0, Math.PI, 0); ctx.fill();
+
+                // Specular highlight on cap top
+                ctx.save();
+                ctx.globalAlpha = 0.38 * glowPulse;
+                const specGrd = ctx.createRadialGradient(
+                    this.x - this.R * 0.28, sy - stemH - this.R * 0.62, 0,
+                    this.x - this.R * 0.2, sy - stemH - this.R * 0.4, this.R * 0.55);
+                specGrd.addColorStop(0, 'rgba(255,255,255,0.9)');
+                specGrd.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = specGrd;
+                ctx.beginPath(); ctx.ellipse(this.x, sy - stemH, this.R * pulse, this.R * 0.78 * pulse, 0, Math.PI, 0); ctx.fill();
+                ctx.restore();
+
                 // White spots on cap
-                const spots = [{ox:-0.35,oy:0.55,r:0.18},{ox:0.28,oy:0.68,r:0.14},{ox:-0.05,oy:0.82,r:0.11},{ox:0.52,oy:0.40,r:0.10}];
+                const spots = [
+                    {ox:-0.36,oy:0.52,r:0.20},{ox:0.30,oy:0.65,r:0.15},
+                    {ox:-0.06,oy:0.80,r:0.13},{ox:0.54,oy:0.38,r:0.11},{ox:-0.55,oy:0.30,r:0.09}
+                ];
                 for (const sp of spots) {
-                    ctx.save(); ctx.globalAlpha = 0.82;
-                    ctx.fillStyle = '#ffffff';
+                    ctx.save(); ctx.globalAlpha = 0.88;
+                    const spotGrd = ctx.createRadialGradient(
+                        this.x + sp.ox * this.R * pulse - sp.r * this.R * 0.2,
+                        sy - stemH - sp.oy * this.R * 0.78 * pulse - sp.r * this.R * 0.15,
+                        0,
+                        this.x + sp.ox * this.R * pulse, sy - stemH - sp.oy * this.R * 0.78 * pulse,
+                        sp.r * this.R * pulse * 1.1);
+                    spotGrd.addColorStop(0, '#ffffff');
+                    spotGrd.addColorStop(0.7, '#e8e0d0');
+                    spotGrd.addColorStop(1, 'rgba(200,190,170,0)');
+                    ctx.fillStyle = spotGrd;
                     ctx.beginPath();
-                    ctx.ellipse(this.x + sp.ox * this.R * pulse, sy - stemH - sp.oy * this.R * 0.75 * pulse,
-                        sp.r * this.R * pulse, sp.r * this.R * 0.55 * pulse, 0, 0, Math.PI * 2);
+                    ctx.ellipse(this.x + sp.ox * this.R * pulse, sy - stemH - sp.oy * this.R * 0.78 * pulse,
+                        sp.r * this.R * pulse, sp.r * this.R * 0.52 * pulse, 0, 0, Math.PI * 2);
                     ctx.fill(); ctx.restore();
                 }
-                // Small question mark overlay for mystery
-                ctx.globalAlpha = 0.55 + 0.3 * Math.abs(Math.sin(t * 2.5));
-                ctx.fillStyle = '#ffffff';
-                ctx.font = `bold 10px monospace`;
+
+                // Floating "!" above mushroom — pickup indicator
+                const excAlpha = 0.65 + 0.35 * Math.abs(Math.sin(t * 2.8));
+                ctx.globalAlpha = excAlpha;
+                ctx.fillStyle = '#ffe840';
+                ctx.strokeStyle = '#a06000';
+                ctx.lineWidth = 2;
+                ctx.font = `bold 13px monospace`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('?', this.x, sy - stemH - this.R * 0.4);
+                const excY = sy - stemH - this.R * 0.78 * pulse - 12 + Math.sin(t * 2.8) * 2;
+                ctx.strokeText('!', this.x, excY);
+                ctx.fillText('!', this.x, excY);
                 ctx.restore();
             }
         }
@@ -4320,9 +4418,11 @@ await Promise.race([
         let player, platforms, crystals, rocks, ghosts, book;
         let particles, snowflakes, powerups, coins, floatTexts;
         let mushrooms = [];
-        let mushroomBadTimer = 0; // bad mushroom effect countdown (600 = 10s)
-        let mushroomHue = 0;      // current hue-rotate degrees
-        let mushroomSpin = 0;     // accumulated screen spin angle
+        let mushroomBadTimer = 0;      // bad mushroom effect countdown (600 = 10s)
+        let mushroomHue = 0;           // current hue-rotate degrees (smoothly lerped)
+        let mushroomHueTarget = 0;     // target hue for smooth transition
+        let mushroomHueChangeTimer = 0;// frames until next hue target pick
+        let mushroomSpin = 0;          // accumulated screen spin angle
         let camY, camYVel, highestY, startY, jumpStartY, bestJumpStartY, difficulty;
         let cameraFloorY;
         let highestLandedPlatY;
@@ -4411,6 +4511,7 @@ await Promise.race([
                 finishPlat.spikes = [];
                 finishPlat.special = true;
                 finishPlat.isFinish = true;
+                finishPlat.hasWeb = false;
                 finishPlatRef = finishPlat;
                 // generate platforms stopping well below the finish zone
                 platforms.push(...generatePlatforms(startPlat.y - 140, finishY + 700, startPlat));
@@ -4452,7 +4553,7 @@ await Promise.race([
             crystals = [];
             rocks = []; ghosts = []; fishes = []; book = new MagicBook();
             powerups = []; coins = []; floatTexts = []; mushrooms = [];
-            mushroomBadTimer = 0; mushroomHue = 0; mushroomSpin = 0;
+            mushroomBadTimer = 0; mushroomHue = 0; mushroomHueTarget = 0; mushroomHueChangeTimer = 0; mushroomSpin = 0;
             fishTimer = rndInt(300, 500); drunkTimer = 0; drunkPhase = 0;
             // Attach a coin to ~30% of moving platforms (not bouncy, not spiked, no overlap)
             for (const plat of platforms) {
@@ -4524,7 +4625,7 @@ await Promise.race([
             ];
             coins = [];
             rocks = []; ghosts = []; fishes = []; mushrooms = [];
-            mushroomBadTimer = 0; mushroomHue = 0; mushroomSpin = 0;
+            mushroomBadTimer = 0; mushroomHue = 0; mushroomHueTarget = 0; mushroomHueChangeTimer = 0; mushroomSpin = 0;
             rockTimer = 999999; ghostTimer = 999999; powerupTimer = 999999;
             fishTimer = 999999; drunkTimer = 0; drunkPhase = 0;
             seaPlant = null; seaPlantTriggered = false;
@@ -8921,7 +9022,7 @@ await Promise.race([
             // Clear carried power-ups
             player.powerSpeed = 0; player.powerHighJump = 0;
             player.powerShield = 0; player.powerSlow = 0;
-            magicPortalReady = false; if (portalPlatRef) { portalPlatRef.isPortal = false; portalPlatRef = null; } portalTimer = 0; portalFlashAlpha = 0; portalLiftFrames = 0; drunkTimer = 0; drunkPhase = 0; seaPlant = null; seaPlantTriggered = false; mushroomBadTimer = 0; mushroomHue = 0; mushroomSpin = 0;
+            magicPortalReady = false; if (portalPlatRef) { portalPlatRef.isPortal = false; portalPlatRef = null; } portalTimer = 0; portalFlashAlpha = 0; portalLiftFrames = 0; drunkTimer = 0; drunkPhase = 0; seaPlant = null; seaPlantTriggered = false; mushroomBadTimer = 0; mushroomHue = 0; mushroomHueTarget = 0; mushroomHueChangeTimer = 0; mushroomSpin = 0;
             camY = player.y - BASE_H + 200; camYVel = 0;
             highestY = player.y; jumpStartY = player.y; bestJumpStartY = player.y;
             highestLandedPlatY = player.y;
@@ -13217,9 +13318,19 @@ function gameUpdate() {
                 if (currentTheme === 1) {
                     if (mushroomBadTimer > 0) {
                         mushroomBadTimer--;
-                        mushroomHue = (mushroomHue + rndInt(18, 55)) % 360;
-                        mushroomSpin += 0.012;
-                        if (mushroomBadTimer === 0) mushroomSpin = 0;
+                        // Smooth hue transition: pick a new target every 18-35 frames, lerp toward it
+                        mushroomHueChangeTimer--;
+                        if (mushroomHueChangeTimer <= 0) {
+                            mushroomHueTarget = (mushroomHue + rndInt(80, 200)) % 360;
+                            mushroomHueChangeTimer = rndInt(18, 35);
+                        }
+                        // Shortest-path lerp around the 360° circle
+                        let hueDiff = ((mushroomHueTarget - mushroomHue + 540) % 360) - 180;
+                        mushroomHue = (mushroomHue + hueDiff * 0.07 + 360) % 360;
+                        mushroomSpin += 0.013;
+                        // Random control drift — player lurches sideways
+                        if (Math.random() < 0.08) player.vx += (Math.random() - 0.5) * 3.5;
+                        if (mushroomBadTimer === 0) { mushroomSpin = 0; mushroomHue = 0; }
                     }
                     for (const m of mushrooms) m.update();
                     for (let mi = mushrooms.length - 1; mi >= 0; mi--) {
@@ -13235,7 +13346,9 @@ function gameUpdate() {
                                 floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 14, '🍄 SUPER!', '#88ff44'));
                             } else {
                                 mushroomBadTimer = 600;
-                                mushroomHue = rndInt(0, 360);
+                                mushroomHueTarget = rndInt(0, 360);
+                                mushroomHue = mushroomHueTarget;
+                                mushroomHueChangeTimer = 0;
                                 mushroomSpin = 0;
                                 floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 14, '🍄 TRIP!', '#ff44cc'));
                             }
@@ -13661,12 +13774,15 @@ function gameUpdate() {
             }
 
             // ─── DRAW ───────────────────────────────
-            // Bad mushroom: CSS filter — only update DOM when state actually changes
+            // Bad mushroom: CSS filter — smooth transitions via lerped hue + blur throb
             if (mushroomBadTimer > 0) {
                 const fade = Math.min(1, mushroomBadTimer / 40);
-                const spin = Math.sin(mushroomSpin) * 3.2 * fade;
-                canvas.style.filter = `hue-rotate(${mushroomHue}deg) saturate(2.2)`;
-                canvas.style.transform = `rotate(${spin}deg)`;
+                const spin = Math.sin(mushroomSpin) * 3.5 * fade;
+                const sat = 1.8 + 0.8 * Math.abs(Math.sin(mushroomSpin * 3));
+                const blurPx = (0.8 + 0.7 * Math.abs(Math.sin(mushroomSpin * 2.3))) * fade;
+                const hRounded = Math.round(mushroomHue);
+                canvas.style.filter = `hue-rotate(${hRounded}deg) saturate(${sat.toFixed(2)}) blur(${blurPx.toFixed(2)}px)`;
+                canvas.style.transform = `rotate(${spin.toFixed(3)}deg)`;
             } else if (canvas.style.filter !== '') {
                 canvas.style.filter = '';
                 canvas.style.transform = '';
