@@ -7230,71 +7230,80 @@ await Promise.race([
             ctx.globalAlpha = 1;
             ctx.restore();
 
-            // ── Mirror portal entry decoration (top centre) ──
+            // ── Big mirror portal at top (the exit) ──
             {
-                const mpX = cx, mpY = 130;
-                const mpW = 80, mpH = 110;
+                const mTop = 60 - MIRROR_DIM_CAM_Y; // screen y ≈ 10
+                const mH = 55, mX = 60, mW = BASE_W - 120;
                 ctx.save();
-                // Frame glow
-                ctx.shadowColor = '#cc66ff'; ctx.shadowBlur = 22;
-                const frameG = ctx.createLinearGradient(mpX - mpW/2, mpY, mpX + mpW/2, mpY);
-                frameG.addColorStop(0, '#6622aa'); frameG.addColorStop(0.5, '#aa44ff'); frameG.addColorStop(1, '#6622aa');
-                ctx.strokeStyle = frameG; ctx.lineWidth = 6;
-                ctx.beginPath(); ctx.roundRect(mpX - mpW/2, mpY, mpW, mpH, 10); ctx.stroke();
+                // Pulsing outer glow
+                const pulse = 0.7 + 0.3 * Math.sin(t * 2.5);
+                ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 28 * pulse;
+                // Frame border
+                const frameG = ctx.createLinearGradient(mX, mTop, mX + mW, mTop);
+                frameG.addColorStop(0, '#551188'); frameG.addColorStop(0.5, '#cc55ff'); frameG.addColorStop(1, '#551188');
+                ctx.strokeStyle = frameG; ctx.lineWidth = 7;
+                ctx.beginPath(); ctx.roundRect(mX, mTop, mW, mH, 12); ctx.stroke();
                 ctx.shadowBlur = 0;
-                // Mirror surface — shimmering silver gradient
-                const mirrorG = ctx.createLinearGradient(mpX - mpW/2 + 4, mpY + 4, mpX + mpW/2 - 4, mpY + mpH - 4);
-                mirrorG.addColorStop(0, `rgba(200,180,255,${0.18 + 0.08*Math.sin(t*2.1)})`);
-                mirrorG.addColorStop(0.4, `rgba(120,80,200,${0.5 + 0.1*Math.sin(t*1.7)})`);
-                mirrorG.addColorStop(1, `rgba(40,10,80,0.85)`);
-                ctx.fillStyle = mirrorG;
-                ctx.beginPath(); ctx.roundRect(mpX - mpW/2 + 4, mpY + 4, mpW - 8, mpH - 8, 8); ctx.fill();
-                // Swirl lines on mirror surface
-                ctx.save(); ctx.beginPath(); ctx.roundRect(mpX - mpW/2 + 4, mpY + 4, mpW - 8, mpH - 8, 8); ctx.clip();
-                for (let si = 0; si < 5; si++) {
-                    const sx = mpX + Math.sin(t * 0.9 + si * 1.2) * (mpW/2 - 10);
-                    const sy = mpY + mpH/2 + Math.cos(t * 0.7 + si * 0.8) * (mpH/2 - 15);
-                    const sr = 18 + si * 7;
+                // Mirror surface
+                ctx.beginPath(); ctx.roundRect(mX + 4, mTop + 4, mW - 8, mH - 8, 9); ctx.clip();
+                const surfG = ctx.createLinearGradient(mX, mTop, mX, mTop + mH);
+                surfG.addColorStop(0, `rgba(230,210,255,${0.12 + 0.06*Math.sin(t*1.8)})`);
+                surfG.addColorStop(0.5, `rgba(160,80,255,${0.55 + 0.08*Math.sin(t*2.2)})`);
+                surfG.addColorStop(1, `rgba(40,0,100,0.88)`);
+                ctx.fillStyle = surfG; ctx.fillRect(mX + 4, mTop + 4, mW - 8, mH - 8);
+                // Swirl blobs
+                for (let si = 0; si < 6; si++) {
+                    const sx = cx + Math.sin(t*0.8 + si*1.05) * (mW/2 - 20);
+                    const sy = mTop + mH/2 + Math.cos(t*0.6 + si*0.9) * (mH/2 - 10);
+                    const sr = 20 + si * 5;
                     const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
-                    sg.addColorStop(0, `rgba(220,200,255,${0.22 - si*0.03})`);
-                    sg.addColorStop(1, 'rgba(100,60,180,0)');
+                    sg.addColorStop(0, `rgba(240,200,255,${0.18 - si*0.02})`);
+                    sg.addColorStop(1, 'rgba(130,50,200,0)');
                     ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2); ctx.fill();
                 }
-                ctx.restore();
                 // Highlight streak
-                ctx.globalAlpha = 0.35 + 0.15*Math.sin(t*3);
-                ctx.strokeStyle = '#e8d8ff'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(mpX - mpW/2 + 10, mpY + 12); ctx.lineTo(mpX - mpW/2 + 25, mpY + 12); ctx.stroke();
+                ctx.globalAlpha = 0.4 + 0.2*Math.sin(t*3.5);
+                ctx.strokeStyle = '#eeddff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(mX+12, mTop+10); ctx.lineTo(mX+40, mTop+10); ctx.stroke();
                 ctx.globalAlpha = 1;
-                // Label above
-                ctx.font = 'bold 9px monospace'; ctx.fillStyle = '#cc88ff';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-                ctx.fillText('MIRROR', mpX, mpY - 4);
+                ctx.restore();
+                // Arrow + label below the mirror
+                ctx.save();
+                ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.fillStyle = `rgba(220,170,255,${0.6 + 0.4*Math.sin(t*2)})`;
+                ctx.fillText('↑  REACH THE MIRROR  ↑', cx, mTop + mH + 5);
                 ctx.restore();
             }
 
-            // Draw dimension platforms
-            for (const p of mirrorDimPlatforms) {
+            // ── Draw dimension platforms ──
+            for (let pi = 0; pi < mirrorDimPlatforms.length; pi++) {
+                const p = mirrorDimPlatforms[pi];
                 const psy = p.y - MIRROR_DIM_CAM_Y;
                 if (psy < -20 || psy > BASE_H + 20) continue;
-                let col = '#334466';
-                if (p === mirrorDimCenterPad) col = '#665500';
+                let col0, col1, stroke;
+                if (p === mirrorDimFloor) {
+                    col0 = '#223344'; col1 = '#112233'; stroke = '#446688';
+                } else {
+                    const isLeft = p.x < BASE_W / 2;
+                    col0 = isLeft ? '#1a2a88' : '#551166';
+                    col1 = isLeft ? '#0d1a55' : '#330044';
+                    stroke = isLeft ? '#5577ff' : '#cc44ff';
+                }
                 const platG = ctx.createLinearGradient(p.x, psy, p.x, psy + p.h);
-                platG.addColorStop(0, col + 'ee');
-                platG.addColorStop(1, col + '88');
+                platG.addColorStop(0, col0 + 'ee');
+                platG.addColorStop(1, col1 + 'bb');
                 ctx.fillStyle = platG;
                 ctx.beginPath(); ctx.roundRect(p.x, psy, p.w, p.h, 4); ctx.fill();
-                const stroke = p === mirrorDimCenterPad ? '#ffdd66' : '#557799';
-                ctx.strokeStyle = stroke; ctx.lineWidth = p === mirrorDimCenterPad ? 2.5 : 2;
+                ctx.strokeStyle = stroke; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.roundRect(p.x - 1, psy - 1, p.w + 2, p.h + 2, 4); ctx.stroke();
-                // Gold "LAND HERE" arrow on center pad
-                if (p === mirrorDimCenterPad) {
-                    const pulse = 0.7 + 0.3*Math.sin(t * 4);
+                // Direction arrow on each stair platform
+                if (p !== mirrorDimFloor) {
+                    const isLeft = p.x < BASE_W / 2;
                     ctx.save();
-                    ctx.globalAlpha = pulse;
-                    ctx.fillStyle = '#ffdd44';
-                    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-                    ctx.fillText('▼ LAND HERE ▼', p.x + p.w/2, psy - 4);
+                    ctx.globalAlpha = 0.55 + 0.35*Math.sin(t*2 + pi);
+                    ctx.fillStyle = isLeft ? '#88aaff' : '#dd88ff';
+                    ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                    ctx.fillText(isLeft ? '◄ LEFT' : 'RIGHT ►', p.x + p.w/2, psy - 2);
                     ctx.restore();
                 }
             }
@@ -7309,32 +7318,14 @@ await Promise.race([
             ctx.fillStyle = wallR; ctx.fillRect(BASE_W - WALL_W, 0, WALL_W, BASE_H);
             ctx.restore();
 
-            // Draw the player
+            // Player
             player.draw(MIRROR_DIM_CAM_Y);
 
-            // Jump progress bar
+            // Top HUD bar
             ctx.save();
-            const bW = 180, bH = 14, bX = cx - bW / 2, bY = 22;
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.beginPath(); ctx.roundRect(bX - 1, bY - 1, bW + 2, bH + 2, 6); ctx.fill();
-            ctx.fillStyle = '#1a0035';
-            ctx.beginPath(); ctx.roundRect(bX, bY, bW, bH, 5); ctx.fill();
-            const prog = Math.min(1, mirrorDimJumps / 8);
-            if (prog > 0) {
-                const fG = ctx.createLinearGradient(bX, bY, bX + bW * prog, bY);
-                fG.addColorStop(0, '#5533cc'); fG.addColorStop(1, '#bb66ff');
-                ctx.fillStyle = fG;
-                ctx.beginPath(); ctx.roundRect(bX, bY, bW * prog, bH, 5); ctx.fill();
-            }
-            ctx.strokeStyle = '#7744ee'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.roundRect(bX - 1, bY - 1, bW + 2, bH + 2, 6); ctx.stroke();
-            // Labels
-            ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#cc99ff';
-            ctx.fillText(mirrorDimExitReady ? '★ LAND ON THE PAD! ★' : `BOUNCES  ${mirrorDimJumps} / 8`, cx, bY + bH / 2);
-            ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(180,140,255,0.7)';
-            ctx.textBaseline = 'alphabetic';
-            ctx.fillText('— MIRROR DIMENSION —', cx, 52);
+            ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(200,160,255,0.75)';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+            ctx.fillText('— MIRROR DIMENSION —  controls reversed', cx, BASE_H - 10);
             ctx.restore();
         }
 
@@ -7343,11 +7334,17 @@ await Promise.race([
             mirrorDimReturnY = player.y;
             mirrorDimReturnCamY = camY;
             mirrorDimReturnPlats = platforms;
-            mirrorDimFloor = new Platform(WALL_W, 690, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
-            mirrorDimLeftPad = null;
-            mirrorDimRightPad = null;
-            mirrorDimCenterPad = null;
-            mirrorDimPlatforms = [mirrorDimFloor];
+            mirrorDimFloor = new Platform(WALL_W, 800, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
+            mirrorDimLeftPad = null; mirrorDimRightPad = null; mirrorDimCenterPad = null;
+            const _mp = [mirrorDimFloor];
+            const _stairY = [700, 620, 540, 460, 380, 300, 220, 140];
+            for (let i = 0; i < 8; i++) {
+                const isLeft = i % 2 === 0;
+                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 150, _stairY[i], 150);
+                sp.spikes = [];
+                _mp.push(sp);
+            }
+            mirrorDimPlatforms = _mp;
             platforms = mirrorDimPlatforms;
             player.x = BASE_W / 2 - player.W / 2;
             player.y = mirrorDimFloor.y - player.H;
@@ -13457,44 +13454,21 @@ function gameUpdate() {
 
                 // ── Mirror Dimension update ──
                 if (mirrorDimActive) {
-                    // Use dimension-specific platforms for player
-                    const dimVisible = mirrorDimPlatforms;
                     const dimKeys = { left: keys.right, right: keys.left, jump: keys.jump };
                     const dimTouch = { left: touch.right, right: touch.left, jump: touch.jump };
-                    player.update(dimKeys, dimVisible, dimTouch);
-                    // Safety: if player falls off, respawn on floor
-                    if (player.y > BASE_H + 40) {
+                    player.update(dimKeys, mirrorDimPlatforms, dimTouch);
+                    // Safety: fell off bottom → back to floor
+                    if (player.y > mirrorDimFloor.y + 80) {
                         player.x = BASE_W / 2 - player.W / 2;
                         player.y = mirrorDimFloor.y - player.H;
                         player.vy = 0; player.vx = 0;
                     }
-                    // Explicit auto-jump — always bounce when on ground
-                    if (player.onGround && player.landCooldown <= 0) {
-                        player.landCooldown = 6;
-                        player.jump(1.0);
-                    }
-                    // Count landings on floor toward the 8-jump goal
-                    if (player.justLanded && !mirrorDimExitReady) {
-                        mirrorDimJumps++;
-                        if (mirrorDimJumps >= 8) {
-                            mirrorDimExitReady = true;
-                            mirrorDimCenterPad = new Platform(BASE_W / 2 - 50, 570, 100);
-                            mirrorDimCenterPad.spikes = [];
-                            mirrorDimPlatforms.push(mirrorDimCenterPad);
-                            SFX.play('coin');
-                        }
-                    }
-                    // Landing on center pad exits the dimension
-                    if (mirrorDimExitReady && mirrorDimCenterPad && mirrorDimTransFrames === 0 && player.justLanded) {
-                        const cp = mirrorDimCenterPad.rect();
-                        const pr = { x: player.x, y: player.y, w: player.W, h: player.H };
-                        if (rectsOverlap(pr, cp)) {
-                            _exitMirrorDimension();
-                        }
+                    // Reaching the mirror at the top = exit (only reachable from P8)
+                    if (mirrorDimTransFrames === 0 && player.y < 0) {
+                        _exitMirrorDimension();
                     }
                     // Keep camera fixed in dimension
                     camY = MIRROR_DIM_CAM_Y;
-                    // Tick transition
                     if (mirrorDimTransFrames > 0) mirrorDimTransFrames--;
                     return;
                 }
@@ -13586,12 +13560,12 @@ function gameUpdate() {
                         const pdx = mCX - (player.x + player.W / 2);
                         const pdy = mCY - (player.y + player.H / 2);
                         const dist = Math.sqrt(pdx * pdx + pdy * pdy);
-                        if (dist < 280 && dist > 2) {
-                            const strength = Math.pow((280 - dist) / 280, 1.5) * 0.42;
+                        if (dist < 160 && dist > 2) {
+                            const strength = Math.pow((160 - dist) / 160, 1.5) * 0.22;
                             player.vx += (pdx / dist) * strength;
                             player.vy += (pdy / dist) * strength;
                         }
-                        if (dist < 200 && mirrorDimTransFrames === 0 && Math.random() < 0.12) {
+                        if (dist < 120 && mirrorDimTransFrames === 0 && Math.random() < 0.12) {
                             particles.push(new Particle(
                                 player.x + rnd(0, player.W), player.y + rnd(0, player.H),
                                 (pdx / dist) * rnd(1.5, 3.5), (pdy / dist) * rnd(1.5, 3.5),
