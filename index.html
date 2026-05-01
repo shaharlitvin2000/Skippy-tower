@@ -7340,7 +7340,7 @@ await Promise.race([
             const _stairY = [860, 740, 620, 500, 380, 260, 140, 20];
             for (let i = 0; i < 8; i++) {
                 const isLeft = i % 2 === 0;
-                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 150, _stairY[i], 150);
+                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 90, _stairY[i], 90);
                 sp.spikes = [];
                 _mp.push(sp);
             }
@@ -7349,6 +7349,7 @@ await Promise.race([
             player.x = BASE_W / 2 - player.W / 2;
             player.y = mirrorDimFloor.y - player.H;
             player.vy = 0; player.vx = 0; player.onGround = true; player.iframes = 30;
+            player.powerHighJump = 0; player.powerSpeed = 0; player.powerShield = 0; player.powerSlow = 0;
             mirrorDimActive = true; mirrorDimJumps = 0; mirrorDimLastSide = -1; mirrorDimExitReady = false;
             camY = mirrorDimFloor.y - BASE_H + 60;
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = 1;
@@ -13552,7 +13553,7 @@ function gameUpdate() {
 
                 // ── MIRROR PORTAL: spawn + black hole pull ──
                 if (currentMode === 'infinite' && !mirrorDimActive) {
-                    if (mirrorPortal === null && lastRunHigh >= nextMirrorM) {
+                    if (mirrorPortal === null && lastRunHigh >= nextMirrorM - 50) {
                         const targetY = BASE_H - 120 - nextMirrorM * 10;
                         const px = rnd(WALL_W + 50, BASE_W - WALL_W - 50);
                         mirrorPortal = new MirrorPortal(px, targetY - 40);
@@ -13578,7 +13579,7 @@ function gameUpdate() {
                         }
                         if (mirrorDimTransFrames === 0) {
                             // Touching the very center = instant death, no exceptions
-                            if (dist < 10) {
+                            if (dist < 4) {
                                 secondLifeReady = false;
                                 secondLifeActive = false;
                                 player.iframes = 0;
