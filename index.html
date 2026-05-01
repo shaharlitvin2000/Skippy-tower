@@ -7230,48 +7230,59 @@ await Promise.race([
             ctx.globalAlpha = 1;
             ctx.restore();
 
-            // ── Big mirror portal at top (the exit) ──
+            // ── Exit mirror — tall portrait frame (world y = -200 to -50) ──
             {
-                const mTop = -120 - camY; // world y=-120, follows scrolling camera
-                const mH = 55, mX = 60, mW = BASE_W - 120;
+                const mW = 110, mH = 150;
+                const mX = cx - mW / 2;
+                const mWorldTop = -200;
+                const mTop = mWorldTop - camY; // screen Y of mirror top
                 ctx.save();
-                // Pulsing outer glow
                 const pulse = 0.7 + 0.3 * Math.sin(t * 2.5);
-                ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 28 * pulse;
-                // Frame border
-                const frameG = ctx.createLinearGradient(mX, mTop, mX + mW, mTop);
-                frameG.addColorStop(0, '#551188'); frameG.addColorStop(0.5, '#cc55ff'); frameG.addColorStop(1, '#551188');
-                ctx.strokeStyle = frameG; ctx.lineWidth = 7;
-                ctx.beginPath(); ctx.roundRect(mX, mTop, mW, mH, 12); ctx.stroke();
+                // Outer glow
+                ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 30 * pulse;
+                // Frame — silver/purple like a real mirror frame
+                const frameG = ctx.createLinearGradient(mX, mTop, mX + mW, mTop + mH);
+                frameG.addColorStop(0, '#8844bb'); frameG.addColorStop(0.3, '#ddaaff');
+                frameG.addColorStop(0.7, '#ddaaff'); frameG.addColorStop(1, '#8844bb');
+                ctx.strokeStyle = frameG; ctx.lineWidth = 8;
+                ctx.beginPath(); ctx.roundRect(mX, mTop, mW, mH, 10); ctx.stroke();
                 ctx.shadowBlur = 0;
-                // Mirror surface
-                ctx.beginPath(); ctx.roundRect(mX + 4, mTop + 4, mW - 8, mH - 8, 9); ctx.clip();
-                const surfG = ctx.createLinearGradient(mX, mTop, mX, mTop + mH);
-                surfG.addColorStop(0, `rgba(230,210,255,${0.12 + 0.06*Math.sin(t*1.8)})`);
-                surfG.addColorStop(0.5, `rgba(160,80,255,${0.55 + 0.08*Math.sin(t*2.2)})`);
-                surfG.addColorStop(1, `rgba(40,0,100,0.88)`);
-                ctx.fillStyle = surfG; ctx.fillRect(mX + 4, mTop + 4, mW - 8, mH - 8);
+                // Inner bevel
+                ctx.strokeStyle = 'rgba(255,230,255,0.35)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(mX + 6, mTop + 6, mW - 12, mH - 12, 7); ctx.stroke();
+                // Mirror surface with clip
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(mX + 5, mTop + 5, mW - 10, mH - 10, 8); ctx.clip();
+                const surfG = ctx.createLinearGradient(mX, mTop, mX + mW, mTop + mH);
+                surfG.addColorStop(0,   `rgba(240,220,255,${0.15 + 0.07*Math.sin(t*1.8)})`);
+                surfG.addColorStop(0.4, `rgba(150,70,240,${0.60 + 0.08*Math.sin(t*2.2)})`);
+                surfG.addColorStop(1,   `rgba(30,0,80,0.90)`);
+                ctx.fillStyle = surfG; ctx.fillRect(mX + 5, mTop + 5, mW - 10, mH - 10);
                 // Swirl blobs
-                for (let si = 0; si < 6; si++) {
-                    const sx = cx + Math.sin(t*0.8 + si*1.05) * (mW/2 - 20);
-                    const sy = mTop + mH/2 + Math.cos(t*0.6 + si*0.9) * (mH/2 - 10);
-                    const sr = 20 + si * 5;
+                for (let si = 0; si < 5; si++) {
+                    const sx = cx + Math.sin(t * 0.9 + si * 1.2) * (mW / 2 - 18);
+                    const sy = mTop + mH / 2 + Math.cos(t * 0.7 + si * 0.9) * (mH / 2 - 22);
+                    const sr = 16 + si * 6;
                     const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
-                    sg.addColorStop(0, `rgba(240,200,255,${0.18 - si*0.02})`);
-                    sg.addColorStop(1, 'rgba(130,50,200,0)');
-                    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2); ctx.fill();
+                    sg.addColorStop(0, `rgba(240,200,255,${0.20 - si * 0.03})`);
+                    sg.addColorStop(1, 'rgba(120,40,180,0)');
+                    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
                 }
-                // Highlight streak
-                ctx.globalAlpha = 0.4 + 0.2*Math.sin(t*3.5);
-                ctx.strokeStyle = '#eeddff'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(mX+12, mTop+10); ctx.lineTo(mX+40, mTop+10); ctx.stroke();
+                // Highlight diagonal streak (like a real mirror reflection)
+                ctx.globalAlpha = 0.45 + 0.2 * Math.sin(t * 3);
+                ctx.strokeStyle = '#f0e0ff'; ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(mX + 12, mTop + 10); ctx.lineTo(mX + 38, mTop + 10);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(mX + 14, mTop + 17); ctx.lineTo(mX + 24, mTop + 17);
+                ctx.stroke();
                 ctx.globalAlpha = 1;
                 ctx.restore();
-                // Arrow + label below the mirror
-                ctx.save();
-                ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                ctx.fillStyle = `rgba(220,170,255,${0.6 + 0.4*Math.sin(t*2)})`;
-                ctx.fillText('↑  REACH THE MIRROR  ↑', cx, mTop + mH + 5);
+                // Pulsing label below
+                ctx.font = `bold 10px monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.fillStyle = `rgba(220,170,255,${0.55 + 0.45 * Math.sin(t * 2.2)})`;
+                ctx.fillText('↑ ENTER MIRROR ↑', cx, mTop + mH + 6);
                 ctx.restore();
             }
 
@@ -7340,7 +7351,7 @@ await Promise.race([
             const _stairY = [860, 740, 620, 500, 380, 260, 140, 20];
             for (let i = 0; i < 8; i++) {
                 const isLeft = i % 2 === 0;
-                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 115, _stairY[i], 115);
+                const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 130, _stairY[i], 130);
                 sp.spikes = [];
                 _mp.push(sp);
             }
@@ -7349,6 +7360,7 @@ await Promise.race([
             player.x = BASE_W / 2 - player.W / 2;
             player.y = mirrorDimFloor.y - player.H;
             player.vy = 0; player.vx = 0; player.onGround = true; player.iframes = 30;
+            player.landCooldown = 0; player.landPause = 0;
             player.powerHighJump = 0; player.powerSpeed = 0; player.powerShield = 0; player.powerSlow = 0;
             mirrorDimActive = true; mirrorDimJumps = 0; mirrorDimLastSide = -1; mirrorDimExitReady = false;
             camY = mirrorDimFloor.y - BASE_H + 60;
@@ -13470,6 +13482,10 @@ function gameUpdate() {
                     const dimKeys = { left: keys.right, right: keys.left, jump: keys.jump };
                     const dimTouch = { left: touch.right, right: touch.left, jump: touch.jump };
                     player.update(dimKeys, mirrorDimPlatforms, dimTouch);
+                    // Auto-jump: freeze breaks justLanded so force it explicitly
+                    if (player.onGround && player.landCooldown <= 0) {
+                        player.landCooldown = 8; player.jump(1.0);
+                    }
                     // Safety: fell off bottom → back to floor
                     if (player.y > mirrorDimFloor.y + 80) {
                         player.x = BASE_W / 2 - player.W / 2;
@@ -13477,7 +13493,7 @@ function gameUpdate() {
                         player.vy = 0; player.vx = 0;
                     }
                     // Reaching the mirror at the top = exit (only reachable from P8 at y=20)
-                    if (player.y < -50) {
+                    if (player.y < -100) {
                         _exitMirrorDimension(); return;
                     }
                     // Scrolling camera follows player upward
@@ -13564,8 +13580,14 @@ function gameUpdate() {
                 if (currentMode === 'infinite' && !mirrorDimActive) {
                     if (mirrorPortal === null && lastRunHigh >= nextMirrorM - 50) {
                         const targetY = BASE_H - 120 - nextMirrorM * 10;
-                        const px = rnd(WALL_W + 50, BASE_W - WALL_W - 50);
-                        mirrorPortal = new MirrorPortal(px, targetY - 40);
+                        // Find a platform near targetY to spawn on
+                        const _cands = platforms.filter(p => !p.isFinish && !p.special && p.w >= 40 && Math.abs(p.y - targetY) < 350);
+                        if (_cands.length > 0) {
+                            const _pl = _cands[rndInt(0, _cands.length - 1)];
+                            mirrorPortal = new MirrorPortal(_pl.x + _pl.w / 2, _pl.y - 31);
+                        } else {
+                            mirrorPortal = new MirrorPortal(rnd(WALL_W + 50, BASE_W - WALL_W - 50), targetY - 40);
+                        }
                     }
                     if (mirrorPortal && mirrorPortal.alive) {
                         mirrorPortal.update();
@@ -13574,12 +13596,12 @@ function gameUpdate() {
                         const pdx = mCX - (player.x + player.W / 2);
                         const pdy = mCY - (player.y + player.H / 2);
                         const dist = Math.sqrt(pdx * pdx + pdy * pdy);
-                        if (dist < 160 && dist > 2) {
-                            const strength = Math.pow((160 - dist) / 160, 1.5) * 0.22;
+                        if (dist < 220 && dist > 2) {
+                            const strength = Math.pow((220 - dist) / 220, 1.5) * 0.30;
                             player.vx += (pdx / dist) * strength;
                             player.vy += (pdy / dist) * strength;
                         }
-                        if (dist < 120 && mirrorDimTransFrames === 0 && Math.random() < 0.12) {
+                        if (dist < 160 && mirrorDimTransFrames === 0 && Math.random() < 0.12) {
                             particles.push(new Particle(
                                 player.x + rnd(0, player.W), player.y + rnd(0, player.H),
                                 (pdx / dist) * rnd(1.5, 3.5), (pdy / dist) * rnd(1.5, 3.5),
