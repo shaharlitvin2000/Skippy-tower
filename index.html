@@ -7232,7 +7232,7 @@ await Promise.race([
 
             // ── Big mirror portal at top (the exit) ──
             {
-                const mTop = 60 - MIRROR_DIM_CAM_Y; // screen y ≈ 10
+                const mTop = -120 - camY; // world y=-120, follows scrolling camera
                 const mH = 55, mX = 60, mW = BASE_W - 120;
                 ctx.save();
                 // Pulsing outer glow
@@ -7278,7 +7278,7 @@ await Promise.race([
             // ── Draw dimension platforms ──
             for (let pi = 0; pi < mirrorDimPlatforms.length; pi++) {
                 const p = mirrorDimPlatforms[pi];
-                const psy = p.y - MIRROR_DIM_CAM_Y;
+                const psy = p.y - camY;
                 if (psy < -20 || psy > BASE_H + 20) continue;
                 let col0, col1, stroke;
                 if (p === mirrorDimFloor) {
@@ -7319,7 +7319,7 @@ await Promise.race([
             ctx.restore();
 
             // Player
-            player.draw(MIRROR_DIM_CAM_Y);
+            player.draw(camY);
 
             // Top HUD bar
             ctx.save();
@@ -7334,10 +7334,10 @@ await Promise.race([
             mirrorDimReturnY = player.y;
             mirrorDimReturnCamY = camY;
             mirrorDimReturnPlats = platforms;
-            mirrorDimFloor = new Platform(WALL_W, 800, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
+            mirrorDimFloor = new Platform(WALL_W, 1000, BASE_W - 2 * WALL_W); mirrorDimFloor.spikes = [];
             mirrorDimLeftPad = null; mirrorDimRightPad = null; mirrorDimCenterPad = null;
             const _mp = [mirrorDimFloor];
-            const _stairY = [700, 620, 540, 460, 380, 300, 220, 140];
+            const _stairY = [860, 740, 620, 500, 380, 260, 140, 20];
             for (let i = 0; i < 8; i++) {
                 const isLeft = i % 2 === 0;
                 const sp = new Platform(isLeft ? WALL_W : BASE_W - WALL_W - 150, _stairY[i], 150);
@@ -7350,7 +7350,7 @@ await Promise.race([
             player.y = mirrorDimFloor.y - player.H;
             player.vy = 0; player.vx = 0; player.onGround = true; player.iframes = 30;
             mirrorDimActive = true; mirrorDimJumps = 0; mirrorDimLastSide = -1; mirrorDimExitReady = false;
-            camY = MIRROR_DIM_CAM_Y;
+            camY = mirrorDimFloor.y - BASE_H + 60;
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = 1;
             SFX.play('powerup');
         }
@@ -7360,9 +7360,11 @@ await Promise.race([
             player.x = mirrorDimReturnX;
             player.y = mirrorDimReturnY;
             player.vy = -3; player.vx = 0;
+            player.landCooldown = 0;
             camY = mirrorDimReturnCamY;
             player.iframes = 120;
             mirrorDimActive = false;
+            mirrorDimPlatforms = [];
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = -1;
             mirrorPortal = null;
             nextMirrorM = lastRunHigh + rndInt(150, 300);
@@ -13463,12 +13465,14 @@ function gameUpdate() {
                         player.y = mirrorDimFloor.y - player.H;
                         player.vy = 0; player.vx = 0;
                     }
-                    // Reaching the mirror at the top = exit (only reachable from P8)
-                    if (mirrorDimTransFrames === 0 && player.y < 0) {
-                        _exitMirrorDimension();
+                    // Reaching the mirror at the top = exit (only reachable from P8 at y=20)
+                    if (mirrorDimTransFrames === 0 && player.y < -50) {
+                        _exitMirrorDimension(); return;
                     }
-                    // Keep camera fixed in dimension
-                    camY = MIRROR_DIM_CAM_Y;
+                    // Scrolling camera follows player upward
+                    const _dimTarget = player.y - BASE_H * 0.55;
+                    camY += (_dimTarget - camY) * 0.10;
+                    camY = Math.max(-280, camY);
                     if (mirrorDimTransFrames > 0) mirrorDimTransFrames--;
                     return;
                 }
