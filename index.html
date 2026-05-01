@@ -1644,46 +1644,6 @@ await Promise.race([
                 const t = Date.now() / 1000;
                 const px = this.x, pw = this.w, ph = this.h;
 
-                // ── MIRROR PORTAL PLATFORM ──
-                if (this.isMirror) {
-                    const mCX = px + pw / 2;
-                    const pulse = 0.7 + 0.3 * Math.sin(t * 3.5);
-                    ctx.save();
-                    // Base glow
-                    const mg = ctx.createRadialGradient(mCX, sy, 0, mCX, sy, pw * 0.65);
-                    mg.addColorStop(0, `rgba(120,80,255,${0.35 + 0.15 * pulse})`);
-                    mg.addColorStop(1, 'rgba(40,0,120,0)');
-                    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mCX, sy, pw * 0.65, 0, Math.PI * 2); ctx.fill();
-                    // Platform body — dark shimmering mirror
-                    const platG = ctx.createLinearGradient(px, sy, px, sy + ph);
-                    platG.addColorStop(0, `rgba(180,140,255,${0.9 * pulse})`);
-                    platG.addColorStop(0.4, 'rgba(60,20,160,0.95)');
-                    platG.addColorStop(1, 'rgba(20,0,80,0.95)');
-                    ctx.fillStyle = platG;
-                    ctx.beginPath(); ctx.roundRect(px, sy, pw, ph, 4); ctx.fill();
-                    // Mirror shimmer lines
-                    ctx.globalAlpha = 0.4 * pulse;
-                    ctx.strokeStyle = '#cc99ff'; ctx.lineWidth = 1;
-                    for (let i = 0; i < 4; i++) {
-                        const lx = px + (pw / 5) * (i + 1) + Math.sin(t * 2 + i) * 3;
-                        ctx.beginPath(); ctx.moveTo(lx, sy); ctx.lineTo(lx, sy + ph); ctx.stroke();
-                    }
-                    // Top glow rim
-                    ctx.globalAlpha = 0.85 * pulse;
-                    ctx.strokeStyle = `rgba(200,160,255,${pulse})`; ctx.lineWidth = 2.5;
-                    ctx.shadowColor = '#aa66ff'; ctx.shadowBlur = 10;
-                    ctx.beginPath(); ctx.moveTo(px + 4, sy + 1); ctx.lineTo(px + pw - 4, sy + 1); ctx.stroke();
-                    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-                    // "MIRROR" label
-                    ctx.font = 'bold 9px monospace'; ctx.fillStyle = `rgba(220,180,255,${pulse})`;
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText('✦ MIRROR ✦', mCX, sy + ph / 2);
-                    ctx.restore();
-                    // Draw spikes if any
-                    for (const sp of this.spikes) sp.draw(this, camY);
-                    return;
-                }
-
                 // ── MAGIC GHOST PLATFORM ──
                 if (this.isGhost) {
                     const gFlicker = 0.85 + 0.05 * Math.sin(t * 3.5 + px * 0.05);
@@ -3810,6 +3770,81 @@ await Promise.race([
         }
 
         // ─────────────────────────────────────────────
+        //  MIRROR PORTAL (clock mode floating object)
+        // ─────────────────────────────────────────────
+        class MirrorPortal {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.bob = rnd(0, Math.PI * 2);
+                this.alive = true;
+                this.size = 26; // bigger than coin (14) and powerup (16)
+            }
+            update() { this.bob += 0.055; }
+            rect() {
+                return { x: this.x - this.size, y: this.y - this.size + Math.sin(this.bob) * 5,
+                         w: this.size * 2, h: this.size * 2 };
+            }
+            draw(camY) {
+                const sy = this.y + Math.sin(this.bob) * 5 - camY;
+                if (sy < -70 || sy > BASE_H + 70) return;
+                const t = Date.now() / 1000;
+                const pulse = 0.7 + 0.3 * Math.sin(this.bob * 2);
+                // Spinning dashed rings (black hole effect)
+                ctx.save();
+                for (let ri = 0; ri < 3; ri++) {
+                    const rr = this.size + 10 + ri * 13 + Math.sin(t * 1.8 + ri * 1.4) * 4;
+                    ctx.globalAlpha = (0.38 - ri * 0.1) * pulse;
+                    ctx.strokeStyle = ri === 0 ? '#cc88ff' : ri === 1 ? '#8844cc' : '#440088';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 7]);
+                    ctx.lineDashOffset = -t * 38 * (ri % 2 === 0 ? 1 : -1);
+                    ctx.beginPath(); ctx.arc(this.x, sy, rr, 0, Math.PI * 2); ctx.stroke();
+                }
+                ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.restore();
+                // Outer glow
+                drawGlow(ctx, '#aa55ff', this.x, sy, 38, 90);
+                // Rotating body
+                ctx.save();
+                ctx.translate(this.x, sy); ctx.rotate(t * 0.7);
+                const bg = ctx.createRadialGradient(0, 0, this.size * 0.15, 0, 0, this.size);
+                bg.addColorStop(0, `rgba(210,150,255,${0.95 * pulse})`);
+                bg.addColorStop(0.45, `rgba(90,30,200,0.9)`);
+                bg.addColorStop(1, `rgba(15,0,50,0.95)`);
+                ctx.fillStyle = bg;
+                ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+                // Inner shimmer spokes (counter-rotate)
+                ctx.save();
+                ctx.translate(this.x, sy); ctx.rotate(-t * 1.1);
+                ctx.globalAlpha = 0.45 * pulse;
+                ctx.strokeStyle = '#ddaaff'; ctx.lineWidth = 1.5;
+                for (let i = 0; i < 6; i++) {
+                    const a = (i / 6) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(a) * this.size * 0.22, Math.sin(a) * this.size * 0.22);
+                    ctx.lineTo(Math.cos(a) * this.size * 0.78, Math.sin(a) * this.size * 0.78);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                // ✦ symbol
+                ctx.save();
+                ctx.fillStyle = `rgba(255,220,255,${pulse})`;
+                ctx.font = `bold ${Math.floor(this.size * 0.82)}px monospace`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 10;
+                ctx.fillText('✦', this.x, sy + 1);
+                ctx.shadowBlur = 0; ctx.restore();
+                // Bright border
+                ctx.save();
+                ctx.strokeStyle = `rgba(220,180,255,${pulse})`;
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#aa66ff'; ctx.shadowBlur = 14;
+                ctx.beginPath(); ctx.arc(this.x, sy, this.size, 0, Math.PI * 2); ctx.stroke();
+                ctx.shadowBlur = 0; ctx.restore();
+            }
+        }
+
+        // ─────────────────────────────────────────────
         //  FOREST MUSHROOM (good 50% / bad 50%)
         // ─────────────────────────────────────────────
         class Mushroom {
@@ -4562,7 +4597,7 @@ await Promise.race([
         let floorY = 0;   // the y of the starting platform — player can't go below this
 
         // ── Mirror Dimension ──────────────────────────────────────────────────────
-        let mirrorPlatRef = null;        // Platform currently marked as mirror
+        let mirrorPortal = null;         // Floating MirrorPortal object (or null)
         let nextMirrorM = 0;             // Next meter at which mirror appears
         let mirrorDimActive = false;     // Currently inside the dimension
         let mirrorDimJumps = 0;          // Alternating zone crossings so far (0-8)
@@ -4712,7 +4747,7 @@ await Promise.race([
             Platform._nextId = 0;
             secondLifeVisited = new Set(); secondLifeProgress = 0; secondLifeReady = false;
             secondLifeActive = false; secondLifeAnimStart = 0;
-            mirrorPlatRef = null; nextMirrorM = rndInt(170, 230);
+            mirrorPortal = null; nextMirrorM = rndInt(170, 230);
             mirrorDimActive = false; mirrorDimJumps = 0; mirrorDimLastSide = -1;
             mirrorDimExitReady = false; mirrorDimPlatforms = []; mirrorDimTransFrames = 0; mirrorDimTransDir = 0;
         }
@@ -7321,7 +7356,7 @@ await Promise.race([
             player.iframes = 120;
             mirrorDimActive = false;
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = -1;
-            if (mirrorPlatRef) { mirrorPlatRef.isMirror = false; mirrorPlatRef = null; }
+            mirrorPortal = null;
             nextMirrorM = lastRunHigh + rndInt(150, 300);
             SFX.play('win');
         }
@@ -13413,7 +13448,9 @@ function gameUpdate() {
                 if (mirrorDimActive) {
                     // Use dimension-specific platforms for player
                     const dimVisible = mirrorDimPlatforms;
-                    player.update(keys, dimVisible, touch);
+                    const dimKeys = { left: keys.right, right: keys.left, jump: keys.jump };
+                    const dimTouch = { left: touch.right, right: touch.left, jump: touch.jump };
+                    player.update(dimKeys, dimVisible, dimTouch);
                     // Safety: if player falls off, respawn on floor
                     if (player.y > BASE_H + 40) {
                         player.x = BASE_W / 2 - player.W / 2;
@@ -13529,22 +13566,17 @@ function gameUpdate() {
                 // Count down portal lift protection
                 if (portalLiftFrames > 0) portalLiftFrames--;
 
-                // ── MIRROR PLATFORM: spawn + black hole pull ──
+                // ── MIRROR PORTAL: spawn + black hole pull ──
                 if (currentMode === 'infinite' && !mirrorDimActive) {
-                    if (mirrorPlatRef === null && lastRunHigh >= nextMirrorM) {
+                    if (mirrorPortal === null && lastRunHigh >= nextMirrorM) {
                         const targetY = BASE_H - 120 - nextMirrorM * 10;
-                        const cands = platforms.filter(p =>
-                            !p.isFinish && !p.special && !p.isMirror && !p.moving &&
-                            p.spikes.length === 0 && Math.abs(p.y - targetY) < 600
-                        );
-                        if (cands.length > 0) {
-                            const ch = cands[Math.floor(cands.length / 2)];
-                            ch.isMirror = true; ch.spikes = []; mirrorPlatRef = ch;
-                        }
+                        const px = rnd(WALL_W + 50, BASE_W - WALL_W - 50);
+                        mirrorPortal = new MirrorPortal(px, targetY - 40);
                     }
-                    if (mirrorPlatRef) {
-                        const mCX = mirrorPlatRef.x + mirrorPlatRef.w / 2;
-                        const mCY = mirrorPlatRef.y - 7;
+                    if (mirrorPortal && mirrorPortal.alive) {
+                        mirrorPortal.update();
+                        const mCX = mirrorPortal.x;
+                        const mCY = mirrorPortal.y + Math.sin(mirrorPortal.bob) * 5;
                         const pdx = mCX - (player.x + player.W / 2);
                         const pdy = mCY - (player.y + player.H / 2);
                         const dist = Math.sqrt(pdx * pdx + pdy * pdy);
@@ -13561,8 +13593,17 @@ function gameUpdate() {
                             ));
                         }
                         if (mirrorDimTransFrames === 0) {
-                            const pr = { x: player.x, y: player.y, w: player.W, h: player.H };
-                            if (rectsOverlap(pr, mirrorPlatRef.rect())) _enterMirrorDimension();
+                            // Touching the very center = instant death, no exceptions
+                            if (dist < 10) {
+                                secondLifeReady = false;
+                                secondLifeActive = false;
+                                player.iframes = 0;
+                                player.powerHighJump = 0;
+                                handleDeath();
+                            } else {
+                                const pr = { x: player.x, y: player.y, w: player.W, h: player.H };
+                                if (rectsOverlap(pr, mirrorPortal.rect())) _enterMirrorDimension();
+                            }
                         }
                     }
                 }
@@ -14379,28 +14420,7 @@ function gameUpdate() {
                 drawBackground(camY);
                 for (const p of platforms) p.draw(camY);
                 drawBlackHoles(camY);
-                // Draw mirror platform black hole pull effect
-                if (mirrorPlatRef && !mirrorDimActive) {
-                    const mpSY = mirrorPlatRef.y - camY;
-                    const mpCX = mirrorPlatRef.x + mirrorPlatRef.w / 2;
-                    if (mpSY > -150 && mpSY < BASE_H + 150) {
-                        const t_bh = Date.now() / 1000;
-                        ctx.save();
-                        // Spiral particle rings
-                        for (let ri = 0; ri < 3; ri++) {
-                            const ringR = 40 + ri * 30 + Math.sin(t_bh * 2 + ri) * 8;
-                            const rAlpha = (0.25 - ri * 0.06) * (0.6 + 0.4 * Math.sin(t_bh * 1.5 + ri));
-                            ctx.globalAlpha = rAlpha;
-                            ctx.strokeStyle = ri === 0 ? '#aa66ff' : ri === 1 ? '#7733cc' : '#441188';
-                            ctx.lineWidth = 2.5 - ri * 0.5;
-                            ctx.setLineDash([6, 8]);
-                            ctx.lineDashOffset = -t_bh * 40;
-                            ctx.beginPath(); ctx.arc(mpCX, mpSY, ringR, 0, Math.PI * 2); ctx.stroke();
-                        }
-                        ctx.setLineDash([]); ctx.globalAlpha = 1;
-                        ctx.restore();
-                    }
-                }
+                if (mirrorPortal && mirrorPortal.alive && !mirrorDimActive) mirrorPortal.draw(camY);
                 // Draw crown above finish platform in level mode
                 if (finishPlatRef) {
                     const fsy = finishPlatRef.y - camY;
