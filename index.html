@@ -1304,11 +1304,19 @@ await Promise.race([
             }
         }
         let prevBestOnDeath = 0; // stored for record screen display
+        function clearAllEffects() {
+            mushroomBadTimer = 0; mushroomHue = 0; mushroomHueTarget = 0; mushroomHueChangeTimer = 0; mushroomSpin = 0;
+            drunkTimer = 0; drunkPhase = 0;
+            canvas.style.filter = '';
+            canvas.style.transform = '';
+        }
+
         function handleDeath() {
             if (player.powerHighJump > 0) return;
             if (portalTimer > 0 || portalLiftFrames > 0) return;
             if (ridingDrakon) { ridingDrakon = false; if (drakon) { drakon.alive = false; drakon = null; } drakonCooldownUntil = lastRunHigh + rndInt(150, 250); }
             if (isMultiplayerGame) { _mpRespawn(); return; }
+            clearAllEffects();
             SFX.play('death');
             _flushSaves();
             hasActiveGame = false;
@@ -2126,7 +2134,7 @@ await Promise.race([
                     // ── Spider web — matches the slowdown zone exactly (pw × 65px) ──
                     if (this.hasWeb) {
                         ctx.save();
-                        const zoneH = 65;
+                        const zoneH = 45;
                         const wCx = px + pw / 2;
                         const wCy = sy - zoneH / 2;
                         const wRx = pw / 2;
@@ -3006,7 +3014,7 @@ await Promise.race([
                 this.vx *= this.onGround ? 0.70 : (this.inWeb ? 0.72 : 0.86);
                 this.vx = clamp(this.vx, -maxSpd, maxSpd);
                 this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0);
-                if (this.inWeb && this.vy > 0) this.vy *= 0.76; // web slows falling only, not jumps
+                if (this.inWeb) this.vy *= (this.vy > 0 ? 0.76 : 0.88); // web slows both directions; gentler going up
                 this.vy = clamp(this.vy, -25, MAX_FALL);
 
                 this.lastVy = this.vy;
@@ -3043,7 +3051,7 @@ await Promise.race([
                     }
                     // Spider web zone: wide area spanning full platform width + above
                     if (plat.hasWeb) {
-                        const wr = { x: plat.x, y: plat.y - 65, w: plat.w, h: 65 };
+                        const wr = { x: plat.x, y: plat.y - 45, w: plat.w, h: 45 };
                         if (rectsOverlap({ x: this.x, y: this.y, w: this.W, h: this.H }, wr)) {
                             this.inWeb = true;
                         }
@@ -13626,6 +13634,8 @@ function gameUpdate() {
                         if (winBonus > 0) { runPointsEarned += winBonus; addPoints(winBonus); }
                         cornerAnimFromPts = pointsBeforeRun; cornerAnimToPts = lockerPoints; cornerAnimBonus = false; cornerAnimStart = Date.now();
                         SFX.play('win');
+                        clearAllEffects();
+                        player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
                         state = STATE.WIN; hasActiveGame = false;
                         saveBest(LEVEL_GOALS[currentLevel]);
                         levelWins[currentLevel] = true; if (_playerStore) _playerStore.set('wins', levelWins);
@@ -13648,6 +13658,8 @@ function gameUpdate() {
                         if (winBonus2 > 0) { runPointsEarned += winBonus2; addPoints(winBonus2); }
                         cornerAnimFromPts = pointsBeforeRun; cornerAnimToPts = lockerPoints; cornerAnimBonus = false; cornerAnimStart = Date.now();
                         SFX.play('win');
+                        clearAllEffects();
+                        player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
                         state = STATE.WIN; hasActiveGame = false; saveBest(lastRunHigh);
                     }
                 }
