@@ -2123,97 +2123,146 @@ await Promise.race([
                         }
                     }
 
-                    // ── Spider web hanging above platform ──
+                    // ── Spider web hanging above platform (3D look) ──
                     if (this.hasWeb) {
                         ctx.save();
-                        // Web center: slightly off-center, floating above platform
                         const wCx = px + pw * 0.46 + Math.sin(px * 0.17) * pw * 0.08;
-                        const wCy = sy - 28; // center of web, 28px above platform top
-                        const wR  = Math.min(pw * 0.44, 30); // web radius
-                        const webAlpha = 0.55 + 0.15 * Math.abs(Math.sin(t * 0.7 + px * 0.02));
-                        const nSpokes = 8;
+                        const wCy = sy - 30;
+                        const wR  = Math.min(pw * 0.44, 32);
+                        const sway = Math.sin(t * 0.55 + px * 0.03) * 1.8; // gentle breathing sway
+                        const webA = 0.60 + 0.14 * Math.abs(Math.sin(t * 0.65 + px * 0.02));
+                        const nSpokes = 9;
 
-                        ctx.strokeStyle = 'rgba(220,215,195,0.82)';
                         ctx.lineCap = 'round';
 
-                        // Anchor silks: thin threads from web center down to platform edges
+                        // ── 3D shadow layer — slightly offset, darker ──
                         ctx.save();
-                        ctx.globalAlpha = webAlpha * 0.45;
-                        ctx.lineWidth = 0.6;
-                        const anchors = [px + 4, px + pw * 0.35, px + pw * 0.65, px + pw - 4];
-                        for (const ax of anchors) {
-                            const sway = Math.sin(t * 0.6 + ax * 0.05) * 2;
-                            ctx.beginPath();
-                            ctx.moveTo(wCx + sway, wCy + wR);
-                            ctx.quadraticCurveTo((wCx + ax) / 2 + sway * 0.5, sy - 6, ax, sy);
-                            ctx.stroke();
-                        }
-                        ctx.restore();
-
-                        // Radial spokes
-                        ctx.save();
-                        ctx.globalAlpha = webAlpha * 0.72;
-                        ctx.lineWidth = 0.75;
+                        ctx.globalAlpha = webA * 0.28;
+                        ctx.strokeStyle = 'rgba(30,20,10,0.9)';
+                        const shOx = 2.5, shOy = 3; // shadow offset
+                        // shadow spokes
+                        ctx.lineWidth = 1.1;
                         for (let i = 0; i < nSpokes; i++) {
-                            const ang = (i / nSpokes) * Math.PI * 2;
+                            const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.015;
                             ctx.beginPath();
-                            ctx.moveTo(wCx, wCy);
-                            ctx.lineTo(wCx + Math.cos(ang) * wR, wCy + Math.sin(ang) * wR);
+                            ctx.moveTo(wCx + shOx, wCy + shOy);
+                            ctx.lineTo(wCx + shOx + Math.cos(ang) * wR, wCy + shOy + Math.sin(ang) * wR * 0.55);
                             ctx.stroke();
                         }
-                        ctx.restore();
-
-                        // Concentric rings (3 rings, connecting spokes with slight sag)
-                        ctx.save();
-                        ctx.globalAlpha = webAlpha * 0.65;
-                        ctx.lineWidth = 0.7;
+                        // shadow rings
+                        ctx.lineWidth = 0.8;
                         for (let ring = 1; ring <= 3; ring++) {
-                            const rFrac = ring / 3.5;
+                            const rF = ring / 3.5;
                             ctx.beginPath();
                             for (let i = 0; i <= nSpokes; i++) {
-                                const ang = (i / nSpokes) * Math.PI * 2;
-                                // Slight sag: rings droop a tiny bit
-                                const sag = ring === 3 ? 1.5 : ring === 2 ? 0.8 : 0;
-                                const rx = wCx + Math.cos(ang) * wR * rFrac;
-                                const ry = wCy + Math.sin(ang) * wR * rFrac + sag;
-                                if (i === 0) ctx.moveTo(rx, ry);
-                                else {
-                                    // Slightly curved segments between spokes
-                                    const prevAng = ((i - 0.5) / nSpokes) * Math.PI * 2;
-                                    const midR = wR * rFrac * 0.93;
-                                    const cpx = wCx + Math.cos(prevAng) * midR;
-                                    const cpy = wCy + Math.sin(prevAng) * midR + sag * 0.6;
-                                    ctx.quadraticCurveTo(cpx, cpy, rx, ry);
-                                }
+                                const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.015;
+                                const rx = wCx + shOx + Math.cos(ang) * wR * rF;
+                                const ry = wCy + shOy + Math.sin(ang) * wR * rF * 0.55;
+                                if (i === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
                             }
                             ctx.stroke();
                         }
                         ctx.restore();
 
-                        // Little spider dangling on a thread from web center
-                        const spDangle = 4 + Math.sin(t * 1.1 + px * 0.09) * 2;
-                        const spX = wCx + Math.sin(t * 0.5) * 3;
-                        const spY = wCy + wR * 0.3 + spDangle;
-                        // Silk thread to spider
-                        ctx.save(); ctx.globalAlpha = webAlpha * 0.5; ctx.lineWidth = 0.55;
-                        ctx.beginPath(); ctx.moveTo(wCx, wCy); ctx.lineTo(spX, spY - 3); ctx.stroke();
+                        // ── Anchor silks to platform ──
+                        ctx.save();
+                        ctx.globalAlpha = webA * 0.42;
+                        ctx.strokeStyle = 'rgba(210,205,185,0.8)';
+                        ctx.lineWidth = 0.65;
+                        const anchors2 = [px + 4, px + pw * 0.5, px + pw - 4];
+                        for (const ax of anchors2) {
+                            const as2 = Math.sin(t * 0.6 + ax * 0.05) * 1.5;
+                            ctx.beginPath();
+                            ctx.moveTo(wCx + as2, wCy + wR * 0.85);
+                            ctx.quadraticCurveTo((wCx + ax) * 0.5 + as2 * 0.4, sy - 8, ax, sy);
+                            ctx.stroke();
+                        }
                         ctx.restore();
-                        // Spider body
-                        ctx.save(); ctx.globalAlpha = 0.88;
-                        ctx.fillStyle = '#0f0f08';
-                        ctx.beginPath(); ctx.ellipse(spX, spY, 3.8, 2.8, 0, 0, Math.PI * 2); ctx.fill();
-                        ctx.fillStyle = '#1e1e0e';
-                        ctx.beginPath(); ctx.arc(spX, spY - 3, 2.2, 0, Math.PI * 2); ctx.fill();
-                        // Spider legs (4 pairs, quick lines)
-                        ctx.strokeStyle = '#0f0f08'; ctx.lineWidth = 0.7;
+
+                        // ── Main web (elliptical = foreshortened 3D circle) ──
+                        const scY = 0.52; // vertical squish ratio → looks like tilted circle
+                        // Spokes
+                        ctx.save();
+                        ctx.globalAlpha = webA * 0.80;
+                        ctx.lineWidth = 0.9;
+                        for (let i = 0; i < nSpokes; i++) {
+                            const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
+                            const ex = Math.cos(ang) * wR;
+                            const ey = Math.sin(ang) * wR * scY;
+                            // Bright spoke (catches light from top)
+                            const isTop = Math.sin(ang) < -0.3;
+                            ctx.strokeStyle = isTop ? 'rgba(240,238,220,0.95)' : 'rgba(190,185,165,0.80)';
+                            ctx.beginPath();
+                            ctx.moveTo(wCx, wCy);
+                            ctx.lineTo(wCx + ex, wCy + ey);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+
+                        // Rings — curved segments with sagging and 3D shading
+                        ctx.save();
+                        ctx.lineWidth = 0.75;
+                        for (let ring = 1; ring <= 4; ring++) {
+                            const rF = ring / 4.6;
+                            const sag = ring * 0.55; // lower rings sag more
+                            ctx.beginPath();
+                            for (let i = 0; i <= nSpokes; i++) {
+                                const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
+                                const rx = wCx + Math.cos(ang) * wR * rF;
+                                const ry = wCy + Math.sin(ang) * wR * rF * scY + sag;
+                                if (i === 0) ctx.moveTo(rx, ry);
+                                else {
+                                    const pAng = ((i - 0.5) / nSpokes) * Math.PI * 2 + sway * 0.012;
+                                    const cpx = wCx + Math.cos(pAng) * wR * rF * 0.94;
+                                    const cpy = wCy + Math.sin(pAng) * wR * rF * scY * 0.94 + sag * 0.7;
+                                    ctx.quadraticCurveTo(cpx, cpy, rx, ry);
+                                }
+                            }
+                            // Top arcs brighter (lit), bottom arcs dimmer (shadow)
+                            ctx.globalAlpha = webA * (0.75 - ring * 0.04);
+                            ctx.strokeStyle = ring <= 2 ? 'rgba(235,230,210,0.90)' : 'rgba(175,170,150,0.75)';
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+
+                        // ── Dew drops on outer ring (3D spheres) ──
+                        ctx.save();
+                        ctx.globalAlpha = webA * 0.65;
+                        for (let i = 0; i < nSpokes; i++) {
+                            const ang = (i / nSpokes) * Math.PI * 2 + sway * 0.012;
+                            const rF = 0.86;
+                            const dx = wCx + Math.cos(ang) * wR * rF;
+                            const dy = wCy + Math.sin(ang) * wR * rF * scY + 1.5;
+                            // Small drop with highlight
+                            ctx.fillStyle = 'rgba(180,220,255,0.55)';
+                            ctx.beginPath(); ctx.arc(dx, dy, 2.2, 0, Math.PI * 2); ctx.fill();
+                            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                            ctx.beginPath(); ctx.arc(dx - 0.6, dy - 0.7, 0.8, 0, Math.PI * 2); ctx.fill();
+                        }
+                        ctx.restore();
+
+                        // ── Spider dangling on silk ──
+                        const spDangle = 5 + Math.sin(t * 1.0 + px * 0.09) * 2.5;
+                        const spX = wCx + Math.sin(t * 0.45) * 3.5 + sway;
+                        const spY = wCy + wR * scY * 0.3 + spDangle;
+                        ctx.save(); ctx.globalAlpha = webA * 0.55; ctx.lineWidth = 0.55;
+                        ctx.strokeStyle = 'rgba(200,195,175,0.8)';
+                        ctx.beginPath(); ctx.moveTo(wCx, wCy - 2); ctx.lineTo(spX, spY - 4); ctx.stroke();
+                        ctx.restore();
+                        ctx.save(); ctx.globalAlpha = 0.92;
+                        // Body — ellipse with highlight for 3D
+                        const spGrd = ctx.createRadialGradient(spX - 1.2, spY - 1.5, 0.5, spX, spY, 4);
+                        spGrd.addColorStop(0, '#3a3820'); spGrd.addColorStop(1, '#0d0c08');
+                        ctx.fillStyle = spGrd;
+                        ctx.beginPath(); ctx.ellipse(spX, spY, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#252310';
+                        ctx.beginPath(); ctx.arc(spX, spY - 3.5, 2.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = '#0a0908'; ctx.lineWidth = 0.65;
                         for (let li = 0; li < 4; li++) {
-                            const lAng = (li / 3.5 - 0.1) * Math.PI;
-                            const lLen = 5.5;
-                            [-1, 1].forEach(side => {
-                                ctx.beginPath();
-                                ctx.moveTo(spX, spY);
-                                ctx.lineTo(spX + side * Math.cos(lAng) * lLen, spY - Math.sin(lAng) * lLen);
-                                ctx.stroke();
+                            const lA = (li / 3.5 - 0.12) * Math.PI;
+                            [-1, 1].forEach(s => {
+                                ctx.beginPath(); ctx.moveTo(spX, spY);
+                                ctx.lineTo(spX + s * Math.cos(lA) * 6, spY - Math.sin(lA) * 5); ctx.stroke();
                             });
                         }
                         ctx.restore();
@@ -2921,7 +2970,7 @@ await Promise.race([
                 this.vx *= this.onGround ? 0.70 : (this.inWeb ? 0.72 : 0.86);
                 this.vx = clamp(this.vx, -maxSpd, maxSpd);
                 this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0);
-                if (this.inWeb) this.vy *= 0.76; // web slows vertical movement too
+                if (this.inWeb && this.vy > 0) this.vy *= 0.76; // web slows falling only, not jumps
                 this.vy = clamp(this.vy, -25, MAX_FALL);
 
                 this.lastVy = this.vy;
@@ -2956,9 +3005,9 @@ await Promise.race([
                             landedPlatRef = plat;
                         }
                     }
-                    // Spider web zone: floating above platform
+                    // Spider web zone: wide area spanning full platform width + above
                     if (plat.hasWeb) {
-                        const wr = { x: plat.x + 4, y: plat.y - 58, w: plat.w - 8, h: 58 };
+                        const wr = { x: plat.x, y: plat.y - 65, w: plat.w, h: 65 };
                         if (rectsOverlap({ x: this.x, y: this.y, w: this.W, h: this.H }, wr)) {
                             this.inWeb = true;
                         }
@@ -3243,10 +3292,58 @@ await Promise.race([
                 this.speed = rnd(0.7, 1.4);
                 this.range = platW / 2 + 32;
                 this.bob = rnd(0, Math.PI * 2);
-                this.R = 18; // puffer radius
+                this.R = 18;
                 this.W = this.R * 2 + 14; this.H = this.R * 2;
-                // Random spot pattern seed
-                this.spotSeed = Math.random() * 100;
+                this._cache = this._buildCache(); // pre-render to offscreen canvas
+            }
+            _buildCache() {
+                const R = this.R, pad = 16;
+                const size = (R + pad) * 2;
+                const oc = document.createElement('canvas');
+                oc.width = size; oc.height = size;
+                const c2 = oc.getContext('2d');
+                const cx = size / 2, cy = size / 2;
+                c2.save(); c2.translate(cx, cy);
+                // Tail
+                c2.fillStyle = '#c8a020';
+                c2.beginPath(); c2.moveTo(-R+2,0); c2.lineTo(-R-10,-8); c2.lineTo(-R-14,0); c2.lineTo(-R-10,8); c2.closePath(); c2.fill();
+                // Body gradient
+                const bG = c2.createRadialGradient(-R*0.2,-R*0.25,R*0.1,0,0,R);
+                bG.addColorStop(0,'#ffe880'); bG.addColorStop(0.45,'#f0c030'); bG.addColorStop(0.80,'#c88010'); bG.addColorStop(1,'#7a5008');
+                c2.fillStyle = bG;
+                c2.beginPath(); c2.arc(0,0,R,0,Math.PI*2); c2.fill();
+                // Spots
+                c2.fillStyle='rgba(100,60,0,0.55)';
+                [{x:-4,y:-6,r:3.5},{x:6,y:-3,r:2.8},{x:-2,y:5,r:3.0},{x:7,y:5,r:2.2},{x:-8,y:1,r:2.5},{x:2,y:-9,r:2.0}]
+                    .forEach(s=>{c2.beginPath();c2.arc(s.x,s.y,s.r,0,Math.PI*2);c2.fill();});
+                // Belly
+                c2.fillStyle='rgba(255,255,240,0.55)';
+                c2.beginPath(); c2.ellipse(0,R*0.35,R*0.55,R*0.38,0,0,Math.PI*2); c2.fill();
+                // Spines
+                c2.lineCap='round';
+                for(let i=0;i<20;i++){
+                    const a=(i/20)*Math.PI*2;
+                    if(Math.sin(a)>0.7)continue;
+                    const l=i%3===0?7:i%3===1?5:4;
+                    c2.lineWidth=i%3===0?1.4:1.0;
+                    c2.strokeStyle=i%3===0?'#8a6010':'#c8a020';
+                    c2.beginPath();c2.moveTo(Math.cos(a)*(R-2),Math.sin(a)*(R-2));c2.lineTo(Math.cos(a)*(R+l),Math.sin(a)*(R+l));c2.stroke();
+                }
+                // Dorsal fin
+                c2.fillStyle='#b88010';
+                c2.beginPath();c2.moveTo(-3,-R+1);c2.lineTo(1,-R-7);c2.lineTo(6,-R+1);c2.closePath();c2.fill();
+                // Pectoral fin
+                c2.fillStyle='rgba(200,160,20,0.70)';
+                c2.beginPath();c2.ellipse(R*0.2,R*0.1,7,4,0.5,0,Math.PI*2);c2.fill();
+                // Eye
+                c2.fillStyle='#fff'; c2.beginPath();c2.arc(R-6,-R*0.25,5.5,0,Math.PI*2);c2.fill();
+                c2.fillStyle='#111'; c2.beginPath();c2.arc(R-5.5,-R*0.25,3.5,0,Math.PI*2);c2.fill();
+                c2.fillStyle='#fff'; c2.beginPath();c2.arc(R-4.5,-R*0.35,1.2,0,Math.PI*2);c2.fill();
+                // Mouth
+                c2.strokeStyle='#7a5008'; c2.lineWidth=1.5; c2.lineCap='round';
+                c2.beginPath();c2.arc(R-1,R*0.15,3,0.2,Math.PI-0.2);c2.stroke();
+                c2.restore();
+                return { canvas: oc, cx, cy, size };
             }
             update(slow = 1) {
                 this.bob += 0.04 * slow;
@@ -3259,100 +3356,17 @@ await Promise.race([
             draw(camY) {
                 const sy = this.displayY - camY;
                 if (sy < -70 || sy > BASE_H + 70) return;
-                const R = this.R;
+                const { canvas: oc, cx, cy, size } = this._cache;
                 ctx.save();
                 ctx.translate(this.x, sy);
                 if (this.dir < 0) ctx.scale(-1, 1);
-
-                // Glow
-                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, R * 1.6);
-                glow.addColorStop(0, 'rgba(255,220,80,0.30)');
-                glow.addColorStop(1, 'transparent');
-                ctx.fillStyle = glow;
-                ctx.beginPath(); ctx.arc(0, 0, R * 1.6, 0, Math.PI * 2); ctx.fill();
-
-                // Tail fin (small, fan-shaped)
-                ctx.fillStyle = '#c8a020';
-                ctx.beginPath();
-                ctx.moveTo(-R + 2, 0);
-                ctx.lineTo(-R - 10, -8);
-                ctx.lineTo(-R - 14, 0);
-                ctx.lineTo(-R - 10, 8);
-                ctx.closePath(); ctx.fill();
-
-                // Body — round inflated puffer shape
-                const bGrd = ctx.createRadialGradient(-R * 0.2, -R * 0.25, R * 0.1, 0, 0, R);
-                bGrd.addColorStop(0, '#ffe880');
-                bGrd.addColorStop(0.45, '#f0c030');
-                bGrd.addColorStop(0.80, '#c88010');
-                bGrd.addColorStop(1, '#7a5008');
-                ctx.fillStyle = bGrd;
-                ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
-
-                // Brown spots
-                const ss = this.spotSeed;
-                const spotData = [
-                    { x: -4, y: -6, r: 3.5 }, { x: 6, y: -3, r: 2.8 },
-                    { x: -2, y:  5, r: 3.0 }, { x: 7,  y:  5, r: 2.2 },
-                    { x:-8,  y:  1, r: 2.5 }, { x: 2,  y: -9, r: 2.0 },
-                ];
-                ctx.fillStyle = 'rgba(100,60,0,0.55)';
-                for (const sp of spotData) {
-                    ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2); ctx.fill();
-                }
-
-                // White belly patch
-                ctx.fillStyle = 'rgba(255,255,240,0.55)';
-                ctx.beginPath();
-                ctx.ellipse(0, R * 0.35, R * 0.55, R * 0.38, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Spines all around body
-                const nSpines = 20;
-                ctx.strokeStyle = '#d4a020';
-                ctx.lineCap = 'round';
-                for (let i = 0; i < nSpines; i++) {
-                    const ang = (i / nSpines) * Math.PI * 2;
-                    // Skip belly area (bottom)
-                    if (Math.sin(ang) > 0.7) continue;
-                    const spLen = i % 3 === 0 ? 7 : i % 3 === 1 ? 5 : 4;
-                    ctx.lineWidth = i % 3 === 0 ? 1.4 : 1.0;
-                    ctx.strokeStyle = i % 3 === 0 ? '#8a6010' : '#c8a020';
-                    ctx.beginPath();
-                    ctx.moveTo(Math.cos(ang) * (R - 2), Math.sin(ang) * (R - 2));
-                    ctx.lineTo(Math.cos(ang) * (R + spLen), Math.sin(ang) * (R + spLen));
-                    ctx.stroke();
-                }
-
-                // Small dorsal fin
-                ctx.fillStyle = '#b88010';
-                ctx.beginPath();
-                ctx.moveTo(-3, -R + 1);
-                ctx.lineTo(1, -R - 7);
-                ctx.lineTo(6, -R + 1);
-                ctx.closePath(); ctx.fill();
-
-                // Small pectoral fin
-                ctx.fillStyle = 'rgba(200,160,20,0.70)';
-                ctx.beginPath();
-                ctx.ellipse(R * 0.2, R * 0.1, 7, 4, 0.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Eye — big round puffer eye
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(R - 6, -R * 0.25, 5.5, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#111';
-                ctx.beginPath(); ctx.arc(R - 5.5, -R * 0.25, 3.5, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(R - 4.5, -R * 0.35, 1.2, 0, Math.PI * 2); ctx.fill();
-
-                // Pursed mouth
-                ctx.strokeStyle = '#7a5008';
-                ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-                ctx.beginPath();
-                ctx.arc(R - 1, R * 0.15, 3, 0.2, Math.PI - 0.2);
-                ctx.stroke();
-
+                // Subtle glow — cheap globalAlpha circle, no gradient
+                ctx.globalAlpha = 0.18;
+                ctx.fillStyle = '#f0c040';
+                ctx.beginPath(); ctx.arc(0, 0, this.R * 1.7, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+                // Draw pre-rendered fish
+                ctx.drawImage(oc, -cx, -cy);
                 ctx.restore();
             }
         }
@@ -12972,9 +12986,9 @@ function gameUpdate() {
                 if (currentTheme === 2 && !tutorialMode) {
                     fishTimer--;
                     if (fishTimer <= 0) {
-                        fishTimer = rndInt(100, 220);
+                        fishTimer = rndInt(140, 280);
                         const h = lastRunHigh;
-                        if (h >= 80 && h <= 250 && fishes.length < 8) {
+                        if (h >= 80 && h <= 250 && fishes.length < 5) {
                             const candidates = platforms.filter(p =>
                                 p.y < player.y - BASE_H * 1.6 &&
                                 p.y > player.y - BASE_H * 2.8 &&
@@ -13644,15 +13658,17 @@ function gameUpdate() {
             }
 
             // ─── DRAW ───────────────────────────────
-            ctx.save();
-            // Bad mushroom: hue-rotate all colors + slow screen spin
+            // Bad mushroom: CSS filter — only update DOM when state actually changes
             if (mushroomBadTimer > 0) {
                 const fade = Math.min(1, mushroomBadTimer / 40);
-                ctx.filter = `hue-rotate(${mushroomHue}deg) saturate(2.2)`;
-                ctx.translate(BASE_W / 2, BASE_H / 2);
-                ctx.rotate(Math.sin(mushroomSpin) * 0.055 * fade);
-                ctx.translate(-BASE_W / 2, -BASE_H / 2);
+                const spin = Math.sin(mushroomSpin) * 3.2 * fade;
+                canvas.style.filter = `hue-rotate(${mushroomHue}deg) saturate(2.2)`;
+                canvas.style.transform = `rotate(${spin}deg)`;
+            } else if (canvas.style.filter !== '') {
+                canvas.style.filter = '';
+                canvas.style.transform = '';
             }
+            ctx.save();
             ctx.translate(shakeX, shakeY);
 
             if (state === STATE.MAIN) {
@@ -13709,21 +13725,14 @@ function gameUpdate() {
                         ctx.restore();
                     }
                 }
-                // Drunk / dizzy overlay (ocean fish hit)
+                // Drunk / dizzy overlay (ocean fish hit) — cheap solid tint, no gradient per frame
                 if (drunkTimer > 0) {
                     const fadeIn = Math.min(1, (720 - drunkTimer) / 20);
                     const fadeOut = Math.min(1, drunkTimer / 45);
-                    const alpha = Math.min(fadeIn, fadeOut) * 0.28;
+                    const alpha = Math.min(fadeIn, fadeOut) * 0.22;
                     ctx.save();
                     ctx.globalAlpha = alpha;
-                    ctx.fillStyle = '#22aaff';
-                    ctx.fillRect(0, 0, BASE_W, BASE_H);
-                    // Vignette rings
-                    ctx.globalAlpha = alpha * 0.8;
-                    const vg = ctx.createRadialGradient(BASE_W/2, BASE_H/2, BASE_H*0.2, BASE_W/2, BASE_H/2, BASE_H*0.8);
-                    vg.addColorStop(0, 'transparent');
-                    vg.addColorStop(1, 'rgba(0,80,180,0.6)');
-                    ctx.fillStyle = vg;
+                    ctx.fillStyle = '#1188dd';
                     ctx.fillRect(0, 0, BASE_W, BASE_H);
                     ctx.restore();
                 }
