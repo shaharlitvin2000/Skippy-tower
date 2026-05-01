@@ -3007,7 +3007,7 @@ await Promise.race([
                 this.vx += acc * (this.powerSpeed > 0 ? 0.55 : 0.4) * (this.inWeb ? 0.3 : 1.0);
                 this.vx *= this.onGround ? 0.70 : (this.inWeb ? 0.72 : 0.86);
                 this.vx = clamp(this.vx, -maxSpd, maxSpd);
-                this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0);
+                this.vy += GRAVITY * (currentTheme === 5 ? 0.7 : 1.0) * (this.inWeb && this.vy < 0 ? 0.40 : 1.0);
                 if (this.inWeb && this.vy > 0) this.vy *= 0.76; // web slows falling only — jump height unaffected
                 this.vy = clamp(this.vy, -25, MAX_FALL);
 
