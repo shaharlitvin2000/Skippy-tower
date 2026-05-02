@@ -8736,37 +8736,33 @@ await Promise.race([
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Background — deep space
-            const shopBg = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            shopBg.addColorStop(0, '#020b1e'); shopBg.addColorStop(1, '#010608');
-            ctx.fillStyle = shopBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            // Background
+            ctx.fillStyle = '#04041a'; ctx.fillRect(0, 0, BASE_W, BASE_H);
             for (let i = 0; i < 20; i++) {
                 const bx = (Math.sin(i*97.3)*0.5+0.5)*BASE_W;
                 const by = (Math.cos(i*113.7)*0.5+0.5)*BASE_H;
-                ctx.fillStyle = `rgba(0,160,255,${0.03+0.06*Math.abs(Math.sin(t*0.8+i))})`;
+                ctx.fillStyle = `rgba(80,120,255,${0.04+0.07*Math.abs(Math.sin(t*0.8+i))})`;
                 ctx.beginPath(); ctx.arc(bx, by, 1.4, 0, Math.PI*2); ctx.fill();
             }
 
-            // Header — dark panel with amber-gold bottom border
-            const shopHeaderBg = ctx.createLinearGradient(0, 0, 0, 58);
-            shopHeaderBg.addColorStop(0, 'rgba(4,10,28,0.99)'); shopHeaderBg.addColorStop(1, 'rgba(3,8,20,0.99)');
-            ctx.fillStyle = shopHeaderBg; ctx.fillRect(0, 0, BASE_W, 58);
-            ctx.strokeStyle = 'rgba(255,160,0,0.4)'; ctx.lineWidth = 1.5;
+            // Header
+            ctx.fillStyle = 'rgba(4,4,26,0.97)'; ctx.fillRect(0, 0, BASE_W, 58);
+            ctx.strokeStyle = 'rgba(80,120,255,0.35)'; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(0,58); ctx.lineTo(BASE_W,58); ctx.stroke();
 
             // Back button
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.beginPath(); ctx.roundRect(10, 12, 44, 34, 9); ctx.fill();
-            ctx.strokeStyle = 'rgba(0,160,255,0.45)'; ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(100,140,255,0.4)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(10, 12, 44, 34, 9); ctx.stroke();
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#55aaff';
+            ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#8899ff';
             ctx.fillText('←', 32, 29);
 
-            // Title — gold
+            // Title
             ctx.font = 'bold 22px monospace';
-            ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 16;
-            ctx.fillStyle = '#ffcc44';
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 14;
+            ctx.fillStyle = '#aabbff';
             ctx.fillText('🛒  SHOP', cx, 30);
             ctx.shadowBlur = 0;
             // Points
@@ -8805,14 +8801,14 @@ await Promise.race([
 
                 // card border
                 if (owned) {
-                    ctx.strokeStyle = `rgba(0,200,255,${pulse * 0.75})`; ctx.lineWidth = 2;
-                    ctx.shadowColor = '#00aaff'; ctx.shadowBlur = 10 * pulse;
+                    ctx.strokeStyle = `rgba(80,140,255,${pulse * 0.7})`; ctx.lineWidth = 2;
+                    ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 8 * pulse;
                 } else if (isBundle) {
-                    ctx.strokeStyle = `rgba(${canAfford ? item.tagColor.slice(1).match(/../g).map(h=>parseInt(h,16)).join(',') : '40,40,60'},${pulse * 0.85})`;
+                    ctx.strokeStyle = `rgba(${canAfford ? item.tagColor.slice(1).match(/../g).map(h=>parseInt(h,16)).join(',') : '40,40,80'},${pulse * 0.85})`;
                     ctx.lineWidth = 2; ctx.shadowColor = canAfford ? item.tagColor : 'transparent';
-                    ctx.shadowBlur = canAfford ? 12 * pulse : 0;
+                    ctx.shadowBlur = canAfford ? 10 * pulse : 0;
                 } else {
-                    ctx.strokeStyle = `rgba(${canAfford ? '60,160,255' : '40,60,100'},${pulse * 0.75})`;
+                    ctx.strokeStyle = `rgba(${canAfford ? '100,140,255' : '50,50,100'},${pulse * 0.7})`;
                     ctx.lineWidth = 1.5; ctx.shadowBlur = 0;
                 }
                 ctx.beginPath(); ctx.roundRect(itemX, iy, itemW, itemH, 14); ctx.stroke();
@@ -8968,23 +8964,23 @@ await Promise.race([
                 const badgeX = itemX + itemW - 86, badgeY = iy + (isBundle ? bundleItemH * 0.22 : itemH/2) - 16;
                 if (owned) {
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillStyle = 'rgba(0,30,30,0.92)';
+                    ctx.fillStyle = 'rgba(20,30,70,0.9)';
                     ctx.beginPath(); ctx.roundRect(badgeX, badgeY, 76, 32, 8); ctx.fill();
-                    ctx.strokeStyle = 'rgba(0,200,180,0.6)'; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(80,140,255,0.5)'; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.roundRect(badgeX, badgeY, 76, 32, 8); ctx.stroke();
-                    ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#44ffcc';
+                    ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#88bbff';
                     ctx.fillText('✓ OWNED', badgeX + 38, badgeY + 16);
                 } else {
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillStyle = canAfford ? 'rgba(20,10,0,0.92)' : 'rgba(8,8,18,0.9)';
+                    ctx.fillStyle = canAfford ? 'rgba(10,15,40,0.9)' : 'rgba(8,8,22,0.9)';
                     ctx.beginPath(); ctx.roundRect(badgeX, badgeY, 76, 32, 8); ctx.fill();
-                    ctx.strokeStyle = canAfford ? `rgba(255,160,0,${pulse * 0.85})` : 'rgba(60,60,80,0.4)';
+                    ctx.strokeStyle = canAfford ? `rgba(100,140,255,${pulse * 0.8})` : 'rgba(50,50,100,0.4)';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.roundRect(badgeX, badgeY, 76, 32, 8); ctx.stroke();
-                    ctx.font = 'bold 10px monospace'; ctx.fillStyle = canAfford ? '#ffcc44' : '#555566';
+                    ctx.font = 'bold 10px monospace'; ctx.fillStyle = '#8899ff';
                     ctx.fillText('⬡', badgeX + 22, badgeY + 16);
                     ctx.font = 'bold 13px monospace';
-                    ctx.fillStyle = canAfford ? '#ffcc44' : '#445566';
+                    ctx.fillStyle = canAfford ? '#aabbff' : '#445577';
                     ctx.fillText(item.price, badgeX + 52, badgeY + 16);
                 }
             }
@@ -11739,17 +11735,17 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // ── BACKGROUND — deep space navy ──
+            // ── BACKGROUND — deep indigo-purple ──
             const grad = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            grad.addColorStop(0,   '#020b1e');
-            grad.addColorStop(0.3, '#040e28');
-            grad.addColorStop(0.7, '#030c20');
-            grad.addColorStop(1,   '#010609');
+            grad.addColorStop(0,   '#0a0030');
+            grad.addColorStop(0.35, '#180060');
+            grad.addColorStop(0.65, '#100048');
+            grad.addColorStop(1,   '#060018');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Floating orbs — electric blue + cyan
-            const orbCols = ['#1a6fff','#00aaff','#0066ee','#00ccff','#1155ee','#0088dd','#2277ff','#00bbee'];
+            // Floating colorful orbs — blue-purple
+            const orbCols = ['#6644ff','#4488ff','#8833ff','#2299cc','#aa55ff','#3366dd','#7722ee','#55aaff'];
             for (let i = 0; i < 8; i++) {
                 const ox = (Math.sin(i * 2.317) * 0.42 + 0.5) * BASE_W;
                 const oy = (Math.cos(i * 1.733) * 0.42 + 0.5) * BASE_H + Math.sin(t * 0.35 + i) * 22;
@@ -11786,7 +11782,7 @@ function _drawMpHostEndBtn() {
 
             // Outer mega glow
             const titleGlowG = ctx.createRadialGradient(cx, 68, 0, cx, 68, 200);
-            titleGlowG.addColorStop(0, `rgba(0,180,255,${0.44 * pulse})`);
+            titleGlowG.addColorStop(0, `rgba(80,120,255,${0.38 * pulse})`);
             titleGlowG.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = titleGlowG; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
@@ -11799,13 +11795,13 @@ function _drawMpHostEndBtn() {
                 ctx.fillText('SKIPPY TOWER', cx + dx, 68 + dy + titleBob);
             }
 
-            // Electric blue → white → cyan title
+            // Blue-purple gradient title
             const rg = ctx.createLinearGradient(cx - 200, 0, cx + 200, 0);
-            rg.addColorStop(0,    '#1a6fff');
-            rg.addColorStop(0.3,  '#55aaff');
-            rg.addColorStop(0.5,  '#ffffff');
-            rg.addColorStop(0.7,  '#00d4ff');
-            rg.addColorStop(1,    '#1a88ff');
+            rg.addColorStop(0,    '#4466ff');
+            rg.addColorStop(0.25, '#7744ff');
+            rg.addColorStop(0.5,  '#cc88ff');
+            rg.addColorStop(0.75, '#55aaff');
+            rg.addColorStop(1,    '#8855ff');
             ctx.fillStyle = rg;
             ctx.font = '900 50px Orbitron, monospace';
             ctx.fillText('SKIPPY TOWER', cx, 68 + titleBob);
@@ -11817,7 +11813,7 @@ function _drawMpHostEndBtn() {
                 const spy = 28 + Math.sin(t * 2.1 + i * 1.4) * 7 + titleBob;
                 const sa = Math.abs(Math.sin(t * 2.8 + i * 1.1));
                 ctx.globalAlpha = sa * 0.95;
-                const sparkColor = ['#ffffff','#00d4ff','#66ccff','#00aaff','#44aaff','#aaddff'][i];
+                const sparkColor = ['#aaccff','#8866ff','#66aaff','#cc99ff','#5588ff','#99bbff'][i];
                 ctx.fillStyle = sparkColor;
                 ctx.beginPath(); ctx.arc(spx, spy, 1.8 + sa * 2.2, 0, Math.PI * 2); ctx.fill();
                 if (sa > 0.65) {
@@ -11835,14 +11831,14 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(180,210,255,0.85)';
             ctx.fillText('Reach the Magic Book at the top!', cx, 100);
 
-            // Cyan separator
+            // Blue-purple separator
             ctx.save();
             const sepG = ctx.createLinearGradient(WALL_W + 20, 0, BASE_W - WALL_W - 20, 0);
-            sepG.addColorStop(0, 'rgba(0,180,255,0)');
-            sepG.addColorStop(0.2, 'rgba(0,180,255,0.55)');
-            sepG.addColorStop(0.5, 'rgba(0,220,255,0.7)');
-            sepG.addColorStop(0.8, 'rgba(0,180,255,0.55)');
-            sepG.addColorStop(1, 'rgba(0,180,255,0)');
+            sepG.addColorStop(0, 'rgba(80,100,255,0)');
+            sepG.addColorStop(0.2, 'rgba(100,130,255,0.5)');
+            sepG.addColorStop(0.5, 'rgba(160,100,255,0.5)');
+            sepG.addColorStop(0.8, 'rgba(100,130,255,0.5)');
+            sepG.addColorStop(1, 'rgba(80,100,255,0)');
             ctx.strokeStyle = sepG; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.moveTo(WALL_W + 20, 116); ctx.lineTo(BASE_W - WALL_W - 20, 116); ctx.stroke();
             ctx.restore();
@@ -11856,17 +11852,17 @@ function _drawMpHostEndBtn() {
             // Hero card background
             const cardX = cx - 160, cardY = 125, cardW = 320, cardH = 300;
             const cardBg = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
-            cardBg.addColorStop(0, 'rgba(6,18,50,0.75)');
-            cardBg.addColorStop(1, 'rgba(3,10,32,0.75)');
+            cardBg.addColorStop(0, 'rgba(20,15,80,0.55)');
+            cardBg.addColorStop(1, 'rgba(10,5,50,0.55)');
             ctx.fillStyle = cardBg;
             ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 22); ctx.fill();
-            // Card border — animated cyan-blue shimmer
+            // Card border — animated blue-purple shimmer
             const ang = t * 0.8;
-            const _bpShift = 195 + Math.sin(ang) * 15;
+            const _bpShift = 220 + Math.sin(ang) * 30;
             const cBorderG = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-            cBorderG.addColorStop(0, `hsl(${_bpShift},100%,65%)`);
-            cBorderG.addColorStop(0.5, `hsl(${_bpShift + 20},100%,72%)`);
-            cBorderG.addColorStop(1, `hsl(${_bpShift},100%,65%)`);
+            cBorderG.addColorStop(0, `hsl(${_bpShift},100%,70%)`);
+            cBorderG.addColorStop(0.5, `hsl(${_bpShift + 40},100%,75%)`);
+            cBorderG.addColorStop(1, `hsl(${_bpShift},100%,70%)`);
             ctx.strokeStyle = cBorderG; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 22); ctx.stroke();
             // Shine strip inside card
@@ -11952,44 +11948,44 @@ function _drawMpHostEndBtn() {
             const btnW = 230, btnH = 64, btnX = cx - btnW / 2;
             const btnY = 442;
 
-            // ▶ PLAY — vivid orange-gold CTA, pulsing
+            // ▶ PLAY — blue-purple, pulsing
             const btnGlow = 0.55 + Math.sin(t * 3.2) * 0.45;
             ctx.save();
-            ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 50 * btnGlow;
+            ctx.shadowColor = '#4d8fff'; ctx.shadowBlur = 40 * btnGlow;
             const playBg = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
-            playBg.addColorStop(0, '#ffaa00');
-            playBg.addColorStop(0.35, '#ff7700');
-            playBg.addColorStop(1, '#cc4400');
+            playBg.addColorStop(0, '#2a44cc');
+            playBg.addColorStop(0.4, '#1e30a0');
+            playBg.addColorStop(1, '#10195e');
             ctx.fillStyle = playBg;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 20); ctx.fill();
-            ctx.strokeStyle = `rgba(255,200,80,${0.85 + btnGlow * 0.15})`; ctx.lineWidth = 3;
+            ctx.strokeStyle = `rgba(120,170,255,${0.8 + btnGlow * 0.2})`; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 20); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
             ctx.beginPath(); ctx.roundRect(btnX + 8, btnY + 6, btnW - 16, btnH / 2 - 4, [14,14,0,0]); ctx.fill();
             ctx.font = '700 30px Orbitron, monospace';
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#c0d4ff';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 14;
+            ctx.shadowColor = '#4d8fff'; ctx.shadowBlur = 20;
             ctx.fillText('▶  PLAY', cx, btnY + btnH / 2);
             ctx.shadowBlur = 0;
 
             // 🌐 PLAY ONLINE
             const onlineY = btnY + btnH + 8, onlineH = 52;
             const onlineBg = ctx.createLinearGradient(btnX, onlineY, btnX, onlineY + onlineH);
-            onlineBg.addColorStop(0, '#003838'); onlineBg.addColorStop(1, '#001c1c');
+            onlineBg.addColorStop(0, '#0a1e40'); onlineBg.addColorStop(1, '#060f28');
             ctx.fillStyle = onlineBg;
             ctx.beginPath(); ctx.roundRect(btnX, onlineY, btnW, onlineH, 16); ctx.fill();
             ctx.save();
-            ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 18;
-            ctx.strokeStyle = 'rgba(0,220,180,0.9)'; ctx.lineWidth = 2.2;
+            ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 14;
+            ctx.strokeStyle = 'rgba(0,200,255,0.85)'; ctx.lineWidth = 2.2;
             ctx.beginPath(); ctx.roundRect(btnX, onlineY, btnW, onlineH, 16); ctx.stroke();
             ctx.restore();
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
             ctx.beginPath(); ctx.roundRect(btnX + 5, onlineY + 5, btnW - 10, onlineH / 2 - 5, [11,11,0,0]); ctx.fill();
-            ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#44ffcc';
+            ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#66ddff';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 14;
+            ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 12;
             ctx.fillText('🌐  PLAY ONLINE', cx, onlineY + onlineH / 2);
             ctx.shadowBlur = 0;
 
@@ -11997,35 +11993,31 @@ function _drawMpHostEndBtn() {
             const sideW = 108, sideH = 52, sideY = onlineY + onlineH + 8, sideGap = 12;
             const leftX = cx - sideW - sideGap / 2, rightX = cx + sideGap / 2;
 
-            // LOCKER — electric blue
-            const lockerBg = ctx.createLinearGradient(leftX, sideY, leftX, sideY + sideH);
-            lockerBg.addColorStop(0, '#0a1a48'); lockerBg.addColorStop(1, '#060e2c');
-            ctx.fillStyle = lockerBg;
+            // LOCKER
+            ctx.fillStyle = 'rgba(20,10,55,0.9)';
             ctx.beginPath(); ctx.roundRect(leftX, sideY, sideW, sideH, 15); ctx.fill();
-            ctx.save(); ctx.shadowColor = '#4488ff'; ctx.shadowBlur = 14;
-            ctx.strokeStyle = 'rgba(60,160,255,0.85)'; ctx.lineWidth = 2;
+            ctx.save(); ctx.shadowColor = '#8866ff'; ctx.shadowBlur = 10;
+            ctx.strokeStyle = 'rgba(140,100,255,0.8)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(leftX, sideY, sideW, sideH, 15); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.07)';
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.beginPath(); ctx.roundRect(leftX + 4, sideY + 4, sideW - 8, sideH / 2 - 4, [11,11,0,0]); ctx.fill();
-            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#88ccff';
-            ctx.shadowColor = '#2266ff'; ctx.shadowBlur = 8;
+            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#bb99ff';
+            ctx.shadowColor = '#8855ff'; ctx.shadowBlur = 6;
             ctx.fillText('🔓 LOCKER', leftX + sideW / 2, sideY + sideH / 2);
             ctx.shadowBlur = 0;
 
-            // SHOP — bright amber/gold to stand out
-            const shopBtnBg = ctx.createLinearGradient(rightX, sideY, rightX, sideY + sideH);
-            shopBtnBg.addColorStop(0, '#3a1800'); shopBtnBg.addColorStop(1, '#1e0c00');
-            ctx.fillStyle = shopBtnBg;
+            // SHOP
+            ctx.fillStyle = 'rgba(10,15,50,0.9)';
             ctx.beginPath(); ctx.roundRect(rightX, sideY, sideW, sideH, 15); ctx.fill();
-            ctx.save(); ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 14;
-            ctx.strokeStyle = 'rgba(255,170,0,0.8)'; ctx.lineWidth = 2;
+            ctx.save(); ctx.shadowColor = '#4466ff'; ctx.shadowBlur = 10;
+            ctx.strokeStyle = 'rgba(80,120,255,0.75)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(rightX, sideY, sideW, sideH, 15); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.07)';
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.beginPath(); ctx.roundRect(rightX + 4, sideY + 4, sideW - 8, sideH / 2 - 4, [11,11,0,0]); ctx.fill();
-            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#ffcc66';
-            ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 8;
+            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#aabbff';
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 6;
             ctx.fillText('🛒 SHOP', rightX + sideW / 2, sideY + sideH / 2);
             ctx.shadowBlur = 0;
 
@@ -12094,21 +12086,21 @@ function _drawMpHostEndBtn() {
             }
 
             // Dark overlay — fully covers the game behind the pause panel
-            ctx.fillStyle = 'rgba(1,4,14,0.97)';
+            ctx.fillStyle = 'rgba(4,0,12,0.97)';
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Ambient cyan glow behind panel area
+            // Ambient blue glow behind panel area
             const aG = ctx.createRadialGradient(cx, 320, 0, cx, 320, 200);
-            aG.addColorStop(0, 'rgba(0,100,200,0.24)'); aG.addColorStop(1, 'transparent');
+            aG.addColorStop(0, 'rgba(60,80,255,0.22)'); aG.addColorStop(1, 'transparent');
             ctx.fillStyle = aG; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // "PAUSED" title — electric blue → white → cyan
+            // "PAUSED" title with blue-purple gradient
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             const pauseG = ctx.createLinearGradient(cx - 110, 195, cx + 110, 225);
-            pauseG.addColorStop(0, '#1a6fff'); pauseG.addColorStop(0.4, '#55aaff');
-            pauseG.addColorStop(0.7, '#ffffff'); pauseG.addColorStop(1, '#00d4ff');
+            pauseG.addColorStop(0, '#5577ff'); pauseG.addColorStop(0.4, '#8855ff');
+            pauseG.addColorStop(0.8, '#aabbff'); pauseG.addColorStop(1, '#6644ff');
             ctx.save();
-            ctx.shadowColor = '#0088ff'; ctx.shadowBlur = 32 + Math.sin(t * 2) * 8;
+            ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 28 + Math.sin(t * 2) * 6;
             ctx.font = 'bold 46px Orbitron, monospace';
             ctx.fillStyle = '#000'; ctx.globalAlpha = 0.5;
             ctx.fillText('⏸ PAUSED', cx + 2, 212);
@@ -12116,10 +12108,10 @@ function _drawMpHostEndBtn() {
             ctx.fillText('⏸ PAUSED', cx, 210);
             ctx.restore();
 
-            // Cyan separator line
+            // Blue-purple separator line
             const sepG = ctx.createLinearGradient(cx - 130, 0, cx + 130, 0);
-            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.3, '#0088ff');
-            sepG.addColorStop(0.6, '#00ccff'); sepG.addColorStop(1, 'transparent');
+            sepG.addColorStop(0, 'transparent'); sepG.addColorStop(0.3, '#5566ff');
+            sepG.addColorStop(0.6, '#8844ff'); sepG.addColorStop(1, 'transparent');
             ctx.strokeStyle = sepG; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(cx - 130, 234); ctx.lineTo(cx + 130, 234); ctx.stroke();
             ctx.globalAlpha = 1;
@@ -12127,35 +12119,27 @@ function _drawMpHostEndBtn() {
             const btnW = 220, btnH = 54, btnX = cx - btnW / 2;
             const btnGlow = 0.6 + Math.sin(t * 3) * 0.4;
 
-            // ▶ CONTINUE — vivid orange CTA with pulse
+            // ▶ CONTINUE — blue-purple with pulse
             const contY = 254;
             ctx.save();
-            ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 42 * btnGlow;
-            const contBg = ctx.createLinearGradient(btnX, contY, btnX, contY + btnH);
-            contBg.addColorStop(0, '#ffaa00'); contBg.addColorStop(0.4, '#ff7700'); contBg.addColorStop(1, '#cc4400');
-            ctx.fillStyle = contBg;
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 22 * btnGlow;
+            ctx.fillStyle = '#0a1240';
             ctx.beginPath(); ctx.roundRect(btnX, contY, btnW, btnH, 14); ctx.fill();
-            ctx.strokeStyle = `rgba(255,200,80,${0.85 + btnGlow * 0.15})`; ctx.lineWidth = 2.5;
+            ctx.strokeStyle = `rgba(100,150,255,${0.7 + btnGlow * 0.3})`; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(btnX, contY, btnW, btnH, 14); ctx.stroke();
-            ctx.fillStyle = 'rgba(255,255,255,0.15)';
-            ctx.beginPath(); ctx.roundRect(btnX + 6, contY + 5, btnW - 12, btnH / 2 - 5, [10,10,0,0]); ctx.fill();
-            ctx.font = 'bold 22px Orbitron, monospace'; ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 12;
+            ctx.font = 'bold 22px Orbitron, monospace'; ctx.fillStyle = '#aabbff';
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 14;
             ctx.fillText('▶  CONTINUE', cx, contY + btnH / 2);
             ctx.restore();
 
             // ↺ NEW GAME (hidden in tutorial and multiplayer)
             if (!tutorialMode && !isMultiplayerGame) {
                 const newY = 322;
-                const newBg = ctx.createLinearGradient(btnX, newY, btnX, newY + btnH);
-                newBg.addColorStop(0, '#081c44'); newBg.addColorStop(1, '#040e24');
-                ctx.fillStyle = newBg;
+                ctx.fillStyle = 'rgba(10,20,50,0.85)';
                 ctx.beginPath(); ctx.roundRect(btnX, newY, btnW, btnH, 12); ctx.fill();
-                ctx.shadowColor = '#0088ff'; ctx.shadowBlur = 12;
-                ctx.strokeStyle = 'rgba(0,160,255,0.75)'; ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(100,160,255,0.7)'; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.roundRect(btnX, newY, btnW, btnH, 12); ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#55ccff';
+                ctx.font = 'bold 20px Orbitron, monospace'; ctx.fillStyle = '#88ccff';
                 ctx.fillText('↺  NEW GAME', cx, newY + btnH / 2);
             }
 
@@ -12184,11 +12168,11 @@ function _drawMpHostEndBtn() {
             } else {
                 const mainY = tutorialMode ? 322 : 392;
                 const mainH = 46;
-                ctx.fillStyle = 'rgba(4,12,30,0.85)';
+                ctx.fillStyle = 'rgba(10,15,45,0.85)';
                 ctx.beginPath(); ctx.roundRect(btnX, mainY, btnW, mainH, 10); ctx.fill();
-                ctx.strokeStyle = 'rgba(0,140,220,0.5)'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = 'rgba(100,130,255,0.6)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.roundRect(btnX, mainY, btnW, mainH, 10); ctx.stroke();
-                ctx.font = 'bold 16px Orbitron, monospace'; ctx.fillStyle = '#44aadd';
+                ctx.font = 'bold 16px Orbitron, monospace'; ctx.fillStyle = '#99bbff';
                 ctx.fillText('⊞  BACK TO LEVEL', cx, mainY + mainH / 2);
             }
 
@@ -12375,17 +12359,17 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx2 = BASE_W / 2;
 
-            // Background — deep space
-            ctx.fillStyle = '#010812';
+            // Background — blue-purple celebration
+            ctx.fillStyle = '#06001a';
             ctx.fillRect(0, 0, BASE_W, BASE_H);
             const deadBg = ctx.createRadialGradient(cx2, BASE_H/2, 10, cx2, BASE_H/2, 360);
-            deadBg.addColorStop(0, `rgba(0,80,200,${0.26 + 0.1*Math.sin(t*1.4)})`);
-            deadBg.addColorStop(0.5, `rgba(0,40,100,0.14)`);
+            deadBg.addColorStop(0, `rgba(80,50,220,${0.22 + 0.1*Math.sin(t*1.4)})`);
+            deadBg.addColorStop(0.5, `rgba(100,0,180,0.12)`);
             deadBg.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = deadBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Confetti burst — electric blue + cyan + gold
-            const _confettiCols = ['#1a6fff','#00aaff','#00d4ff','#ffaa00','#55ccff','#ff8800','#0088ee','#ffcc44'];
+            // Confetti burst — blue-purple shades
+            const _confettiCols = ['#5577ff','#8855ff','#aa66ff','#4488ff','#cc88ff','#3366dd','#7744ee','#6699ff'];
             for (let i = 0; i < 28; i++) {
                 const ci = i * 137.508;
                 const cbx = (Math.sin(ci)*0.5+0.5)*BASE_W;
@@ -12411,16 +12395,16 @@ function _drawMpHostEndBtn() {
             const panelW = 470, panelH = 430;
             const panelX = cx2 - panelW/2, panelY = 120;
             const panBg = ctx.createLinearGradient(panelX, panelY, panelX, panelY+panelH);
-            panBg.addColorStop(0, 'rgba(4,12,36,0.98)'); panBg.addColorStop(1, 'rgba(2,6,18,0.98)');
+            panBg.addColorStop(0, 'rgba(8,10,40,0.97)'); panBg.addColorStop(1, 'rgba(4,4,22,0.97)');
             ctx.fillStyle = panBg;
             ctx.beginPath(); ctx.roundRect(panelX, panelY, panelW, panelH, 24); ctx.fill();
-            // Animated cyan-to-gold border
+            // Animated blue-purple border
             const _bpa = 0.7 + 0.3 * Math.sin(t * 2.1);
             const rBorder = ctx.createLinearGradient(panelX, panelY, panelX+panelW, panelY+panelH);
-            rBorder.addColorStop(0, `rgba(0,160,255,${_bpa})`);
-            rBorder.addColorStop(0.5, `rgba(255,160,0,${_bpa})`);
-            rBorder.addColorStop(1, `rgba(0,160,255,${_bpa})`);
-            ctx.save(); ctx.shadowColor = '#0088ff'; ctx.shadowBlur = 20;
+            rBorder.addColorStop(0, `rgba(80,120,255,${_bpa})`);
+            rBorder.addColorStop(0.5, `rgba(160,80,255,${_bpa})`);
+            rBorder.addColorStop(1, `rgba(80,120,255,${_bpa})`);
+            ctx.save(); ctx.shadowColor = '#7766ff'; ctx.shadowBlur = 16;
             ctx.strokeStyle = rBorder; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.roundRect(panelX+1, panelY+1, panelW-2, panelH-2, 23); ctx.stroke();
             ctx.restore();
@@ -12429,7 +12413,7 @@ function _drawMpHostEndBtn() {
 
             // Star burst icon
             const ix = cx2, iy = panelY + 76;
-            const _burstCols = ['#1a6fff','#00aaff','#aaddff','#0066ee','#00d4ff','#4488ff','#55bbff','#0088cc','#00ccff','#88ddff'];
+            const _burstCols = ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4466ee','#9966ff','#7788ff','#bb66ff','#4499ff'];
             ctx.save();
             for (let i = 0; i < 10; i++) {
                 const a = (i/10)*Math.PI*2 + t*0.6;
@@ -12448,7 +12432,7 @@ function _drawMpHostEndBtn() {
             ctx.textAlign='center'; ctx.textBaseline='middle';
             ctx.fillText('★', ix, iy+1); ctx.restore();
             // Orbiting dots — blue-purple
-            const _orbitCols = ['#1a6fff','#00aaff','#aaddff','#0066ee','#00d4ff','#4488ff','#55bbff'];
+            const _orbitCols = ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4488ff','#9966ff'];
             for (let i = 0; i < 7; i++) {
                 const a = (i/7)*Math.PI*2 + t*1.8;
                 ctx.fillStyle = _orbitCols[i];
@@ -12460,9 +12444,9 @@ function _drawMpHostEndBtn() {
             // "NEW RECORD!" text
             ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
             const recG = ctx.createLinearGradient(cx2-140,0,cx2+140,0);
-            recG.addColorStop(0,'#00aaff'); recG.addColorStop(0.5,'#ffffff'); recG.addColorStop(1,'#00d4ff');
+            recG.addColorStop(0,'#88ccff'); recG.addColorStop(0.5,'#ffffff'); recG.addColorStop(1,'#88ccff');
             ctx.fillStyle = recG; ctx.font = '900 38px Orbitron, monospace';
-            ctx.shadowColor = '#0088ff'; ctx.shadowBlur = 28;
+            ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 24;
             ctx.fillText('NEW RECORD!', cx2, panelY + 152); ctx.shadowBlur = 0;
 
             ctx.fillStyle = 'rgba(255,255,255,0.32)'; ctx.font = '14px monospace';
@@ -12483,29 +12467,25 @@ function _drawMpHostEndBtn() {
             const btnW = 218, btnH = 54, btnX = cx2 - btnW/2;
             const newY = panelY + 248;
             const _deadBtnGlow = 0.6 + Math.sin(t * 3) * 0.4;
-            ctx.save(); ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 44 * _deadBtnGlow;
-            const playAgainBg = ctx.createLinearGradient(btnX, newY, btnX, newY + btnH);
-            playAgainBg.addColorStop(0, '#ffaa00'); playAgainBg.addColorStop(0.4, '#ff7700'); playAgainBg.addColorStop(1, '#cc4400');
-            ctx.fillStyle = playAgainBg; ctx.beginPath(); ctx.roundRect(btnX, newY, btnW, btnH, 16); ctx.fill();
-            ctx.strokeStyle = `rgba(255,200,80,${0.85 + _deadBtnGlow * 0.15})`; ctx.lineWidth = 2.5;
+            ctx.save(); ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 16 * _deadBtnGlow;
+            ctx.fillStyle = '#0a1240'; ctx.beginPath(); ctx.roundRect(btnX, newY, btnW, btnH, 16); ctx.fill();
+            ctx.strokeStyle = `rgba(100,150,255,${0.7 + _deadBtnGlow * 0.3})`; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(btnX, newY, btnW, btnH, 16); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            ctx.fillStyle = 'rgba(255,255,255,0.07)';
             ctx.beginPath(); ctx.roundRect(btnX+5, newY+5, btnW-10, btnH/2-5, [11,11,0,0]); ctx.fill();
-            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px monospace';
-            ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 12;
+            ctx.fillStyle = '#aabbff'; ctx.font = 'bold 22px monospace';
+            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 12;
             ctx.textBaseline = 'middle';
             ctx.fillText('▶ PLAY AGAIN', cx2, newY + btnH/2);
             ctx.shadowBlur = 0;
 
             const exitY = newY + btnH + 12;
-            const exitBg = ctx.createLinearGradient(btnX, exitY, btnX, exitY + btnH);
-            exitBg.addColorStop(0, '#081c44'); exitBg.addColorStop(1, '#040e24');
-            ctx.fillStyle = exitBg;
+            ctx.fillStyle = 'rgba(20,0,40,0.85)';
             ctx.beginPath(); ctx.roundRect(btnX, exitY, btnW, btnH, 16); ctx.fill();
-            ctx.strokeStyle = 'rgba(0,140,255,0.6)'; ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(180,100,255,0.5)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX, exitY, btnW, btnH, 16); ctx.stroke();
-            ctx.fillStyle = '#55aaff'; ctx.font = 'bold 20px monospace';
+            ctx.fillStyle = 'rgba(200,160,255,0.9)'; ctx.font = 'bold 20px monospace';
             ctx.fillText('MAIN MENU', cx2, exitY + btnH/2);
 
             ctx.restore();
