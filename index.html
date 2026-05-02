@@ -12571,6 +12571,32 @@ function _drawMpHostEndBtn() {
                 }
                 ctx.fillStyle = 'rgba(0,0,0,0.72)';
                 ctx.fillRect(0, 0, BASE_W, BASE_H);
+                // HUD overlay — top strip with live stats baked into the image look
+                const _hudBarH = 32;
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                ctx.fillRect(0, 0, BASE_W, _hudBarH);
+                // Height
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 13px monospace';
+                ctx.fillStyle = '#aaffee'; ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 7;
+                ctx.fillText('↑', 10, _hudBarH/2);
+                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px monospace';
+                ctx.fillText(lastRunHigh + 'm', 22, _hudBarH/2);
+                ctx.shadowBlur = 0;
+                // Record / SO CLOSE label (center)
+                const _deadLabel = deathWasSoClose ? 'SO CLOSE!' : 'NEW RECORD!';
+                const _deadLabelCol = deathWasSoClose ? '#ffaa44' : '#aaddff';
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 12px monospace';
+                ctx.fillStyle = _deadLabelCol; ctx.shadowColor = _deadLabelCol; ctx.shadowBlur = 8;
+                ctx.fillText(_deadLabel, BASE_W / 2, _hudBarH/2);
+                ctx.shadowBlur = 0;
+                // Previous best (right)
+                if (prevBestOnDeath > 0) {
+                    ctx.textAlign = 'right'; ctx.font = 'bold 11px monospace';
+                    ctx.fillStyle = 'rgba(200,220,255,0.85)';
+                    ctx.fillText('BEST: ' + prevBestOnDeath + 'm', BASE_W - 8, _hudBarH/2);
+                }
                 ctx.restore();
             } else {
                 ctx.fillStyle = '#06001a';
@@ -13119,10 +13145,72 @@ function _drawMpHostEndBtn() {
                     }
                     ctx.drawImage(_deathScreenshotImg, srcX, srcY, srcW, srcH, snapCardX, snapCardY, snapCardW, snapCardH);
                 }
-                // Slight dark overlay
-                ctx.fillStyle = 'rgba(0,0,20,0.18)';
+                // Slight dark overlay so HUD text is readable
+                ctx.fillStyle = 'rgba(0,0,20,0.22)';
                 ctx.fillRect(snapCardX, snapCardY, snapCardW, snapCardH);
+
+                // ── TOP BAR: height + mode badge ──
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, 28, [12,12,0,0]); ctx.clip();
+                ctx.fillStyle = 'rgba(0,0,0,0.62)'; ctx.fillRect(snapCardX, snapCardY, snapCardW, 28);
                 ctx.restore();
+                // Height counter (↑ Xm)
+                ctx.save();
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 13px monospace';
+                ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 8;
+                ctx.fillStyle = '#aaffee';
+                ctx.fillText('↑', snapCardX + 8, snapCardY + 14);
+                ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 6;
+                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px monospace';
+                ctx.fillText(lastRunHigh + 'm', snapCardX + 20, snapCardY + 14);
+                ctx.restore();
+                // Mode badge (right side)
+                const _modeBadge = currentMode === 'level' ? 'LVL ' + (currentLevel + 1) : 'INFINITE';
+                const _badgeW = 6 + _modeBadge.length * 7.5;
+                ctx.save();
+                ctx.fillStyle = 'rgba(100,140,255,0.7)';
+                ctx.beginPath(); ctx.roundRect(snapCardX + snapCardW - _badgeW - 6, snapCardY + 6, _badgeW, 16, 4); ctx.fill();
+                ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 10px monospace'; ctx.fillStyle = '#ddeeff'; ctx.shadowBlur = 0;
+                ctx.fillText(_modeBadge, snapCardX + snapCardW - 9, snapCardY + 14);
+                ctx.restore();
+
+                // ── BOTTOM BAR: victory label + points + best ──
+                const _barH = 36;
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY + snapCardH - _barH, snapCardW, _barH, [0,0,12,12]); ctx.clip();
+                const _barGrad = ctx.createLinearGradient(snapCardX, 0, snapCardX + snapCardW, 0);
+                _barGrad.addColorStop(0, 'rgba(20,0,50,0.82)');
+                _barGrad.addColorStop(0.5, 'rgba(10,10,40,0.88)');
+                _barGrad.addColorStop(1, 'rgba(20,0,50,0.82)');
+                ctx.fillStyle = _barGrad; ctx.fillRect(snapCardX, snapCardY + snapCardH - _barH, snapCardW, _barH);
+                ctx.restore();
+                // Victory label (left)
+                ctx.save();
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 12px monospace';
+                ctx.fillStyle = '#ffdd44'; ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 8;
+                ctx.fillText('✓ VICTORY', snapCardX + 8, snapCardY + snapCardH - _barH/2);
+                ctx.restore();
+                // Points (center)
+                if (runPointsEarned > 0) {
+                    ctx.save();
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.fillStyle = '#88ffcc'; ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 6;
+                    ctx.fillText('★ +' + runPointsEarned, cx2, snapCardY + snapCardH - _barH/2);
+                    ctx.restore();
+                }
+                // Best (right)
+                ctx.save();
+                ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 11px monospace';
+                ctx.fillStyle = 'rgba(180,200,255,0.9)'; ctx.shadowBlur = 0;
+                ctx.fillText('BEST: ' + (getBest() > 0 ? getBest() + 'm' : '—'), snapCardX + snapCardW - 8, snapCardY + snapCardH - _barH/2);
+                ctx.restore();
+
+                ctx.restore(); // end clip group from earlier
                 // Gold animated border
                 const snapBord = 0.6 + 0.4*Math.sin(t*2.4);
                 const snapBg = ctx.createLinearGradient(snapCardX,snapCardY,snapCardX+snapCardW,snapCardY+snapCardH);
@@ -13133,14 +13221,6 @@ function _drawMpHostEndBtn() {
                 ctx.strokeStyle = snapBg; ctx.lineWidth = 2.5;
                 ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, snapCardH, 12); ctx.stroke();
                 ctx.restore();
-                // "YOUR MOMENT" label strip at bottom of card
-                ctx.save();
-                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY+snapCardH-22, snapCardW, 22, [0,0,12,12]); ctx.clip();
-                ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(snapCardX, snapCardY+snapCardH-22, snapCardW, 22);
-                ctx.restore();
-                ctx.fillStyle = 'rgba(255,220,80,0.9)'; ctx.font = 'bold 11px monospace';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('YOUR MOMENT  ★  ' + lastRunHigh + 'm', cx2, snapCardY+snapCardH-11);
             }
 
             // Divider
