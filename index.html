@@ -4516,6 +4516,8 @@ await Promise.race([
         let mpEndGameConfirm = false; // true = showing "are you sure?" before force-ending
         let mpGameStartAt = 0;        // synchronized start timestamp (ms); 0 = not set
         let _mpFinalScoresCb = null;  // callback set by _mpFetchAndFinalize to receive finalScores via subscription
+        let mpRoomIsPublic = false;   // true if game started from a public room
+        let mpPublicTimerEndAt = 0;   // 5-min public game timer end timestamp (0 = not active)
 
         // Tutorial
         let tutorialMode = false;
@@ -9422,6 +9424,15 @@ await Promise.race([
             mpGameOver = false; mpFinalScores = []; mpHostInLobby = false;
             _afkLastActivity = Date.now(); _afkPromptActive = false;
 
+            // Public room setup
+            mpRoomIsPublic = currentRoomData?.type === 'public';
+            mpPublicTimerEndAt = 0;
+            if (isRoomHost && mpRoomIsPublic && lobbyMapMode === 'infinite') {
+                mpPublicTimerEndAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+                _fbDb.collection('rooms').doc(mpRoomId)
+                    .update({ publicTimerEndAt: mpPublicTimerEndAt }).catch(() => {});
+            }
+
             // Show "connecting" screen and wait until all players have published their position
             const expectedCount = playerList.length;
             loadingMsg = 'Connecting 1\u2002/\u2002' + expectedCount;
@@ -9619,6 +9630,8 @@ await Promise.race([
             mpHostLeft = false;
             mpHostTransferring = false;
             mpGameStartAt = 0;
+            mpRoomIsPublic = false;
+            mpPublicTimerEndAt = 0;
             mpLastMetaSend = 0;
             mpLastSentX = null; mpLastSentY = null;
             if (_mpFinalScoresCb) { _mpFinalScoresCb = null; }
@@ -9747,6 +9760,11 @@ await Promise.race([
                     const cb = _mpFinalScoresCb;
                     _mpFinalScoresCb = null;
                     cb(d.finalScores);
+                }
+                // Public timer: guests pick up publicTimerEndAt written by HOST
+                if (!isRoomHost && d.publicTimerEndAt && mpPublicTimerEndAt === 0) {
+                    mpPublicTimerEndAt = d.publicTimerEndAt;
+                    mpRoomIsPublic = true;
                 }
                 // Synchronized start: guests pick up gameStartAt written by HOST
                 // Only accept a fresh timestamp (in the future) to ignore stale values from previous games
@@ -10106,6 +10124,34 @@ function _drawMpHostEndBtn() {
             ctx.textAlign = 'center'; ctx.fillStyle = '#aad4ff';
             ctx.font = 'bold 16px "Segoe UI",Arial';
             ctx.fillText('Calculating results\u2026', cx, cy + 22);
+            ctx.restore();
+        }
+
+        // Draw 5-minute public game timer in top-left corner
+        function _drawMpPublicTimer() {
+            if (!mpPublicTimerEndAt || mpGameOver || mpEndTriggered) return;
+            const remMs = Math.max(0, mpPublicTimerEndAt - Date.now());
+            const remSec = Math.ceil(remMs / 1000);
+            const mins = Math.floor(remSec / 60);
+            const secs = remSec % 60;
+            const timeStr = mins + ':' + String(secs).padStart(2, '0');
+            const isUrgent = remSec <= 60;
+            const cx2 = 58;
+            ctx.save();
+            ctx.fillStyle = isUrgent ? 'rgba(60,0,0,0.82)' : 'rgba(0,0,0,0.55)';
+            ctx.beginPath(); ctx.roundRect(8, 6, 100, 32, 8); ctx.fill();
+            if (isUrgent) {
+                ctx.strokeStyle = `rgba(255,60,60,${0.5 + 0.5 * Math.abs(Math.sin(Date.now() / 300))})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.roundRect(8, 6, 100, 32, 8); ctx.stroke();
+            }
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.font = 'bold 10px "Segoe UI",Arial';
+            ctx.fillStyle = isUrgent ? '#ff8888' : 'rgba(200,200,200,0.7)';
+            ctx.fillText('🌍 PUBLIC', cx2, 16);
+            ctx.font = 'bold 13px "Segoe UI",Arial';
+            ctx.fillStyle = isUrgent ? '#ff4444' : '#ffffff';
+            ctx.fillText('⏱ ' + timeStr, cx2, 30);
             ctx.restore();
         }
 
@@ -12260,7 +12306,7 @@ function _drawMpHostEndBtn() {
 
             // Multiplayer host / leave buttons
             if (isMultiplayerGame) {
-                if (isRoomHost) {
+                if (isRoomHost && !mpRoomIsPublic) {
                     const endY = 322;
                     const endDisabled = mpEndTriggered;
                     ctx.globalAlpha = endDisabled ? 0.35 : 1;
@@ -12272,7 +12318,7 @@ function _drawMpHostEndBtn() {
                     ctx.fillText(endDisabled ? '⏹  ENDING SOON…' : '⏹  END GAME', cx, endY + btnH / 2);
                     ctx.globalAlpha = 1;
                 }
-                const leaveY = isRoomHost ? 392 : 322;
+                const leaveY = (isRoomHost && !mpRoomIsPublic) ? 392 : 322;
                 const leaveH = 46;
                 ctx.fillStyle = 'rgba(25,5,5,0.85)';
                 ctx.beginPath(); ctx.roundRect(btnX, leaveY, btnW, leaveH, 10); ctx.fill();
@@ -13470,14 +13516,14 @@ function menuAction(sx, sy) {
                     return;
                 }
                 if (isMultiplayerGame) {
-                    // HOST only: END GAME button at y=322 — disabled once countdown started
-                    if (isRoomHost && !mpEndTriggered && sy >= 322 && sy <= 376 && sx >= btnX && sx <= btnX + btnW) {
+                    // HOST only: END GAME button at y=322 — disabled once countdown started or in public room
+                    if (isRoomHost && !mpRoomIsPublic && !mpEndTriggered && sy >= 322 && sy <= 376 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click');
                         mpEndGameConfirm = true;
                         return;
                     }
                     // END GAME confirmation dialog
-                    if (isRoomHost && mpEndGameConfirm) {
+                    if (isRoomHost && !mpRoomIsPublic && mpEndGameConfirm) {
                         const dW = 300, dH = 160, dX = BASE_W/2 - dW/2, dY = BASE_H/2 - dH/2 - 20;
                         const bW = 110, bH = 40, gap = 16;
                         const yX = BASE_W/2 - bW - gap/2, nX = BASE_W/2 + gap/2, bY = dY + dH - 58;
@@ -13490,8 +13536,8 @@ function menuAction(sx, sy) {
                         }
                         return;
                     }
-                    // LEAVE button: host at y=392, guest at y=322
-                    const leaveY = isRoomHost ? 392 : 322;
+                    // LEAVE button: host (private) at y=392, host (public) at y=322, guest at y=322
+                    const leaveY = (isRoomHost && !mpRoomIsPublic) ? 392 : 322;
                     if (sy >= leaveY && sy <= leaveY + 46 && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click');
                         if (isRoomHost) {
@@ -13614,6 +13660,13 @@ function gameUpdate() {
     if (isMultiplayerGame && mpPausedByHost) return; 
     
     if (isMultiplayerGame && mpGameOver) return;
+
+    // ── Public game timer: host triggers force end when 5-min timer expires ──
+    if (isMultiplayerGame && isRoomHost && mpPublicTimerEndAt > 0 && !mpEndTriggered && Date.now() >= mpPublicTimerEndAt) {
+        mpPublicTimerEndAt = 0;
+        mpWinnerName = '';
+        _mpHostForceEnd();
+    }
 
                 // ── Second Life revival check ──
                 if (secondLifeActive) {
@@ -14719,6 +14772,7 @@ function gameUpdate() {
                 if (secondLifeActive) _drawSecondLifeAnim();
                 if (mirrorDimActive || mirrorDimTransFrames > 0) _drawMirrorDimension();
                 if (isMultiplayerGame) _drawMpCountdown();
+                if (isMultiplayerGame) _drawMpPublicTimer();
                 if (isMultiplayerGame) _drawMpHeightBar();
                 if (isMultiplayerGame) _drawMpMyHeight();
             }
