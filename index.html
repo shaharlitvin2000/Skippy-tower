@@ -3779,8 +3779,9 @@ await Promise.race([
                 this.bob = rnd(0, Math.PI * 2);
                 this.alive = true;
                 this.size = 26; // bigger than coin (14) and powerup (16)
+                this.fadeAge = 0; // frames alive, used for fade-in (0→60)
             }
-            update() { this.bob += 0.055; }
+            update() { this.bob += 0.055; this.fadeAge++; }
             rect() {
                 return { x: this.x - this.size, y: this.y - this.size + Math.sin(this.bob) * 5,
                          w: this.size * 2, h: this.size * 2 };
@@ -3790,6 +3791,8 @@ await Promise.race([
                 if (sy < -70 || sy > BASE_H + 70) return;
                 const t = Date.now() / 1000;
                 const pulse = 0.7 + 0.3 * Math.sin(this.bob * 2);
+                const fadeAlpha = Math.min(1, this.fadeAge / 60); // fade in over 60 frames
+                ctx.save(); ctx.globalAlpha = fadeAlpha;
                 // Spinning dashed rings (black hole effect)
                 ctx.save();
                 for (let ri = 0; ri < 3; ri++) {
@@ -3842,6 +3845,7 @@ await Promise.race([
                 ctx.shadowColor = '#aa66ff'; ctx.shadowBlur = 14;
                 ctx.beginPath(); ctx.arc(this.x, sy, this.size, 0, Math.PI * 2); ctx.stroke();
                 ctx.shadowBlur = 0; ctx.restore();
+                ctx.restore(); // close fade-in wrapper
             }
         }
 
@@ -4609,7 +4613,7 @@ await Promise.race([
         let mirrorDimReturnX = 0, mirrorDimReturnY = 0, mirrorDimReturnCamY = 0, mirrorDimReturnPlats = null;
         let mirrorDimTransFrames = 0;    // Transition frames remaining
         let mirrorDimTransDir = 0;       // 1=entering -1=exiting
-        const MIRROR_DIM_TRANS = 28;
+        const MIRROR_DIM_TRANS = 45;
         const MIRROR_DIM_EXIT_Y = 320;
         const MIRROR_DIM_EXIT_X = 480 / 2 - 60;
         const MIRROR_DIM_EXIT_W = 120;
@@ -7190,22 +7194,78 @@ await Promise.race([
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // Transition: ripple fade overlay
+            // Transition: vortex portal effect
             if (mirrorDimTransFrames > 0) {
-                const frac = mirrorDimTransFrames / MIRROR_DIM_TRANS;
-                const alpha = mirrorDimTransDir === 1 ? frac : (1 - frac);
+                const frac = mirrorDimTransFrames / MIRROR_DIM_TRANS; // 1→0 as transition plays
+                // entering: frac goes 1→0, exiting: same
+                const prog = mirrorDimTransDir === 1 ? (1 - frac) : frac; // 0→1 = opening, 1→0 = closing
                 ctx.save();
-                ctx.globalAlpha = alpha;
-                // White flash at start/end
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, BASE_W, BASE_H);
-                // Ripple ring
-                ctx.globalAlpha = alpha * 0.7;
-                ctx.strokeStyle = '#aa66ff'; ctx.lineWidth = 3 + (1 - frac) * 8;
-                const rr = (1 - frac) * BASE_W * 0.7 + 20;
-                ctx.beginPath(); ctx.arc(cx, BASE_H / 2, rr, 0, Math.PI * 2); ctx.stroke();
-                ctx.restore();
-                if (!mirrorDimActive) return; // only show transition overlay when exiting
+                const cy2 = BASE_H / 2;
+                if (mirrorDimTransDir === 1) {
+                    // ENTRY: dark vortex expands from center, swallows screen
+                    const maxR = Math.hypot(BASE_W, BASE_H);
+                    const vortexR = prog * maxR * 1.2;
+                    // Dark void circle expanding
+                    ctx.fillStyle = '#060010';
+                    ctx.beginPath(); ctx.arc(cx, cy2, vortexR, 0, Math.PI * 2); ctx.fill();
+                    // Swirling purple rings inside vortex
+                    for (let ri = 0; ri < 5; ri++) {
+                        const ringR = vortexR * (0.25 + ri * 0.18);
+                        const spinAngle = t * (2.5 + ri * 0.8) * (ri % 2 === 0 ? 1 : -1);
+                        ctx.save();
+                        ctx.translate(cx, cy2); ctx.rotate(spinAngle);
+                        ctx.globalAlpha = (0.6 - ri * 0.1) * Math.min(1, prog * 3);
+                        ctx.strokeStyle = ri % 2 === 0 ? '#cc66ff' : '#8833cc';
+                        ctx.lineWidth = 2.5 - ri * 0.3;
+                        ctx.setLineDash([8, 6]);
+                        ctx.beginPath(); ctx.arc(0, 0, ringR, 0, Math.PI * 2); ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.restore();
+                    }
+                    // Bright center flash at peak
+                    if (prog > 0.75) {
+                        const flashA = (prog - 0.75) / 0.25;
+                        ctx.globalAlpha = flashA * 0.9;
+                        const flashG = ctx.createRadialGradient(cx, cy2, 0, cx, cy2, 60);
+                        flashG.addColorStop(0, '#ffffff');
+                        flashG.addColorStop(0.5, '#dd99ff');
+                        flashG.addColorStop(1, 'rgba(100,0,200,0)');
+                        ctx.fillStyle = flashG;
+                        ctx.beginPath(); ctx.arc(cx, cy2, 60, 0, Math.PI * 2); ctx.fill();
+                    }
+                } else {
+                    // EXIT: bright cyan/white ring bursts outward, then fades
+                    const burstR = (1 - frac) * BASE_W * 1.4;
+                    // Full-screen white flash at start of exit
+                    if (frac > 0.7) {
+                        ctx.globalAlpha = (frac - 0.7) / 0.3;
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, BASE_W, BASE_H);
+                    }
+                    // Expanding rings
+                    for (let ri = 0; ri < 4; ri++) {
+                        const rOff = ri * 28;
+                        const rRad = burstR - rOff;
+                        if (rRad < 0) continue;
+                        ctx.globalAlpha = Math.max(0, frac * (1 - ri * 0.2));
+                        ctx.strokeStyle = ri === 0 ? '#aaffee' : ri === 1 ? '#ffffff' : ri === 2 ? '#cc88ff' : '#8844cc';
+                        ctx.lineWidth = 4 - ri * 0.7;
+                        ctx.beginPath(); ctx.arc(cx, cy2, rRad, 0, Math.PI * 2); ctx.stroke();
+                    }
+                    // Starbursts
+                    ctx.globalAlpha = frac * 0.7;
+                    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+                    for (let i = 0; i < 12; i++) {
+                        const ang = (i / 12) * Math.PI * 2;
+                        const len = burstR * 0.18;
+                        ctx.beginPath();
+                        ctx.moveTo(cx + Math.cos(ang) * (burstR - len), cy2 + Math.sin(ang) * (burstR - len));
+                        ctx.lineTo(cx + Math.cos(ang) * (burstR + len * 0.5), cy2 + Math.sin(ang) * (burstR + len * 0.5));
+                        ctx.stroke();
+                    }
+                }
+                ctx.globalAlpha = 1; ctx.restore();
+                if (!mirrorDimActive) return; // only show overlay when not yet in dimension (exit)
             }
 
             if (!mirrorDimActive) return;
@@ -13508,6 +13568,11 @@ function gameUpdate() {
                     return;
                 }
 
+                // Decrement exit transition frames (when not in dimension)
+                if (!mirrorDimActive && mirrorDimTransFrames > 0) {
+                    mirrorDimTransFrames--;
+                }
+
                 // Prev on ground tracking
                 const wasOnGround = player.onGround;
                 const visible = platforms.filter(p => Math.abs(p.y - player.y) < BASE_H * 2);
@@ -13583,7 +13648,7 @@ function gameUpdate() {
 
                 // ── MIRROR PORTAL: spawn + black hole pull ──
                 if (currentMode === 'infinite' && !mirrorDimActive) {
-                    if (mirrorPortal === null && lastRunHigh >= nextMirrorM - 50) {
+                    if (mirrorPortal === null && lastRunHigh >= nextMirrorM - 100) {
                         const targetY = BASE_H - 120 - nextMirrorM * 10;
                         // Find a platform near targetY to spawn on
                         const _cands = platforms.filter(p => !p.isFinish && !p.special && p.w >= 40 && Math.abs(p.y - targetY) < 350);
