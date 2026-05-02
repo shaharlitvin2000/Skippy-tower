@@ -12556,7 +12556,19 @@ function _drawMpHostEndBtn() {
             // Background — screenshot dimmed if available, else solid
             if (_deathScreenshotImg && _deathScreenshotImg.complete) {
                 ctx.save();
-                ctx.drawImage(_deathScreenshotImg, 0, 0, BASE_W, BASE_H);
+                {
+                    const iW = _deathScreenshotImg.naturalWidth || BASE_W;
+                    const iH = _deathScreenshotImg.naturalHeight || BASE_H;
+                    const cardAspect = BASE_W / BASE_H;
+                    const imgAspect = iW / iH;
+                    let srcX, srcY, srcW, srcH;
+                    if (imgAspect > cardAspect) {
+                        srcH = iH; srcW = iH * cardAspect; srcX = (iW - srcW) / 2; srcY = 0;
+                    } else {
+                        srcW = iW; srcH = iW / cardAspect; srcX = 0; srcY = (iH - srcH) / 2;
+                    }
+                    ctx.drawImage(_deathScreenshotImg, srcX, srcY, srcW, srcH, 0, 0, BASE_W, BASE_H);
+                }
                 ctx.fillStyle = 'rgba(0,0,0,0.72)';
                 ctx.fillRect(0, 0, BASE_W, BASE_H);
                 ctx.restore();
@@ -13089,10 +13101,24 @@ function _drawMpHostEndBtn() {
                 ctx.fillStyle = '#000';
                 ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, snapCardH, 12); ctx.fill();
                 ctx.restore();
-                // Clip and draw screenshot
+                // Clip and draw screenshot — cover crop to preserve aspect ratio
                 ctx.save();
                 ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, snapCardH, 12); ctx.clip();
-                ctx.drawImage(_deathScreenshotImg, snapCardX, snapCardY, snapCardW, snapCardH);
+                {
+                    const iW = _deathScreenshotImg.naturalWidth || BASE_W;
+                    const iH = _deathScreenshotImg.naturalHeight || BASE_H;
+                    const cardAspect = snapCardW / snapCardH;
+                    const imgAspect = iW / iH;
+                    let srcX, srcY, srcW, srcH;
+                    if (imgAspect > cardAspect) {
+                        srcH = iH; srcW = iH * cardAspect;
+                        srcX = (iW - srcW) / 2; srcY = 0;
+                    } else {
+                        srcW = iW; srcH = iW / cardAspect;
+                        srcX = 0; srcY = (iH - srcH) / 2;
+                    }
+                    ctx.drawImage(_deathScreenshotImg, srcX, srcY, srcW, srcH, snapCardX, snapCardY, snapCardW, snapCardH);
+                }
                 // Slight dark overlay
                 ctx.fillStyle = 'rgba(0,0,20,0.18)';
                 ctx.fillRect(snapCardX, snapCardY, snapCardW, snapCardH);
