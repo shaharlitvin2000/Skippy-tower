@@ -5,127 +5,108 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Mobile Game UI</title>
 <style>
-  /* ─── TOKENS ─────────────────────────────────────────────── */
   :root {
-    --bg:          #0B1026;
-    --panel:       #1A1F3D;
-    --border:      #2A2F5A;
-    --primary:     #5B6CFF;
-    --cta:         #FF8A00;
-    --gold:        #FFD166;
-    --text:        #FFFFFF;
-    --text-sec:    #A0A3BD;
-
-    --primary-glow: 0 0 14px rgba(91,108,255,.45);
-    --cta-glow:     0 0 18px rgba(255,138,0,.55);
-    --gold-glow:    0 0 10px rgba(255,209,102,.35);
-
-    --radius-card: 16px;
-    --radius-btn:  10px;
-    --gap:         12px;
+    --bg:       #0B1026;
+    --panel:    #1A1F3D;
+    --border:   #2A2F5A;
+    --primary:  #5B6CFF;
+    --cta:      #FF8A00;
+    --gold:     #FFD166;
+    --text:     #FFFFFF;
+    --text-sec: #A0A3BD;
+    --cta-glow:     0 0 18px rgba(255,138,0,.5);
+    --primary-glow: 0 0 14px rgba(91,108,255,.4);
   }
 
-  /* ─── RESET ──────────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   html, body {
-    height: 100%;
-    background: var(--bg);
+    min-height: 100%;
+    background: #07091a;
     color: var(--text);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 0 40px;
   }
 
-  /* ─── PHONE SHELL ────────────────────────────────────────── */
+  /* ── SHELL ─────────────────────────────────────────────── */
   .shell {
     width: 390px;
     min-height: 844px;
-    margin: 32px auto;
     background: var(--bg);
-    border-radius: 44px;
-    border: 2px solid var(--border);
+    border-radius: 40px;
+    border: 1.5px solid var(--border);
     overflow: hidden;
-    position: relative;
-    box-shadow: 0 32px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
     display: flex;
     flex-direction: column;
+    box-shadow: 0 40px 100px rgba(0,0,0,.8);
+    position: relative;
   }
 
-  /* ─── STATUS BAR ─────────────────────────────────────────── */
-  .status-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 24px 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-sec);
-    flex-shrink: 0;
+  /* ── PAGES ─────────────────────────────────────────────── */
+  .page {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
-  .status-bar .time { color: var(--text); font-size: 15px; font-weight: 700; }
-  .status-icons { display: flex; gap: 6px; align-items: center; }
-  .status-icons svg { width: 16px; height: 16px; fill: var(--text); }
+  .page.active { display: flex; }
 
-  /* ─── HEADER ─────────────────────────────────────────────── */
-  .header {
+  /* ── SHARED HEADER ──────────────────────────────────────── */
+  .page-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 14px 20px 10px;
+    justify-content: space-between;
+    padding: 20px 20px 12px;
     flex-shrink: 0;
   }
-  .header-title {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: .5px;
-  }
+  .page-title { font-size: 22px; font-weight: 800; letter-spacing: .4px; }
   .currency-row { display: flex; gap: 8px; }
   .currency-pill {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    display: flex; align-items: center; gap: 5px;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 20px;
-    padding: 5px 10px;
-    font-size: 13px;
-    font-weight: 700;
+    padding: 5px 11px;
+    font-size: 13px; font-weight: 700;
   }
-  .currency-pill .coin-icon {
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    background: var(--gold);
-    box-shadow: var(--gold-glow);
+  .coin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--gold); font-size: 8px; color: #7a4800;
     display: flex; align-items: center; justify-content: center;
-    font-size: 9px; color: #7a4800;
+    box-shadow: 0 0 6px rgba(255,209,102,.4);
   }
-  .currency-pill .gem-icon {
-    width: 16px; height: 16px;
+  .gem-dot {
+    width: 14px; height: 14px;
     background: var(--primary);
     clip-path: polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%);
-    box-shadow: var(--primary-glow);
+    box-shadow: 0 0 6px rgba(91,108,255,.4);
   }
-  .currency-pill .amount { color: var(--text); }
 
-  /* ─── NAV TABS ───────────────────────────────────────────── */
-  .nav-tabs {
-    display: flex;
-    gap: 4px;
-    padding: 0 20px 14px;
+  /* ── SCROLL AREA ────────────────────────────────────────── */
+  .scroll { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+  .scroll::-webkit-scrollbar { width: 3px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── TABS ───────────────────────────────────────────────── */
+  .tab-row {
+    display: flex; gap: 4px;
+    padding: 0 16px 14px;
     flex-shrink: 0;
   }
   .tab {
-    flex: 1;
-    text-align: center;
-    padding: 8px 0;
-    font-size: 12px;
-    font-weight: 700;
+    flex: 1; text-align: center;
+    padding: 7px 0;
+    font-size: 11px; font-weight: 700;
     color: var(--text-sec);
-    border-radius: var(--radius-btn);
-    cursor: pointer;
-    transition: all .2s;
-    letter-spacing: .4px;
-    text-transform: uppercase;
+    border-radius: 8px;
     border: 1px solid transparent;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    transition: all .18s;
   }
   .tab.active {
     color: var(--primary);
@@ -134,288 +115,266 @@
     box-shadow: var(--primary-glow);
   }
 
-  /* ─── SCROLL AREA ────────────────────────────────────────── */
-  .scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 16px 24px;
-    scroll-behavior: smooth;
-  }
-  .scroll-area::-webkit-scrollbar { width: 3px; }
-  .scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  /* ─── SECTION LABEL ──────────────────────────────────────── */
-  .section-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 4px 0 10px;
-  }
-  .section-label h2 {
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: .5px;
-    text-transform: uppercase;
-    color: var(--text-sec);
-  }
-  .see-all {
-    font-size: 12px;
-    color: var(--primary);
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  /* ─── FEATURED BANNER ────────────────────────────────────── */
-  .featured-banner {
+  /* ── SEARCH ─────────────────────────────────────────────── */
+  .search {
+    display: flex; align-items: center; gap: 8px;
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin-bottom: 12px;
   }
-  .featured-banner::before {
+  .search svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .search input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text); font-size: 13px;
+  }
+  .search input::placeholder { color: var(--text-sec); }
+
+  /* ── SORT CHIPS ─────────────────────────────────────────── */
+  .sort-row {
+    display: flex; gap: 6px;
+    overflow-x: auto; padding-bottom: 2px;
+    margin-bottom: 14px;
+  }
+  .sort-row::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid var(--border);
+    color: var(--text-sec);
+    background: transparent;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .chip.active {
+    background: var(--primary); color: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 8px rgba(91,108,255,.3);
+  }
+
+  /* ── TIMER ──────────────────────────────────────────────── */
+  .timer {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,209,102,.08);
+    border: 1px solid rgba(255,209,102,.22);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px; font-weight: 700; color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .timer-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  /* ── FEATURED BANNER ────────────────────────────────────── */
+  .featured {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 14px;
+    position: relative; overflow: hidden;
+  }
+  .featured::after {
     content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 80% 50%, rgba(91,108,255,.08) 0%, transparent 70%);
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 85% 50%, rgba(91,108,255,.07) 0%, transparent 65%);
     pointer-events: none;
   }
-  .featured-char {
-    width: 88px;
-    height: 88px;
+  .featured-icon {
+    width: 80px; height: 80px; flex-shrink: 0;
     border-radius: 14px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
     background: rgba(255,255,255,.04);
     border: 1px solid var(--border);
-    position: relative;
-    z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px;
+    position: relative; z-index: 1;
   }
-  .featured-info { flex: 1; position: relative; z-index: 1; }
-  .featured-tag {
+  .featured-body { flex: 1; position: relative; z-index: 1; }
+  .f-tag {
     display: inline-block;
-    background: rgba(255,138,0,.15);
-    border: 1px solid rgba(255,138,0,.3);
-    color: #FF8A00;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .8px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
+    background: rgba(255,138,0,.13);
+    border: 1px solid rgba(255,138,0,.28);
+    color: var(--cta);
+    font-size: 9px; font-weight: 800; letter-spacing: .7px;
+    padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; margin-bottom: 5px;
   }
-  .featured-name {
-    font-size: 18px;
-    font-weight: 800;
-    margin-bottom: 4px;
-  }
-  .featured-desc {
-    font-size: 12px;
-    color: var(--text-sec);
-    margin-bottom: 12px;
-    line-height: 1.4;
-  }
-  .featured-price-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .price-badge {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 14px;
-    font-weight: 800;
-    color: var(--gold);
-  }
-  .old-price {
-    font-size: 12px;
-    color: var(--text-sec);
-    text-decoration: line-through;
-    font-weight: 500;
+  .f-name { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+  .f-desc { font-size: 11px; color: var(--text-sec); line-height: 1.4; margin-bottom: 10px; }
+  .f-price-row { display: flex; align-items: center; gap: 8px; }
+  .f-price { font-size: 14px; font-weight: 800; color: var(--gold); }
+  .f-old { font-size: 11px; color: var(--text-sec); text-decoration: line-through; }
+  .badge-off {
+    background: rgba(255,138,0,.13);
+    border: 1px solid rgba(255,138,0,.28);
+    color: var(--cta);
+    font-size: 10px; font-weight: 800;
+    padding: 2px 6px; border-radius: 4px;
   }
 
-  /* ─── CARD GRID ──────────────────────────────────────────── */
-  .card-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--gap);
+  /* ── BUTTONS ────────────────────────────────────────────── */
+  .btn {
+    width: 100%; padding: 9px 0;
+    border: none; border-radius: 9px;
+    font-size: 12px; font-weight: 800; letter-spacing: .4px;
+    cursor: pointer; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    transition: transform .12s, opacity .12s;
+  }
+  .btn:active { transform: scale(.95); }
+
+  .btn-cta   { background: var(--cta); color: #fff; box-shadow: var(--cta-glow); }
+  .btn-cta:hover { background: #ff9d20; }
+  .btn-blue  { background: var(--primary); color: #fff; box-shadow: 0 0 8px rgba(91,108,255,.22); }
+  .btn-blue:hover { background: #6e7eff; }
+  .btn-owned {
+    background: rgba(91,108,255,.08);
+    border: 1px solid var(--border);
+    color: var(--text-sec);
+  }
+  .btn-owned:hover { background: rgba(91,108,255,.14); }
+
+  .btn-wide {
+    width: 100%; padding: 12px 0;
     margin-bottom: 16px;
+    font-size: 14px; letter-spacing: .7px;
   }
 
-  /* ─── CHARACTER CARD ─────────────────────────────────────── */
+  /* ── SECTION LABEL ──────────────────────────────────────── */
+  .section-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 14px 0 10px;
+  }
+  .section-label h2 {
+    font-size: 13px; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; color: var(--text-sec);
+  }
+  .divider { height: 1px; background: var(--border); margin: 6px 0 14px; opacity: .45; }
+
+  /* ── CARD GRID ──────────────────────────────────────────── */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+  /* ── CHARACTER CARD ─────────────────────────────────────── */
   .char-card {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    position: relative;
-    overflow: hidden;
-    transition: transform .15s, border-color .15s;
+    border-radius: 14px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 9px;
+    position: relative; overflow: hidden;
+    transition: border-color .15s;
     cursor: pointer;
   }
-  .char-card:active { transform: scale(.97); }
   .char-card::before {
     content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(160deg, rgba(255,255,255,.025) 0%, transparent 60%);
+    position: absolute; inset: 0;
+    background: linear-gradient(155deg, rgba(255,255,255,.022) 0%, transparent 55%);
     pointer-events: none;
   }
+  .char-card.selected { border-color: var(--primary); box-shadow: var(--primary-glow); }
 
-  /* corner tag */
   .card-tag {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .6px;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 4px;
-    z-index: 2;
+    position: absolute; top: 9px; right: 9px;
+    font-size: 9px; font-weight: 800; letter-spacing: .5px;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 4px; z-index: 2;
   }
-  .tag-exclusive {
-    background: rgba(255,138,0,.12);
-    border: 1px solid rgba(255,138,0,.25);
-    color: #FF8A00;
-  }
-  .tag-bundle {
-    background: rgba(91,108,255,.14);
-    border: 1px solid rgba(91,108,255,.3);
-    color: var(--primary);
-  }
-  .tag-new {
-    background: rgba(255,209,102,.12);
-    border: 1px solid rgba(255,209,102,.3);
-    color: var(--gold);
-  }
+  .tag-ex  { background: rgba(255,138,0,.11); border:1px solid rgba(255,138,0,.24); color: var(--cta); }
+  .tag-new { background: rgba(255,209,102,.1); border:1px solid rgba(255,209,102,.25); color: var(--gold); }
+  .tag-bun { background: rgba(91,108,255,.13); border:1px solid rgba(91,108,255,.28); color: var(--primary); }
 
-  /* icon area — only colorful element */
   .char-icon {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 52px;
+    width: 100%; aspect-ratio: 1;
+    border-radius: 9px;
     background: rgba(255,255,255,.04);
-    position: relative;
-    z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    position: relative; z-index: 1;
   }
+  .char-name { font-size: 13px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .char-sub  { font-size: 11px; color: var(--text-sec); margin-top: -5px; line-height: 1.35; }
+  .card-price {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 800; color: var(--gold);
+    margin-top: -3px;
+  }
+  .card-price span { font-size: 11px; }
 
-  .char-name {
-    font-size: 13px;
-    font-weight: 800;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .char-desc {
-    font-size: 11px;
-    color: var(--text-sec);
-    line-height: 1.35;
-    margin-top: -4px;
-  }
-
-  /* ─── BUTTONS ────────────────────────────────────────────── */
-  .btn {
-    width: 100%;
-    padding: 9px 0;
-    border: none;
-    border-radius: var(--radius-btn);
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: .4px;
-    cursor: pointer;
-    transition: all .15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    text-transform: uppercase;
-  }
-  .btn:active { transform: scale(.96); }
-
-  /* CTA — orange, BUY / PLAY only */
-  .btn-cta {
-    background: var(--cta);
-    color: #fff;
-    box-shadow: var(--cta-glow);
-  }
-  .btn-cta:hover { background: #ff9d1f; }
-
-  /* Secondary — blue, subtle glow */
-  .btn-secondary {
-    background: var(--primary);
-    color: #fff;
-    box-shadow: 0 0 8px rgba(91,108,255,.25);
-  }
-  .btn-secondary:hover { background: #6e7eff; }
-
-  /* Owned — muted, not attention-grabbing */
-  .btn-owned {
-    background: rgba(91,108,255,.1);
-    color: var(--text-sec);
-    border: 1px solid var(--border);
-    box-shadow: none;
-  }
-  .btn-owned:hover { background: rgba(91,108,255,.15); }
-
-  /* ─── PLAY BAR ───────────────────────────────────────────── */
-  .play-bar {
-    flex-shrink: 0;
-    padding: 12px 20px 20px;
-    background: linear-gradient(0deg, var(--bg) 70%, transparent);
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .play-bar .char-thumb {
-    width: 48px; height: 48px;
-    border-radius: 10px;
+  /* ── BUNDLE CARD ────────────────────────────────────────── */
+  .bundle-card {
     background: var(--panel);
     border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+    position: relative; overflow: hidden;
+  }
+  .bundle-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(130deg, rgba(91,108,255,.05) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .bundle-icons { display: flex; }
+  .b-icon {
+    width: 48px; height: 48px; border-radius: 9px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    flex-shrink: 0;
+    font-size: 24px;
+    margin-left: -8px; position: relative; z-index: 1;
   }
-  .play-bar-info { flex: 1; min-width: 0; }
-  .play-bar-info .label { font-size: 11px; color: var(--text-sec); font-weight: 500; }
-  .play-bar-info .active-char { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .play-btn {
-    min-width: 110px;
-    padding: 13px 18px;
-    border: none;
-    border-radius: var(--radius-btn);
-    background: var(--cta);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: .6px;
-    cursor: pointer;
-    box-shadow: var(--cta-glow);
-    text-transform: uppercase;
-    transition: all .15s;
-    flex-shrink: 0;
-  }
-  .play-btn:active { transform: scale(.96); }
+  .b-icon:first-child { margin-left: 0; }
+  .bundle-info { flex: 1; }
+  .b-title { font-size: 14px; font-weight: 800; margin-bottom: 3px; }
+  .b-desc  { font-size: 11px; color: var(--text-sec); margin-bottom: 7px; }
+  .b-price-row { display: flex; align-items: center; gap: 7px; }
 
-  /* ─── BOTTOM NAV ─────────────────────────────────────────── */
+  /* ── NO RESULTS ─────────────────────────────────────────── */
+  .no-results {
+    text-align: center; padding: 40px 0;
+    color: var(--text-sec); font-size: 14px;
+    display: none;
+  }
+
+  /* ── PLAY BAR ───────────────────────────────────────────── */
+  .play-bar {
+    flex-shrink: 0;
+    padding: 10px 16px 14px;
+    background: linear-gradient(0deg, var(--bg) 60%, transparent);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .thumb {
+    width: 46px; height: 46px; border-radius: 9px;
+    background: var(--panel); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+    transition: all .2s;
+  }
+  .bar-info { flex: 1; min-width: 0; }
+  .bar-label { font-size: 10px; color: var(--text-sec); }
+  .bar-name  { font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .play-btn {
+    min-width: 105px; padding: 12px 0;
+    border: none; border-radius: 9px;
+    background: var(--cta); color: #fff;
+    font-size: 15px; font-weight: 900; letter-spacing: .5px;
+    text-transform: uppercase; cursor: pointer;
+    box-shadow: var(--cta-glow);
+    transition: transform .12s;
+    flex-shrink: 0;
+  }
+  .play-btn:active { transform: scale(.95); }
+
+  /* ── BOTTOM NAV ─────────────────────────────────────────── */
   .bottom-nav {
     flex-shrink: 0;
     display: flex;
@@ -423,509 +382,845 @@
     background: var(--bg);
   }
   .nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
     padding: 10px 0 14px;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-sec);
-    text-transform: uppercase;
-    letter-spacing: .4px;
-    cursor: pointer;
-    transition: color .2s;
+    font-size: 9px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--text-sec);
+    cursor: pointer; transition: color .18s;
+    -webkit-tap-highlight-color: transparent;
   }
   .nav-item.active { color: var(--primary); }
   .nav-item svg { width: 20px; height: 20px; }
-  .nav-dot {
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--primary);
-    margin-top: -2px;
-  }
+  .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--primary); margin-top: -2px; }
 
-  /* ─── DIVIDER ────────────────────────────────────────────── */
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 4px 0 14px;
-    opacity: .5;
+  /* ── TOAST ──────────────────────────────────────────────── */
+  .toast {
+    position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%) translateY(10px);
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 18px;
+    font-size: 13px; font-weight: 700;
+    white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity .2s, transform .2s;
+    z-index: 100;
   }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: rgba(255,80,80,.4); color: #ff6060; }
+  .toast.success { border-color: rgba(91,108,255,.4); color: var(--primary); }
 
-  /* ─── TIMER CHIP ─────────────────────────────────────────── */
-  .timer-chip {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(255,209,102,.1);
-    border: 1px solid rgba(255,209,102,.25);
-    border-radius: 6px;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--gold);
-    margin-bottom: 10px;
+  /* ── SHAKE ──────────────────────────────────────────────── */
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-5px)}
+    40%{transform:translateX(5px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(4px)}
   }
-  .timer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 1.2s infinite; }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+  .shake { animation: shake .35s ease; }
 
-  /* ─── BUNDLE CARD ────────────────────────────────────────── */
-  .bundle-card {
+  /* ══════════════════════════════════════════════════════════
+     HOME PAGE
+  ══════════════════════════════════════════════════════════ */
+  .home-hero {
+    margin: 0 16px 16px;
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    padding: 16px;
-    margin-bottom: 12px;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
+    border-radius: 20px;
+    padding: 28px 20px;
+    text-align: center;
+    position: relative; overflow: hidden;
   }
-  .bundle-card::before {
+  .home-hero::before {
     content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(91,108,255,.06) 0%, transparent 60%);
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(91,108,255,.1) 0%, transparent 60%);
     pointer-events: none;
   }
-  .bundle-chars { display: flex; }
-  .bundle-char {
-    width: 52px; height: 52px;
-    border-radius: 10px;
-    background: rgba(255,255,255,.04);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    margin-left: -8px;
+  .hero-icon { font-size: 80px; display: block; margin-bottom: 10px; position: relative; z-index: 1; }
+  .hero-name { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .hero-sub  { font-size: 13px; color: var(--text-sec); margin-bottom: 20px; }
+  .hero-play {
+    width: 100%; padding: 14px 0;
+    border: none; border-radius: 11px;
+    background: var(--cta); color: #fff;
+    font-size: 16px; font-weight: 900; letter-spacing: .6px;
+    text-transform: uppercase; cursor: pointer;
+    box-shadow: var(--cta-glow);
+    transition: transform .12s;
+    position: relative; z-index: 1;
   }
-  .bundle-char:first-child { margin-left: 0; }
-  .bundle-info { flex: 1; }
-  .bundle-info .bundle-title { font-size: 14px; font-weight: 800; margin-bottom: 3px; }
-  .bundle-info .bundle-desc { font-size: 11px; color: var(--text-sec); margin-bottom: 8px; }
-  .bundle-price-row { display: flex; align-items: center; gap: 8px; }
-  .badge-save {
-    background: rgba(255,138,0,.15);
-    border: 1px solid rgba(255,138,0,.3);
-    color: var(--cta);
-    font-size: 10px;
-    font-weight: 800;
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
+  .hero-play:active { transform: scale(.97); }
 
-  /* ─── SORT ROW ───────────────────────────────────────────── */
-  .sort-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 14px;
-    overflow-x: auto;
-    padding-bottom: 2px;
+  .home-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; margin: 0 16px 16px;
   }
-  .sort-row::-webkit-scrollbar { display: none; }
-  .sort-chip {
-    flex-shrink: 0;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    border: 1px solid var(--border);
-    color: var(--text-sec);
-    background: transparent;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all .15s;
-  }
-  .sort-chip.active {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-    box-shadow: 0 0 8px rgba(91,108,255,.3);
-  }
-
-  /* ─── SEARCH BAR ─────────────────────────────────────────── */
-  .search-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .stat-box {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 9px 12px;
-    margin-bottom: 12px;
+    border-radius: 12px;
+    padding: 14px 0;
+    text-align: center;
   }
-  .search-bar svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .search-bar input {
-    flex: 1;
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-size: 13px;
-  }
-  .search-bar input::placeholder { color: var(--text-sec); }
+  .stat-val { font-size: 20px; font-weight: 800; }
+  .stat-key { font-size: 10px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
 
-  /* ─── PRICE ROW INSIDE CARD ──────────────────────────────── */
-  .card-price {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin-top: -4px;
+  .home-owned {
+    margin: 0 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
   }
-  .card-price .coin { color: var(--gold); font-size: 12px; }
-  .card-price .amount { font-size: 13px; font-weight: 800; color: var(--gold); }
+  .home-owned-title {
+    font-size: 12px; font-weight: 700; color: var(--text-sec);
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 10px;
+  }
+  .owned-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  .owned-row::-webkit-scrollbar { display: none; }
+  .owned-pill {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: border-color .15s;
+    white-space: nowrap;
+  }
+  .owned-pill.active { border-color: var(--primary); color: var(--primary); }
+  .owned-pill .pi { font-size: 20px; }
+
+  /* ══════════════════════════════════════════════════════════
+     RANKED PAGE
+  ══════════════════════════════════════════════════════════ */
+  .ranked-hero {
+    margin: 0 16px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .rank-badge {
+    width: 64px; height: 64px; border-radius: 14px;
+    background: rgba(255,209,102,.08);
+    border: 1px solid rgba(255,209,102,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px; flex-shrink: 0;
+  }
+  .rank-info .rank-label { font-size: 11px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+  .rank-info .rank-tier  { font-size: 20px; font-weight: 800; margin: 2px 0; }
+  .rank-info .rank-pts   { font-size: 12px; color: var(--gold); font-weight: 700; }
+
+  .leaderboard { margin: 0 16px; }
+  .lb-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 11px 14px;
+    margin-bottom: 8px;
+  }
+  .lb-row.me { border-color: var(--primary); box-shadow: 0 0 10px rgba(91,108,255,.2); }
+  .lb-pos { width: 22px; font-size: 13px; font-weight: 800; color: var(--text-sec); text-align: center; flex-shrink: 0; }
+  .lb-pos.gold   { color: var(--gold); }
+  .lb-pos.silver { color: #b0b8cc; }
+  .lb-pos.bronze { color: #cd7f32; }
+  .lb-icon { font-size: 26px; }
+  .lb-name { flex: 1; font-size: 13px; font-weight: 700; }
+  .lb-pts  { font-size: 13px; font-weight: 800; color: var(--gold); }
+
+  /* ══════════════════════════════════════════════════════════
+     PROFILE PAGE
+  ══════════════════════════════════════════════════════════ */
+  .profile-top {
+    display: flex; align-items: center; gap: 14px;
+    margin: 0 16px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px; padding: 18px;
+  }
+  .avatar {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(91,108,255,.12);
+    border: 2px solid var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; flex-shrink: 0;
+  }
+  .profile-name { font-size: 18px; font-weight: 800; }
+  .profile-sub  { font-size: 12px; color: var(--text-sec); margin-top: 2px; }
+  .profile-xp   { font-size: 12px; color: var(--primary); font-weight: 700; margin-top: 6px; }
+
+  .profile-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin: 0 16px 16px;
+  }
+  .profile-stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px;
+  }
+  .ps-val { font-size: 22px; font-weight: 800; }
+  .ps-key { font-size: 11px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
+
+  .owned-skins-title {
+    font-size: 13px; font-weight: 700; color: var(--text-sec);
+    text-transform: uppercase; letter-spacing: .5px;
+    padding: 0 16px; margin-bottom: 10px;
+  }
+  .owned-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 0 16px; }
+  .owned-cell {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; cursor: pointer; transition: border-color .15s;
+  }
+  .owned-cell.active-skin { border-color: var(--primary); box-shadow: 0 0 8px rgba(91,108,255,.3); }
 </style>
 </head>
 <body>
+<div class="shell" id="shell">
 
-<div class="shell">
+  <!-- ═══════════════════════════════════════════
+       HOME PAGE
+  ═══════════════════════════════════════════ -->
+  <div class="page active" id="page-home">
+    <div class="page-header">
+      <div class="page-title">ARENA</div>
+      <div class="currency-row">
+        <div class="currency-pill">
+          <div class="coin-dot">✦</div>
+          <span id="home-coins">4,820</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- STATUS BAR -->
-  <div class="status-bar">
-    <span class="time">9:41</span>
-    <div class="status-icons">
-      <svg viewBox="0 0 24 24"><rect x="2" y="15" width="3" height="7" rx="1"/><rect x="7" y="11" width="3" height="11" rx="1"/><rect x="12" y="7" width="3" height="15" rx="1"/><rect x="17" y="3" width="3" height="19" rx="1"/></svg>
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M1.5 8.5a15 15 0 0 1 21 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01"/></svg>
-      <svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" stroke="white" stroke-width="1.5" fill="none"/><path d="M19 10v4" stroke="white" stroke-width="2" stroke-linecap="round"/><rect x="3" y="8" width="12" height="8" rx="1" fill="white"/></svg>
+    <div class="home-hero">
+      <span class="hero-icon" id="hero-icon">🧊</span>
+      <div class="hero-name" id="hero-name">Frost Knight</div>
+      <div class="hero-sub" id="hero-sub">Ice warrior class</div>
+      <button class="hero-play" onclick="handlePlay()">▶ &nbsp;PLAY</button>
+    </div>
+
+    <div class="home-stats">
+      <div class="stat-box">
+        <div class="stat-val">42</div>
+        <div class="stat-key">Wins</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--gold)">8</div>
+        <div class="stat-key">Streak</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">63%</div>
+        <div class="stat-key">Win Rate</div>
+      </div>
+    </div>
+
+    <div class="home-owned">
+      <div class="home-owned-title">My Skins</div>
+      <div class="owned-row" id="home-owned-row"></div>
     </div>
   </div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="header-title">ARMORY</div>
-    <div class="currency-row">
-      <div class="currency-pill">
-        <div class="coin-icon">✦</div>
-        <span class="amount">4,820</span>
+  <!-- ═══════════════════════════════════════════
+       SHOP PAGE
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-shop">
+    <div class="page-header">
+      <div class="page-title">SHOP</div>
+      <div class="currency-row">
+        <div class="currency-pill">
+          <div class="coin-dot">✦</div>
+          <span id="shop-coins">4,820</span>
+        </div>
+        <div class="currency-pill">
+          <div class="gem-dot"></div>
+          <span>120</span>
+        </div>
       </div>
-      <div class="currency-pill">
-        <div class="gem-icon"></div>
-        <span class="amount">120</span>
+    </div>
+
+    <div class="tab-row">
+      <div class="tab active" data-filter="all">All</div>
+      <div class="tab" data-filter="skins">Skins</div>
+      <div class="tab" data-filter="bundles">Bundles</div>
+      <div class="tab" data-filter="limited">Limited</div>
+    </div>
+
+    <div class="scroll" id="shop-scroll">
+
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#A0A3BD" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search characters…">
+      </div>
+
+      <div class="sort-row">
+        <div class="chip active" data-sort="featured">Featured</div>
+        <div class="chip" data-sort="price-asc">Price ↑</div>
+        <div class="chip" data-sort="price-desc">Price ↓</div>
+        <div class="chip" data-sort="owned">Owned</div>
+      </div>
+
+      <!-- LIMITED SECTION -->
+      <div id="limited-section" data-section="limited">
+        <div class="timer" id="timer-el">
+          <div class="timer-dot"></div>
+          Limited offer ends in 06:42:18
+        </div>
+
+        <div class="featured" id="featured-banner">
+          <div class="featured-icon">🐉</div>
+          <div class="featured-body">
+            <div class="f-tag">Featured</div>
+            <div class="f-name">Ember Drake</div>
+            <div class="f-desc">Rare dragon-class skin.</div>
+            <div class="f-price-row">
+              <div class="f-price">✦ 1,200</div>
+              <div class="f-old">2,400</div>
+              <div class="badge-off">50% OFF</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-cta btn-wide" id="featured-buy-btn"
+          onclick="buyFeatured()">
+          BUY NOW &nbsp;<span style="font-weight:500;font-size:12px;opacity:.7;text-transform:none;">— 1,200 coins</span>
+        </button>
+      </div>
+
+      <div class="divider" id="divider-skins" data-section="skins"></div>
+
+      <!-- SKINS SECTION -->
+      <div id="skins-section" data-section="skins">
+        <div class="section-label">
+          <h2>Characters</h2>
+        </div>
+        <div class="card-grid" id="card-grid"></div>
+        <div class="no-results" id="no-results">No characters found.</div>
+      </div>
+
+      <div class="divider" id="divider-bundles" data-section="bundles"></div>
+
+      <!-- BUNDLES SECTION -->
+      <div id="bundles-section" data-section="bundles">
+        <div class="section-label">
+          <h2>Bundles</h2>
+        </div>
+        <div id="bundles-list"></div>
+      </div>
+
+    </div><!-- /scroll -->
+
+    <div class="play-bar">
+      <div class="thumb" id="bar-thumb">🧊</div>
+      <div class="bar-info">
+        <div class="bar-label">Active skin</div>
+        <div class="bar-name" id="bar-name">Frost Knight</div>
+      </div>
+      <button class="play-btn" onclick="goHome()">▶ PLAY</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       RANKED PAGE
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-ranked">
+    <div class="page-header">
+      <div class="page-title">RANKED</div>
+    </div>
+
+    <div class="ranked-hero">
+      <div class="rank-badge">🏆</div>
+      <div class="rank-info">
+        <div class="rank-label">Your Rank</div>
+        <div class="rank-tier">Gold III</div>
+        <div class="rank-pts">1,240 pts · 120 to Platinum</div>
+      </div>
+    </div>
+
+    <div class="section-label" style="padding:0 16px;margin-bottom:10px;">
+      <h2>Leaderboard</h2>
+    </div>
+
+    <div class="leaderboard">
+      <div class="lb-row">
+        <div class="lb-pos gold">1</div>
+        <div class="lb-icon">🔥</div>
+        <div class="lb-name">NovaStar</div>
+        <div class="lb-pts">3,810</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos silver">2</div>
+        <div class="lb-icon">⚡</div>
+        <div class="lb-name">ThunderX</div>
+        <div class="lb-pts">3,540</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos bronze">3</div>
+        <div class="lb-icon">🌊</div>
+        <div class="lb-name">TideRunner</div>
+        <div class="lb-pts">3,210</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">4</div>
+        <div class="lb-icon">🦅</div>
+        <div class="lb-name">SkyHunter</div>
+        <div class="lb-pts">2,980</div>
+      </div>
+      <div class="lb-row">
+        <div class="lb-pos">5</div>
+        <div class="lb-icon">🕷️</div>
+        <div class="lb-name">DarkPhase</div>
+        <div class="lb-pts">2,760</div>
+      </div>
+      <div class="lb-row me">
+        <div class="lb-pos" style="color:var(--primary)">14</div>
+        <div class="lb-icon" id="ranked-my-icon">🧊</div>
+        <div class="lb-name" style="color:var(--primary)">You</div>
+        <div class="lb-pts">1,240</div>
       </div>
     </div>
   </div>
 
-  <!-- NAV TABS -->
-  <div class="nav-tabs">
-    <div class="tab">All</div>
-    <div class="tab active">Skins</div>
-    <div class="tab">Bundles</div>
-    <div class="tab">Limited</div>
-  </div>
-
-  <!-- SCROLL CONTENT -->
-  <div class="scroll-area">
-
-    <!-- SEARCH -->
-    <div class="search-bar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#A0A3BD" stroke-width="2" stroke-linecap="round">
-        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-      </svg>
-      <input type="text" placeholder="Search characters…">
+  <!-- ═══════════════════════════════════════════
+       PROFILE PAGE
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-profile">
+    <div class="page-header">
+      <div class="page-title">PROFILE</div>
     </div>
 
-    <!-- SORT CHIPS -->
-    <div class="sort-row">
-      <div class="sort-chip active">Featured</div>
-      <div class="sort-chip">New</div>
-      <div class="sort-chip">Price ↑</div>
-      <div class="sort-chip">Owned</div>
-      <div class="sort-chip">Rarity</div>
-    </div>
-
-    <!-- TIMER -->
-    <div class="timer-chip">
-      <div class="timer-dot"></div>
-      Limited offer ends in 06:42:18
-    </div>
-
-    <!-- FEATURED BANNER -->
-    <div class="featured-banner">
-      <div class="featured-char">🐉</div>
-      <div class="featured-info">
-        <div class="featured-tag">Featured</div>
-        <div class="featured-name">Ember Drake</div>
-        <div class="featured-desc">Rare dragon-class skin with animated flame trail.</div>
-        <div class="featured-price-row">
-          <div class="price-badge">✦ 1,200</div>
-          <div class="old-price">2,400</div>
-          <div class="badge-save">50% OFF</div>
-        </div>
+    <div class="profile-top">
+      <div class="avatar" id="profile-avatar">🧊</div>
+      <div>
+        <div class="profile-name">Player</div>
+        <div class="profile-sub">Member since 2024</div>
+        <div class="profile-xp">Level 18 · 4,200 XP</div>
       </div>
     </div>
 
-    <button class="btn btn-cta" style="margin-bottom:20px;padding:12px 0;font-size:14px;letter-spacing:.8px;">
-      BUY NOW &nbsp;<span style="color:rgba(255,255,255,.65);font-weight:500;font-size:12px;text-transform:none;">— 1,200 coins</span>
-    </button>
-
-    <div class="divider"></div>
-
-    <!-- CHARACTERS SECTION -->
-    <div class="section-label">
-      <h2>Characters</h2>
-      <span class="see-all">See all →</span>
+    <div class="profile-grid">
+      <div class="profile-stat">
+        <div class="ps-val">42</div>
+        <div class="ps-key">Total Wins</div>
+      </div>
+      <div class="profile-stat">
+        <div class="ps-val" style="color:var(--gold)" id="profile-skins-count">3</div>
+        <div class="ps-key">Skins Owned</div>
+      </div>
+      <div class="profile-stat">
+        <div class="ps-val">63%</div>
+        <div class="ps-key">Win Rate</div>
+      </div>
+      <div class="profile-stat">
+        <div class="ps-val" style="color:var(--gold)" id="profile-coins">4,820</div>
+        <div class="ps-key">Coins</div>
+      </div>
     </div>
 
-    <div class="card-grid">
-
-      <!-- Owned -->
-      <div class="char-card">
-        <div class="char-icon">🧊</div>
-        <div>
-          <div class="char-name">Frost Knight</div>
-          <div class="char-desc">Ice warrior class</div>
-        </div>
-        <button class="btn btn-owned">✓ Owned</button>
-      </div>
-
-      <!-- Exclusive + BUY -->
-      <div class="char-card">
-        <div class="card-tag tag-exclusive">Exclusive</div>
-        <div class="char-icon">🔥</div>
-        <div>
-          <div class="char-name">Lava Titan</div>
-          <div class="char-desc">Volcanic fury skin</div>
-        </div>
-        <div class="card-price"><span class="coin">✦</span><span class="amount">2,500</span></div>
-        <button class="btn btn-cta">BUY</button>
-      </div>
-
-      <!-- New tag + BUY -->
-      <div class="char-card">
-        <div class="card-tag tag-new">New</div>
-        <div class="char-icon">⚡</div>
-        <div>
-          <div class="char-name">Storm Rider</div>
-          <div class="char-desc">Lightning speed build</div>
-        </div>
-        <div class="card-price"><span class="coin">✦</span><span class="amount">800</span></div>
-        <button class="btn btn-cta">BUY</button>
-      </div>
-
-      <!-- Owned -->
-      <div class="char-card">
-        <div class="char-icon">🌿</div>
-        <div>
-          <div class="char-name">Vine Warden</div>
-          <div class="char-desc">Nature guardian</div>
-        </div>
-        <button class="btn btn-owned">✓ Owned</button>
-      </div>
-
-      <!-- Bundle tag + VIEW -->
-      <div class="char-card">
-        <div class="card-tag tag-bundle">Bundle</div>
-        <div class="char-icon">🌊</div>
-        <div>
-          <div class="char-name">Tide Caller</div>
-          <div class="char-desc">Ocean mystic class</div>
-        </div>
-        <div class="card-price"><span class="coin">✦</span><span class="amount">600</span></div>
-        <button class="btn btn-secondary">VIEW</button>
-      </div>
-
-      <!-- Regular BUY -->
-      <div class="char-card">
-        <div class="char-icon">🦅</div>
-        <div>
-          <div class="char-name">Sky Reaper</div>
-          <div class="char-desc">Aerial recon unit</div>
-        </div>
-        <div class="card-price"><span class="coin">✦</span><span class="amount">1,000</span></div>
-        <button class="btn btn-cta">BUY</button>
-      </div>
-
-      <!-- Owned -->
-      <div class="char-card">
-        <div class="char-icon">🌋</div>
-        <div>
-          <div class="char-name">Magma Core</div>
-          <div class="char-desc">Tank-class brawler</div>
-        </div>
-        <button class="btn btn-owned">✓ Owned</button>
-      </div>
-
-      <!-- Exclusive -->
-      <div class="char-card">
-        <div class="card-tag tag-exclusive">Exclusive</div>
-        <div class="char-icon">🕷️</div>
-        <div>
-          <div class="char-name">Shadow Weave</div>
-          <div class="char-desc">Stealth infiltrator</div>
-        </div>
-        <div class="card-price"><span class="coin">✦</span><span class="amount">3,200</span></div>
-        <button class="btn btn-cta">BUY</button>
-      </div>
-
-      <!-- New -->
-      <div class="char-card">
-        <div class="card-tag tag-new">New</div>
-        <div class="char-icon">🦁</div>
-        <div>
-          <div class="char-name">Golden Mane</div>
-          <div class="char-desc">Savanna berserker</div>
-        </div>
-        <div class="card-price"><span class="coin">✦</span><span class="amount">950</span></div>
-        <button class="btn btn-cta">BUY</button>
-      </div>
-
-      <!-- Owned -->
-      <div class="char-card">
-        <div class="char-icon">🐺</div>
-        <div>
-          <div class="char-name">Dusk Fang</div>
-          <div class="char-desc">Night predator class</div>
-        </div>
-        <button class="btn btn-owned">✓ Owned</button>
-      </div>
-
-    </div><!-- /card-grid -->
-
-    <div class="divider"></div>
-
-    <!-- BUNDLES SECTION -->
-    <div class="section-label">
-      <h2>Bundles</h2>
-      <span class="see-all">See all →</span>
-    </div>
-
-    <div class="bundle-card">
-      <div class="bundle-chars">
-        <div class="bundle-char">🔥</div>
-        <div class="bundle-char">⚡</div>
-        <div class="bundle-char">🌊</div>
-      </div>
-      <div class="bundle-info">
-        <div class="bundle-title">Elements Pack</div>
-        <div class="bundle-desc">3 skins · Flame, Storm &amp; Tide</div>
-        <div class="bundle-price-row">
-          <span style="color:var(--gold);font-weight:800;font-size:14px;">✦ 2,200</span>
-          <span style="color:var(--text-sec);font-size:11px;text-decoration:line-through;">4,400</span>
-          <div class="badge-save">–50%</div>
-        </div>
-      </div>
-      <button class="btn btn-cta" style="width:64px;padding:10px 0;font-size:11px;">BUY</button>
-    </div>
-
-    <div class="bundle-card">
-      <div class="bundle-chars">
-        <div class="bundle-char">🧊</div>
-        <div class="bundle-char">🌿</div>
-      </div>
-      <div class="bundle-info">
-        <div class="bundle-title">Nature &amp; Ice</div>
-        <div class="bundle-desc">2 skins · Frost &amp; Vine</div>
-        <div class="bundle-price-row">
-          <span style="color:var(--gold);font-weight:800;font-size:14px;">✦ 1,400</span>
-          <span style="color:var(--text-sec);font-size:11px;text-decoration:line-through;">2,000</span>
-          <div class="badge-save">–30%</div>
-        </div>
-      </div>
-      <button class="btn btn-owned" style="width:64px;padding:10px 0;font-size:11px;">✓ Had</button>
-    </div>
-
-  </div><!-- /scroll-area -->
-
-  <!-- PLAY BAR -->
-  <div class="play-bar">
-    <div class="char-thumb">🧊</div>
-    <div class="play-bar-info">
-      <div class="label">Active skin</div>
-      <div class="active-char">Frost Knight</div>
-    </div>
-    <button class="play-btn">▶ PLAY</button>
+    <div class="owned-skins-title">Owned Skins</div>
+    <div class="owned-grid" id="owned-grid"></div>
   </div>
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
-
-    <div class="nav-item">
+    <div class="nav-item active" data-page="home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
       Home
     </div>
-
-    <div class="nav-item active">
+    <div class="nav-item" data-page="shop">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
         <line x1="3" y1="6" x2="21" y2="6"/>
         <path d="M16 10a4 4 0 0 1-8 0"/>
       </svg>
       Shop
-      <div class="nav-dot"></div>
     </div>
-
-    <div class="nav-item">
+    <div class="nav-item" data-page="ranked">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
       </svg>
       Ranked
     </div>
-
-    <div class="nav-item">
+    <div class="nav-item" data-page="profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
         <circle cx="12" cy="7" r="4"/>
       </svg>
       Profile
     </div>
-
   </div>
 
+  <div class="toast" id="toast"></div>
 </div><!-- /shell -->
 
 <script>
-  // Tab switching
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-    });
+// ── STATE ─────────────────────────────────────────────────────
+const state = {
+  coins: 4820,
+  activeSkin: { icon: '🧊', name: 'Frost Knight', desc: 'Ice warrior class' },
+  currentFilter: 'all',
+  currentSort: 'featured',
+  ownedIds: new Set([0, 3, 6, 9]) // owned by default
+};
+
+// ── SKINS DATA ────────────────────────────────────────────────
+const skins = [
+  { id:0,  icon:'🧊', name:'Frost Knight', desc:'Ice warrior class',    price:0,     tag:null,        limited:false },
+  { id:1,  icon:'🔥', name:'Lava Titan',   desc:'Volcanic fury skin',   price:2500,  tag:'exclusive', limited:false },
+  { id:2,  icon:'⚡', name:'Storm Rider',  desc:'Lightning speed build', price:800,  tag:'new',       limited:false },
+  { id:3,  icon:'🌿', name:'Vine Warden',  desc:'Nature guardian',      price:0,     tag:null,        limited:false },
+  { id:4,  icon:'🌊', name:'Tide Caller',  desc:'Ocean mystic class',   price:600,   tag:'bundle',    limited:false },
+  { id:5,  icon:'🦅', name:'Sky Reaper',   desc:'Aerial recon unit',    price:1000,  tag:null,        limited:false },
+  { id:6,  icon:'🌋', name:'Magma Core',   desc:'Tank-class brawler',   price:0,     tag:null,        limited:false },
+  { id:7,  icon:'🕷️', name:'Shadow Weave', desc:'Stealth infiltrator',  price:3200,  tag:'exclusive', limited:false },
+  { id:8,  icon:'🦁', name:'Golden Mane',  desc:'Savanna berserker',    price:950,   tag:'new',       limited:true  },
+  { id:9,  icon:'🐺', name:'Dusk Fang',    desc:'Night predator class', price:0,     tag:null,        limited:false },
+];
+
+const bundles = [
+  { id:'b1', icons:['🔥','⚡','🌊'], title:'Elements Pack', desc:'3 skins · Flame, Storm & Tide', price:2200, oldPrice:4400, pct:'–50%', skinIds:[1,2,4] },
+  { id:'b2', icons:['🧊','🌿'],       title:'Ice & Nature',  desc:'2 skins · Frost & Vine',       price:1400, oldPrice:2000, pct:'–30%', skinIds:[0,3] },
+];
+
+// featured skin (limited)
+const featured = { id:'f', icon:'🐉', price:1200, ownedId:'featured' };
+let featuredOwned = false;
+
+// ── COINS ─────────────────────────────────────────────────────
+function setCoins(val) {
+  state.coins = val;
+  const fmt = val.toLocaleString();
+  document.getElementById('home-coins').textContent  = fmt;
+  document.getElementById('shop-coins').textContent  = fmt;
+  document.getElementById('profile-coins').textContent = fmt;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 2000);
+}
+
+// ── SET ACTIVE SKIN ───────────────────────────────────────────
+function setActiveSkin(skin) {
+  state.activeSkin = skin;
+  // play bar
+  document.getElementById('bar-thumb').textContent = skin.icon;
+  document.getElementById('bar-name').textContent  = skin.name;
+  // home hero
+  document.getElementById('hero-icon').textContent = skin.icon;
+  document.getElementById('hero-name').textContent = skin.name;
+  document.getElementById('hero-sub').textContent  = skin.desc;
+  // ranked row
+  document.getElementById('ranked-my-icon').textContent = skin.icon;
+  // profile avatar
+  document.getElementById('profile-avatar').textContent = skin.icon;
+  // mark selected card
+  document.querySelectorAll('.char-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.id == skin.id);
+  });
+  // mark owned grid
+  document.querySelectorAll('.owned-cell').forEach(c => {
+    c.classList.toggle('active-skin', c.dataset.id == skin.id);
+  });
+  // mark home owned pills
+  document.querySelectorAll('.owned-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.id == skin.id);
+  });
+}
+
+// ── BUY SKIN ──────────────────────────────────────────────────
+function buySkin(id, btn) {
+  if (state.ownedIds.has(id)) return;
+  const skin = skins.find(s => s.id === id);
+  if (!skin) return;
+  if (state.coins < skin.price) {
+    btn.classList.add('shake');
+    btn.addEventListener('animationend', () => btn.classList.remove('shake'), { once:true });
+    showToast('Not enough coins!', 'error');
+    return;
+  }
+  setCoins(state.coins - skin.price);
+  state.ownedIds.add(id);
+  btn.className = 'btn btn-owned';
+  btn.textContent = '✓ Owned';
+  btn.onclick = null;
+  setActiveSkin(skin);
+  renderOwnedSections();
+  showToast(`${skin.name} unlocked!`, 'success');
+}
+
+// ── BUY FEATURED ─────────────────────────────────────────────
+function buyFeatured() {
+  if (featuredOwned) return;
+  if (state.coins < featured.price) {
+    const btn = document.getElementById('featured-buy-btn');
+    btn.classList.add('shake');
+    btn.addEventListener('animationend', () => btn.classList.remove('shake'), { once:true });
+    showToast('Not enough coins!', 'error');
+    return;
+  }
+  setCoins(state.coins - featured.price);
+  featuredOwned = true;
+  const btn = document.getElementById('featured-buy-btn');
+  btn.className = 'btn btn-owned btn-wide';
+  btn.innerHTML = '✓ Owned';
+  btn.onclick = null;
+  showToast('Ember Drake unlocked!', 'success');
+}
+
+// ── BUY BUNDLE ────────────────────────────────────────────────
+function buyBundle(bundleId, btn) {
+  const bundle = bundles.find(b => b.id === bundleId);
+  if (!bundle) return;
+  const allOwned = bundle.skinIds.every(id => state.ownedIds.has(id));
+  if (allOwned) return;
+  if (state.coins < bundle.price) {
+    btn.classList.add('shake');
+    btn.addEventListener('animationend', () => btn.classList.remove('shake'), { once:true });
+    showToast('Not enough coins!', 'error');
+    return;
+  }
+  setCoins(state.coins - bundle.price);
+  bundle.skinIds.forEach(id => state.ownedIds.add(id));
+  btn.className = 'btn btn-owned';
+  btn.style.width = '64px';
+  btn.style.padding = '10px 0';
+  btn.style.fontSize = '11px';
+  btn.textContent = '✓ Had';
+  btn.onclick = null;
+  renderCards();
+  renderOwnedSections();
+  showToast(`${bundle.title} unlocked!`, 'success');
+}
+
+// ── RENDER CARDS ──────────────────────────────────────────────
+function renderCards() {
+  const query  = document.getElementById('search-input').value.toLowerCase().trim();
+  const sort   = state.currentSort;
+
+  let list = skins.filter(s => {
+    if (query && !s.name.toLowerCase().includes(query)) return false;
+    if (sort === 'owned' && !state.ownedIds.has(s.id)) return false;
+    return true;
   });
 
-  // Sort chips
-  document.querySelectorAll('.sort-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-    });
+  if (sort === 'price-asc')  list.sort((a,b) => a.price - b.price);
+  if (sort === 'price-desc') list.sort((a,b) => b.price - a.price);
+
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+  document.getElementById('no-results').style.display = list.length ? 'none' : 'block';
+
+  list.forEach(skin => {
+    const owned = state.ownedIds.has(skin.id);
+    const isActive = state.activeSkin.id === skin.id;
+
+    const tagMap = { exclusive:'tag-ex', new:'tag-new', bundle:'tag-bun' };
+    const tagLabel = { exclusive:'Exclusive', new:'New', bundle:'Bundle' };
+
+    const card = document.createElement('div');
+    card.className = 'char-card' + (isActive ? ' selected' : '');
+    card.dataset.id = skin.id;
+    card.onclick = () => {
+      if (owned) { setActiveSkin(skin); showToast(`${skin.name} selected`, 'success'); }
+    };
+
+    const tagHTML = skin.tag
+      ? `<div class="card-tag ${tagMap[skin.tag]}">${tagLabel[skin.tag]}</div>` : '';
+
+    const priceRow = (!owned && skin.price > 0)
+      ? `<div class="card-price"><span>✦</span>${skin.price.toLocaleString()}</div>` : '';
+
+    let btnHTML;
+    if (owned) {
+      btnHTML = `<button class="btn btn-owned" onclick="event.stopPropagation();setActiveSkin(skins[${skin.id}]);showToast('${skin.name} selected','success')">✓ Owned</button>`;
+    } else {
+      btnHTML = `<button class="btn btn-cta" onclick="event.stopPropagation();buySkin(${skin.id},this)">BUY</button>`;
+    }
+
+    card.innerHTML = `
+      ${tagHTML}
+      <div class="char-icon">${skin.icon}</div>
+      <div>
+        <div class="char-name">${skin.name}</div>
+        <div class="char-sub">${skin.desc}</div>
+      </div>
+      ${priceRow}
+      ${btnHTML}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── RENDER BUNDLES ────────────────────────────────────────────
+function renderBundles() {
+  const list = document.getElementById('bundles-list');
+  list.innerHTML = '';
+  bundles.forEach(b => {
+    const allOwned = b.skinIds.every(id => state.ownedIds.has(id));
+    const icons = b.icons.map(i => `<div class="b-icon">${i}</div>`).join('');
+    const btnClass = allOwned ? 'btn btn-owned' : 'btn btn-cta';
+    const btnText  = allOwned ? '✓ Owned' : 'BUY';
+    const btnClick = allOwned ? '' : `onclick="buyBundle('${b.id}',this)"`;
+
+    const el = document.createElement('div');
+    el.className = 'bundle-card';
+    el.innerHTML = `
+      <div class="bundle-icons">${icons}</div>
+      <div class="bundle-info">
+        <div class="b-title">${b.title}</div>
+        <div class="b-desc">${b.desc}</div>
+        <div class="b-price-row">
+          <span style="color:var(--gold);font-weight:800;font-size:14px;">✦ ${b.price.toLocaleString()}</span>
+          <span style="color:var(--text-sec);font-size:11px;text-decoration:line-through;">${b.oldPrice.toLocaleString()}</span>
+          <div class="badge-off">${b.pct}</div>
+        </div>
+      </div>
+      <button class="${btnClass}" style="width:64px;padding:10px 0;font-size:11px;" ${btnClick}>${btnText}</button>
+    `;
+    list.appendChild(el);
+  });
+}
+
+// ── RENDER OWNED SECTIONS ─────────────────────────────────────
+function renderOwnedSections() {
+  const ownedSkins = skins.filter(s => state.ownedIds.has(s.id));
+
+  // Home owned pills
+  const row = document.getElementById('home-owned-row');
+  row.innerHTML = '';
+  ownedSkins.forEach(s => {
+    const pill = document.createElement('div');
+    pill.className = 'owned-pill' + (state.activeSkin.id === s.id ? ' active' : '');
+    pill.dataset.id = s.id;
+    pill.innerHTML = `<span class="pi">${s.icon}</span>${s.name}`;
+    pill.onclick = () => { setActiveSkin(s); showToast(`${s.name} selected`, 'success'); };
+    row.appendChild(pill);
   });
 
-  // Bottom nav
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      item.classList.add('active');
-    });
+  // Profile owned grid
+  const grid = document.getElementById('owned-grid');
+  grid.innerHTML = '';
+  ownedSkins.forEach(s => {
+    const cell = document.createElement('div');
+    cell.className = 'owned-cell' + (state.activeSkin.id === s.id ? ' active-skin' : '');
+    cell.dataset.id = s.id;
+    cell.textContent = s.icon;
+    cell.title = s.name;
+    cell.onclick = () => { setActiveSkin(s); showToast(`${s.name} selected`, 'success'); };
+    grid.appendChild(cell);
   });
 
-  // Clicking a card sets it as active skin in play bar
-  const playThumb = document.querySelector('.play-bar .char-thumb');
-  const activeCharName = document.querySelector('.active-char');
-  document.querySelectorAll('.char-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const icon = card.querySelector('.char-icon').textContent.trim();
-      const name = card.querySelector('.char-name').textContent.trim();
-      playThumb.textContent = icon;
-      activeCharName.textContent = name;
-    });
-  });
+  // Profile skin count
+  document.getElementById('profile-skins-count').textContent = ownedSkins.length;
+}
 
-  // Live countdown timer
-  let total = 6 * 3600 + 42 * 60 + 18;
-  const timerEl = document.querySelector('.timer-chip');
-  setInterval(() => {
-    if (total <= 0) return;
-    total--;
-    const h = String(Math.floor(total / 3600)).padStart(2, '0');
-    const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
-    const s = String(total % 60).padStart(2, '0');
-    timerEl.innerHTML = `<div class="timer-dot"></div> Limited offer ends in ${h}:${m}:${s}`;
-  }, 1000);
+// ── TAB FILTER ────────────────────────────────────────────────
+function applyTabFilter(filter) {
+  state.currentFilter = filter;
+  const sections = ['limited', 'skins', 'bundles'];
+  sections.forEach(sec => {
+    const el   = document.getElementById(sec + '-section');
+    const divEl = document.getElementById('divider-' + sec);
+    const show = filter === 'all' || filter === sec;
+    if (el)    el.style.display = show ? '' : 'none';
+    if (divEl) divEl.style.display = show ? '' : 'none';
+  });
+  if (filter !== 'bundles') renderCards();
+}
+
+// ── NAV ───────────────────────────────────────────────────────
+function goToPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === pageId);
+  });
+  // update shop nav dot
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const dot = n.querySelector('.nav-dot');
+    if (dot) dot.remove();
+  });
+  const shopNav = document.querySelector('[data-page="shop"]');
+  if (pageId === 'shop' && shopNav) {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    shopNav.appendChild(dot);
+  }
+}
+
+function goHome() {
+  goToPage('home');
+}
+function handlePlay() {
+  showToast('Starting game…', 'success');
+}
+
+// ── TIMER ─────────────────────────────────────────────────────
+let timerSec = 6 * 3600 + 42 * 60 + 18;
+setInterval(() => {
+  if (timerSec <= 0) return;
+  timerSec--;
+  const h = String(Math.floor(timerSec / 3600)).padStart(2,'0');
+  const m = String(Math.floor((timerSec % 3600) / 60)).padStart(2,'0');
+  const s = String(timerSec % 60).padStart(2,'0');
+  const el = document.getElementById('timer-el');
+  if (el) el.innerHTML = `<div class="timer-dot"></div> Limited offer ends in ${h}:${m}:${s}`;
+}, 1000);
+
+// ── WIRE UP EVENTS ────────────────────────────────────────────
+document.querySelectorAll('[data-page]').forEach(item => {
+  item.addEventListener('click', () => goToPage(item.dataset.page));
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    applyTabFilter(tab.dataset.filter);
+  });
+});
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.currentSort = chip.dataset.sort;
+    renderCards();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', renderCards);
+
+// ── INIT ──────────────────────────────────────────────────────
+renderCards();
+renderBundles();
+renderOwnedSections();
+setActiveSkin(state.activeSkin);
+
+// Add shop nav dot on load (shop is not active)
+const shopNav = document.querySelector('[data-page="shop"]');
+if (shopNav) {
+  const dot = document.createElement('div');
+  dot.className = 'nav-dot';
+  shopNav.appendChild(dot);
+}
 </script>
 </body>
 </html>
