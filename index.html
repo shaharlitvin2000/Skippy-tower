@@ -1320,6 +1320,8 @@ await Promise.race([
             }
         }
         let prevBestOnDeath = 0; // stored for record screen display
+        let deathScreenshotUrl = null;
+        let _deathScreenshotImg = null;
         function clearAllEffects() {
             mushroomBadTimer = 0; mushroomHue = 0; mushroomHueTarget = 0; mushroomHueChangeTimer = 0; mushroomSpin = 0;
             drunkTimer = 0; drunkPhase = 0;
@@ -1364,6 +1366,9 @@ await Promise.race([
             }
             // Show DEAD screen only for new record in infinite mode
             if (currentMode !== 'level' && lastRunHigh > prevBestOnDeath) {
+                deathScreenshotUrl = canvas.toDataURL('image/png');
+                _deathScreenshotImg = new Image();
+                _deathScreenshotImg.src = deathScreenshotUrl;
                 state = STATE.DEAD; deathScreenTime = Date.now();
             } else {
                 _syncTheme(); initWorld(); state = STATE.PLAY; // silent restart
@@ -3996,7 +4001,8 @@ await Promise.race([
         // ─────────────────────────────────────────────
         class MagicBook {
             constructor() {
-                this.x = BASE_W / 2 - 20; this.y = TOWER_TOP - 40;
+                this.x = BASE_W / 2 - 20;
+                this.y = currentMode === 'infinite' ? -9999999 : TOWER_TOP - 40;
                 this.w = 40; this.h = 50; this.bob = 0; this.glow = 0;
             }
             update() { this.bob += 0.04; this.glow += 0.07; }
@@ -4691,7 +4697,7 @@ await Promise.race([
                 }
             } else {
                 finishPlatRef = null;
-                platforms.push(...generatePlatforms(startPlat.y - 140, TOWER_TOP - 200, startPlat));
+                platforms.push(...generatePlatforms(startPlat.y - 140, -100000, startPlat));
             }
             for (const plat of platforms) {
                 if (plat !== startPlat && startPlat.y - plat.y < 180) {
@@ -10345,7 +10351,7 @@ function _drawMpHostEndBtn() {
             const barX = BASE_W - 10;
             const barTop = 80, barBot = BASE_H - 80;
             const barH = barBot - barTop;
-            const maxH = Math.max(50, Math.floor((BASE_H - 120 - TOWER_TOP) / 10));
+            const maxH = currentMode === 'infinite' ? 9999 : Math.max(50, Math.floor((BASE_H - 120 - TOWER_TOP) / 10));
             ctx.save();
 
             // Bar track
@@ -12514,15 +12520,43 @@ function _drawMpHostEndBtn() {
             ctx.textBaseline = 'alphabetic';
         }
 
+        async function shareDeathScreenshot() {
+            if (!deathScreenshotUrl) return;
+            const heightLabel = lastRunHigh + 'm';
+            const fileName = 'skippy_' + heightLabel + '.png';
+            try {
+                const res = await fetch(deathScreenshotUrl);
+                const blob = await res.blob();
+                const file = new File([blob], fileName, { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'Skippy – New Record!', text: 'I just set a new record of ' + heightLabel + ' in Skippy!' });
+                    return;
+                }
+            } catch (e) { /* share cancelled or unavailable, fall through to download */ }
+            // Fallback: trigger download
+            const a = document.createElement('a');
+            a.href = deathScreenshotUrl;
+            a.download = fileName;
+            a.click();
+        }
+
         function drawDead() {
             // This screen only shows on a NEW RECORD — full celebration
             ctx.save();
             const t = Date.now() / 1000;
             const cx2 = BASE_W / 2;
 
-            // Background — blue-purple celebration
-            ctx.fillStyle = '#06001a';
-            ctx.fillRect(0, 0, BASE_W, BASE_H);
+            // Background — screenshot dimmed if available, else solid
+            if (_deathScreenshotImg && _deathScreenshotImg.complete) {
+                ctx.save();
+                ctx.drawImage(_deathScreenshotImg, 0, 0, BASE_W, BASE_H);
+                ctx.fillStyle = 'rgba(0,0,0,0.72)';
+                ctx.fillRect(0, 0, BASE_W, BASE_H);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#06001a';
+                ctx.fillRect(0, 0, BASE_W, BASE_H);
+            }
             const deadBg = ctx.createRadialGradient(cx2, BASE_H/2, 10, cx2, BASE_H/2, 360);
             deadBg.addColorStop(0, `rgba(80,50,220,${0.22 + 0.1*Math.sin(t*1.4)})`);
             deadBg.addColorStop(0.5, `rgba(100,0,180,0.12)`);
@@ -12553,7 +12587,7 @@ function _drawMpHostEndBtn() {
             }
 
             // Panel
-            const panelW = 470, panelH = 430;
+            const panelW = 470, panelH = deathScreenshotUrl ? 508 : 430;
             const panelX = cx2 - panelW/2, panelY = 120;
             const panBg = ctx.createLinearGradient(panelX, panelY, panelX, panelY+panelH);
             panBg.addColorStop(0, 'rgba(8,10,40,0.97)'); panBg.addColorStop(1, 'rgba(4,4,22,0.97)');
@@ -12641,12 +12675,34 @@ function _drawMpHostEndBtn() {
             ctx.fillText('▶ PLAY AGAIN', cx2, newY + btnH/2);
             ctx.shadowBlur = 0;
 
-            const exitY = newY + btnH + 12;
+            let exitY = newY + btnH + 12;
+
+            if (deathScreenshotUrl) {
+                // SHARE button
+                const shareY = exitY;
+                const shareGlow = 0.5 + Math.sin(t * 2.8) * 0.5;
+                ctx.save(); ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 14 * shareGlow;
+                ctx.fillStyle = 'rgba(0,30,24,0.92)';
+                ctx.beginPath(); ctx.roundRect(btnX, shareY, btnW, btnH, 16); ctx.fill();
+                ctx.strokeStyle = `rgba(0,220,160,${0.6 + shareGlow * 0.4})`; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.roundRect(btnX, shareY, btnW, btnH, 16); ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                ctx.beginPath(); ctx.roundRect(btnX+5, shareY+5, btnW-10, btnH/2-5, [11,11,0,0]); ctx.fill();
+                ctx.fillStyle = '#88ffdd'; ctx.font = 'bold 20px monospace';
+                ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 10;
+                ctx.textBaseline = 'middle';
+                ctx.fillText('📤 SHARE SCREENSHOT', cx2, shareY + btnH/2);
+                ctx.shadowBlur = 0;
+                exitY = shareY + btnH + 12;
+            }
+
             ctx.fillStyle = 'rgba(20,0,40,0.85)';
             ctx.beginPath(); ctx.roundRect(btnX, exitY, btnW, btnH, 16); ctx.fill();
             ctx.strokeStyle = 'rgba(180,100,255,0.5)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX, exitY, btnW, btnH, 16); ctx.stroke();
             ctx.fillStyle = 'rgba(200,160,255,0.9)'; ctx.font = 'bold 20px monospace';
+            ctx.textBaseline = 'middle';
             ctx.fillText('MAIN MENU', cx2, exitY + btnH/2);
 
             ctx.restore();
@@ -13579,11 +13635,18 @@ function menuAction(sx, sy) {
                 const btnW = 218, btnH = 54, btnX = BASE_W/2 - btnW/2;
                 const newY = panelY + 248;
                 if (sy >= newY && sy <= newY + btnH && sx >= btnX && sx <= btnX + btnW) {
-                    SFX.play('click'); _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
+                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                 }
-                const exitY = newY + btnH + 12;
+                let exitY = newY + btnH + 12;
+                if (deathScreenshotUrl) {
+                    const shareY = exitY;
+                    if (sy >= shareY && sy <= shareY + btnH && sx >= btnX && sx <= btnX + btnW) {
+                        SFX.play('click'); shareDeathScreenshot(); return;
+                    }
+                    exitY = shareY + btnH + 12;
+                }
                 if (sy >= exitY && sy <= exitY + btnH && sx >= btnX && sx <= btnX + btnW) {
-                    SFX.play('click'); state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
+                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
                 }
                 return;
             }
@@ -13865,7 +13928,7 @@ function gameUpdate() {
 
                 if (!mirrorDimActive) updateCamera();
                 if (player.y < highestY) highestY = player.y;
-                const _maxH = Math.floor((BASE_H - 120 - TOWER_TOP) / 10);
+                const _maxH = currentMode === 'infinite' ? 9999 : Math.floor((BASE_H - 120 - TOWER_TOP) / 10);
                 lastRunHigh = Math.min(Math.max(lastRunHigh, Math.floor((BASE_H - 120 - highestY) / 10)), _maxH);
 
                 // ── FESTIVAL WIND ──
