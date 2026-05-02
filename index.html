@@ -410,148 +410,131 @@
     })();
     </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * { margin:0; padding:0; box-sizing:border-box; }
 
-        html, body {
-            width: 100%;
-            height: 100%;
-            background: #000;
-            overflow: hidden;
-            touch-action: none;
-            font-family: 'Courier New', monospace;
-        }
+    html, body {
+        width:100%; height:100%;
+        background:#06080F;
+        overflow:hidden;
+        touch-action:none;
+        font-family:'Orbitron','Courier New',monospace;
+    }
 
-        canvas {
-            display: block;
-            margin: 0 auto;
-            image-rendering: pixelated;
-        }
+    canvas { display:block; margin:0 auto; image-rendering:pixelated; }
 
-        /* ── AUTH OVERLAY ── */
-        #authOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(ellipse at center, #0a1a2e 0%, #000810 100%);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Courier New', monospace;
-        }
-        #authOverlay.visible { display: flex; }
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:#0C0E1A; }
+    ::-webkit-scrollbar-thumb { background:#2A4A88; border-radius:4px; }
 
-        #authBox {
-            background: linear-gradient(160deg, #0d1f3c 0%, #060e1a 100%);
-            border: 2px solid #1a6aaa;
-            border-radius: 18px;
-            padding: 32px 28px 28px;
-            width: 340px;
-            max-width: 95vw;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 0 40px rgba(60,160,255,0.25), 0 0 80px rgba(0,80,180,0.15);
-            scrollbar-width: thin;
-            scrollbar-color: #1a6aaa #060e1a;
-        }
+    /* ── AUTH OVERLAY ── */
+    #authOverlay {
+        display:none; position:fixed; inset:0;
+        background:radial-gradient(ellipse at 40% 40%, #0D1A38 0%, #06080F 70%);
+        z-index:9999; align-items:center; justify-content:center;
+        font-family:'Orbitron','Courier New',monospace;
+    }
+    #authOverlay.visible { display:flex; }
 
-        #authBox h1 {
-            text-align: center;
-            font-size: 22px;
-            color: #55ccff;
-            text-shadow: 0 0 12px rgba(85,204,255,0.7);
-            margin-bottom: 6px;
-            letter-spacing: 3px;
-        }
-        #authBox h2 {
-            text-align: center;
-            font-size: 14px;
-            color: #4488aa;
-            margin-bottom: 22px;
-            letter-spacing: 1px;
-        }
-        #authBox label {
-            display: block;
-            color: #7abfdd;
-            font-size: 11px;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-            margin-top: 14px;
-            text-transform: uppercase;
-        }
-        #authBox input {
-            width: 100%;
-            background: rgba(10,30,55,0.8);
-            border: 1px solid #1a4a7a;
-            border-radius: 8px;
-            color: #c8e8ff;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            padding: 9px 12px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        #authBox input:focus { border-color: #55aaff; box-shadow: 0 0 8px rgba(85,170,255,0.3); }
-        #authBox input.error { border-color: #ff4444; }
+    #authBox {
+        background:linear-gradient(160deg, #0F1828 0%, #0C0E1A 100%);
+        border:1.5px solid #2A4A88;
+        border-radius:20px;
+        padding:36px 30px 30px;
+        width:350px; max-width:95vw; max-height:90vh;
+        overflow-y:auto;
+        box-shadow:0 0 60px rgba(77,143,255,0.2), 0 0 120px rgba(77,143,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+        scrollbar-width:thin; scrollbar-color:#2A4A88 #0C0E1A;
+    }
 
-        #authError {
-            color: #ff6666;
-            font-size: 12px;
-            text-align: center;
-            margin-top: 12px;
-            min-height: 18px;
-            letter-spacing: 0.5px;
-        }
+    #authBox h1 {
+        text-align:center; font-size:20px;
+        background:linear-gradient(135deg, #7AB2FF, #00D4FF);
+        -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+        background-clip:text;
+        text-shadow:none;
+        margin-bottom:6px; letter-spacing:4px;
+        filter:drop-shadow(0 0 12px rgba(0,212,255,0.5));
+    }
+    #authBox h2 {
+        text-align:center; font-size:12px; color:#3A5272;
+        margin-bottom:24px; letter-spacing:2px; text-transform:uppercase;
+    }
+    #authBox label {
+        display:block; color:#4D8FFF; font-size:10px;
+        letter-spacing:2px; margin-bottom:5px; margin-top:16px;
+        text-transform:uppercase;
+    }
+    #authBox input {
+        width:100%;
+        background:rgba(6,8,15,0.8);
+        border:1.5px solid #1A2E50;
+        border-radius:10px;
+        color:#EEF4FF;
+        font-family:'Orbitron','Courier New',monospace;
+        font-size:13px; padding:10px 14px; outline:none;
+        transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    #authBox input:focus {
+        border-color:#4D8FFF;
+        box-shadow:0 0 0 3px rgba(77,143,255,0.15), 0 0 16px rgba(77,143,255,0.2);
+    }
+    #authBox input.error { border-color:#FF4560; box-shadow:0 0 0 3px rgba(255,69,96,0.15); }
+    #authBox input::placeholder { color:#3A5272; }
 
-        .authBtn {
-            width: 100%;
-            margin-top: 20px;
-            padding: 12px;
-            background: linear-gradient(135deg, #1a5fa0, #0d3a6e);
-            border: 1px solid #3a9adc;
-            border-radius: 10px;
-            color: #aadeff;
-            font-family: 'Courier New', monospace;
-            font-size: 15px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .authBtn:hover { background: linear-gradient(135deg, #2275c0, #1a4f8a); box-shadow: 0 0 16px rgba(60,160,255,0.4); color: #fff; }
+    #authError, #authError2, #authErrorUsername {
+        color:#FF4560; font-size:11px; text-align:center;
+        margin-top:10px; min-height:18px; letter-spacing:0.5px;
+    }
 
-        .authSwitch {
-            text-align: center;
-            margin-top: 18px;
-            font-size: 12px;
-            color: #4a7a99;
-        }
-        .authSwitch span {
-            color: #55aaff;
-            cursor: pointer;
-            text-decoration: underline;
-        }
-        .authSwitch span:hover { color: #88ccff; }
+    .authBtn {
+        width:100%; margin-top:22px; padding:13px;
+        background:linear-gradient(135deg, #1E3A7A 0%, #0F1D4A 100%);
+        border:1.5px solid #4D8FFF;
+        border-radius:12px;
+        color:#7AB2FF;
+        font-family:'Orbitron','Courier New',monospace;
+        font-size:13px; font-weight:bold; letter-spacing:3px;
+        cursor:pointer; transition:all 0.2s;
+        box-shadow:0 0 20px rgba(77,143,255,0.15);
+        text-transform:uppercase;
+    }
+    .authBtn:hover {
+        background:linear-gradient(135deg, #2A4A9A 0%, #162060 100%);
+        box-shadow:0 0 30px rgba(77,143,255,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+        color:#EEF4FF; border-color:#7AB2FF;
+        transform:translateY(-1px);
+    }
+    .authBtn:active { transform:translateY(0); }
 
-        .authDivider {
-            border: none;
-            border-top: 1px solid #1a3a5a;
-            margin: 20px 0 6px;
-        }
-    </style>
+    .authSwitch {
+        text-align:center; margin-top:20px;
+        font-size:11px; color:#3A5272; letter-spacing:0.5px;
+    }
+    .authSwitch span {
+        color:#4D8FFF; cursor:pointer;
+        text-decoration:none; border-bottom:1px solid rgba(77,143,255,0.4);
+        padding-bottom:1px; transition:color 0.2s, border-color 0.2s;
+    }
+    .authSwitch span:hover { color:#7AB2FF; border-color:#7AB2FF; }
+
+    .authDivider {
+        border:none; border-top:1px solid #1A2E50; margin:22px 0 8px;
+    }
+</style>
 </head>
 <body>
-<div id="loadingScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Courier New',monospace;">
-  <div style="text-align:center;">
-    <div style="font-size:48px;margin-bottom:10px;color:#aabbff;text-shadow:0 0 24px #6688ff,0 0 48px #4466ff;">❄</div>
-    <div style="font-size:28px;font-weight:bold;color:#00cfff;letter-spacing:6px;text-shadow:0 0 20px #00cfff;margin-bottom:6px;">SKIPPY TOWER</div>
-    <div style="font-size:12px;color:#4488aa;letter-spacing:3px;margin-bottom:40px;">LOADING...</div>
-    <div style="width:220px;height:6px;background:#111133;border-radius:3px;overflow:hidden;margin:0 auto;">
-      <div id="loadingBar" style="width:0%;height:100%;background:linear-gradient(90deg,#0066ff,#00cfff);border-radius:3px;box-shadow:0 0 10px #00cfff;"></div>
+<div id="loadingScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#06080F;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Orbitron','Courier New',monospace;">
+  <div style="text-align:center;position:relative;">
+    <div style="width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(77,143,255,0.15) 0%,transparent 70%);border:2px solid rgba(77,143,255,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 40px rgba(77,143,255,0.2),0 0 80px rgba(77,143,255,0.08);">
+      <div style="font-size:42px;filter:drop-shadow(0 0 16px rgba(0,212,255,0.8));">❄</div>
     </div>
+    <div style="font-size:24px;font-weight:900;letter-spacing:8px;margin-bottom:8px;background:linear-gradient(135deg,#7AB2FF,#00D4FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px rgba(0,212,255,0.4));">SKIPPY TOWER</div>
+    <div style="font-size:10px;color:#3A5272;letter-spacing:5px;margin-bottom:48px;text-transform:uppercase;">INITIALIZING</div>
+    <div style="width:240px;height:3px;background:rgba(26,46,80,0.8);border-radius:3px;overflow:hidden;margin:0 auto 12px;">
+      <div id="loadingBar" style="width:0%;height:100%;background:linear-gradient(90deg,#4D8FFF,#00D4FF);border-radius:3px;box-shadow:0 0 12px #00D4FF;transition:width 0.1s;"></div>
+    </div>
+    <div style="font-size:9px;color:#1A2E50;letter-spacing:3px;">LOADING ASSETS</div>
   </div>
 </div>
 <script>
@@ -579,24 +562,26 @@
 
     <!-- USER TAG + LOGOUT -->
     <div id="userTag" style="display:none; position:fixed; top:10px; left:10px; z-index:1000; align-items:center; gap:6px; pointer-events:auto;">
-        <div style="background:rgba(30,0,55,0.88); border:1.5px solid rgba(180,80,255,0.6); border-radius:20px; padding:5px 13px; font-family:'Orbitron','Courier New',monospace; font-size:12px; color:#dd88ff; text-shadow:0 0 8px rgba(200,80,255,0.6); white-space:nowrap; box-shadow:0 0 12px rgba(160,40,255,0.25);">
+        <div style="background:rgba(15,24,40,0.92);border:1.5px solid rgba(77,143,255,0.4);border-radius:22px;padding:6px 14px;font-family:'Orbitron','Courier New',monospace;font-size:11px;color:#7AB2FF;white-space:nowrap;box-shadow:0 0 16px rgba(77,143,255,0.15),inset 0 1px 0 rgba(255,255,255,0.05);">
             👤 <span id="userTagName"></span>
         </div>
-        <div id="offlineBadge" style="display:none; background:rgba(60,0,0,0.88); border:1.5px solid rgba(255,80,80,0.6); border-radius:20px; padding:5px 11px; font-family:'Orbitron','Courier New',monospace; font-size:10px; color:#ff7777; white-space:nowrap; letter-spacing:1px;">
+        <div id="offlineBadge" style="display:none;background:rgba(15,8,8,0.92);border:1.5px solid rgba(255,69,96,0.5);border-radius:22px;padding:6px 12px;font-family:'Orbitron','Courier New',monospace;font-size:10px;color:#FF4560;white-space:nowrap;letter-spacing:1px;box-shadow:0 0 12px rgba(255,69,96,0.15);">
             ✕ OFFLINE
         </div>
-        <button id="logoutBtn" style="background:rgba(40,0,20,0.88); border:1.5px solid rgba(255,80,80,0.5); border-radius:20px; padding:5px 12px; font-family:'Orbitron','Courier New',monospace; font-size:10px; color:#ff8888; cursor:pointer; letter-spacing:1px; white-space:nowrap; box-shadow:0 0 8px rgba(255,60,60,0.2);">
+        <button id="logoutBtn" style="background:rgba(15,8,8,0.88);border:1.5px solid rgba(255,69,96,0.3);border-radius:22px;padding:6px 12px;font-family:'Orbitron','Courier New',monospace;font-size:10px;color:#FF4560;cursor:pointer;letter-spacing:1px;white-space:nowrap;box-shadow:0 0 8px rgba(255,69,96,0.1);transition:all 0.2s;">
             ✕ LOGOUT
         </button>
     </div>
 
     <!-- LOGOUT CONFIRM POPUP -->
-    <div id="logoutConfirm" style="display:none; position:fixed; inset:0; z-index:9998; align-items:center; justify-content:center; background:rgba(0,0,0,0.6);" onclick="if(event.target===this)this.style.display='none';">
-        <div style="background:linear-gradient(160deg,#0d1f3c,#060e1a); border:2px solid #1a4a7a; border-radius:16px; padding:28px 32px; font-family:'Courier New',monospace; text-align:center; box-shadow:0 0 40px rgba(0,80,180,0.3);">
-            <div style="color:#aaddff; font-size:16px; margin-bottom:20px; letter-spacing:1px;">Are you sure you want to log out?</div>
-            <div style="display:flex; gap:12px; justify-content:center;">
-                <button id="logoutConfirmYes" style="background:linear-gradient(135deg,#6a1a1a,#3a0a0a); border:1px solid #aa3333; border-radius:10px; padding:10px 24px; font-family:'Courier New',monospace; font-size:13px; color:#ff8888; cursor:pointer; letter-spacing:1px;">YES, LOG OUT</button>
-                <button id="logoutConfirmNo"  style="background:linear-gradient(135deg,#1a3a6a,#0d1f3c); border:1px solid #3a7aaa; border-radius:10px; padding:10px 24px; font-family:'Courier New',monospace; font-size:13px; color:#88ccff; cursor:pointer; letter-spacing:1px;">CANCEL</button>
+    <div id="logoutConfirm" style="display:none;position:fixed;inset:0;z-index:9998;align-items:center;justify-content:center;background:rgba(6,8,15,0.85);backdrop-filter:blur(4px);" onclick="if(event.target===this)this.style.display='none';">
+        <div style="background:linear-gradient(160deg,#0F1828,#0C0E1A);border:1.5px solid #2A4A88;border-radius:20px;padding:32px 36px;font-family:'Orbitron','Courier New',monospace;text-align:center;box-shadow:0 0 60px rgba(77,143,255,0.2),0 0 120px rgba(77,143,255,0.06);max-width:320px;">
+            <div style="font-size:28px;margin-bottom:16px;filter:drop-shadow(0 0 12px rgba(255,69,96,0.5));">⚠</div>
+            <div style="color:#EEF4FF;font-size:13px;margin-bottom:8px;letter-spacing:2px;">LOG OUT?</div>
+            <div style="color:#3A5272;font-size:11px;margin-bottom:28px;letter-spacing:1px;line-height:1.5;">Your progress is saved automatically.</div>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="logoutConfirmYes" style="background:linear-gradient(135deg,#3A0A0A,#1A0505);border:1.5px solid #FF4560;border-radius:12px;padding:11px 24px;font-family:'Orbitron','Courier New',monospace;font-size:11px;color:#FF4560;cursor:pointer;letter-spacing:2px;transition:all 0.2s;box-shadow:0 0 16px rgba(255,69,96,0.15);">YES</button>
+                <button id="logoutConfirmNo" style="background:linear-gradient(135deg,#0F1828,#0C0E1A);border:1.5px solid #4D8FFF;border-radius:12px;padding:11px 24px;font-family:'Orbitron','Courier New',monospace;font-size:11px;color:#7AB2FF;cursor:pointer;letter-spacing:2px;transition:all 0.2s;box-shadow:0 0 16px rgba(77,143,255,0.15);">CANCEL</button>
             </div>
         </div>
     </div>
@@ -611,7 +596,7 @@
             <div id="signupFields">
                 <label>Username</label>
                 <input id="suUsername" type="text" maxlength="20" autocomplete="username" placeholder="Choose a username">
-                <div id="authErrorUsername" style="color:#ff6666;font-size:12px;min-height:16px;margin-top:4px;letter-spacing:0.5px;"></div>
+                <div id="authErrorUsername"></div>
                 <label>Password</label>
                 <input id="suPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters">
                 <label>Confirm Password</label>
@@ -11750,12 +11735,12 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
 
-            // ── BACKGROUND — vibrant deep purple ──
+            // ── BACKGROUND — deep indigo-purple ──
             const grad = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            grad.addColorStop(0,   '#1a0040');
-            grad.addColorStop(0.4, '#25006a');
-            grad.addColorStop(0.7, '#1a0050');
-            grad.addColorStop(1,   '#0e0028');
+            grad.addColorStop(0,   '#0a0030');
+            grad.addColorStop(0.35, '#180060');
+            grad.addColorStop(0.65, '#100048');
+            grad.addColorStop(1,   '#060018');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
@@ -11782,7 +11767,7 @@ function _drawMpHostEndBtn() {
                 ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
                 if (s.r > 1.4 && twinkle > 0.78) {
                     ctx.globalAlpha = twinkle * 0.45;
-                    ctx.strokeStyle = '#ffaaff'; ctx.lineWidth = 0.7;
+                    ctx.strokeStyle = '#aaccff'; ctx.lineWidth = 0.7;
                     ctx.beginPath();
                     ctx.moveTo(s.x - s.r * 2.8, s.y); ctx.lineTo(s.x + s.r * 2.8, s.y);
                     ctx.moveTo(s.x, s.y - s.r * 2.8); ctx.lineTo(s.x, s.y + s.r * 2.8);
@@ -11797,7 +11782,7 @@ function _drawMpHostEndBtn() {
 
             // Outer mega glow
             const titleGlowG = ctx.createRadialGradient(cx, 68, 0, cx, 68, 200);
-            titleGlowG.addColorStop(0, `rgba(200,80,255,${0.28 * pulse})`);
+            titleGlowG.addColorStop(0, `rgba(80,120,255,${0.38 * pulse})`);
             titleGlowG.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = titleGlowG; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
@@ -11843,7 +11828,7 @@ function _drawMpHostEndBtn() {
 
             // Subtitle
             ctx.font = 'bold 12px monospace';
-            ctx.fillStyle = 'rgba(220,180,255,0.8)';
+            ctx.fillStyle = 'rgba(180,210,255,0.85)';
             ctx.fillText('Reach the Magic Book at the top!', cx, 100);
 
             // Blue-purple separator
@@ -11867,8 +11852,8 @@ function _drawMpHostEndBtn() {
             // Hero card background
             const cardX = cx - 160, cardY = 125, cardW = 320, cardH = 300;
             const cardBg = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
-            cardBg.addColorStop(0, 'rgba(60,0,100,0.45)');
-            cardBg.addColorStop(1, 'rgba(30,0,60,0.45)');
+            cardBg.addColorStop(0, 'rgba(20,15,80,0.55)');
+            cardBg.addColorStop(1, 'rgba(10,5,50,0.55)');
             ctx.fillStyle = cardBg;
             ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 22); ctx.fill();
             // Card border — animated blue-purple shimmer
@@ -11966,41 +11951,41 @@ function _drawMpHostEndBtn() {
             // ▶ PLAY — blue-purple, pulsing
             const btnGlow = 0.55 + Math.sin(t * 3.2) * 0.45;
             ctx.save();
-            ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 28 * btnGlow;
+            ctx.shadowColor = '#4d8fff'; ctx.shadowBlur = 40 * btnGlow;
             const playBg = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
-            playBg.addColorStop(0, '#2233aa');
-            playBg.addColorStop(0.45, '#1a2480');
-            playBg.addColorStop(1, '#0e1450');
+            playBg.addColorStop(0, '#2a44cc');
+            playBg.addColorStop(0.4, '#1e30a0');
+            playBg.addColorStop(1, '#10195e');
             ctx.fillStyle = playBg;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 20); ctx.fill();
-            ctx.strokeStyle = `rgba(100,150,255,${0.7 + btnGlow * 0.3})`; ctx.lineWidth = 3;
+            ctx.strokeStyle = `rgba(120,170,255,${0.8 + btnGlow * 0.2})`; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 20); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.10)';
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
             ctx.beginPath(); ctx.roundRect(btnX + 8, btnY + 6, btnW - 16, btnH / 2 - 4, [14,14,0,0]); ctx.fill();
             ctx.font = '700 30px Orbitron, monospace';
-            ctx.fillStyle = '#aabbff';
+            ctx.fillStyle = '#c0d4ff';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 16;
+            ctx.shadowColor = '#4d8fff'; ctx.shadowBlur = 20;
             ctx.fillText('▶  PLAY', cx, btnY + btnH / 2);
             ctx.shadowBlur = 0;
 
             // 🌐 PLAY ONLINE
             const onlineY = btnY + btnH + 8, onlineH = 52;
             const onlineBg = ctx.createLinearGradient(btnX, onlineY, btnX, onlineY + onlineH);
-            onlineBg.addColorStop(0, '#280055'); onlineBg.addColorStop(1, '#160030');
+            onlineBg.addColorStop(0, '#0a1e40'); onlineBg.addColorStop(1, '#060f28');
             ctx.fillStyle = onlineBg;
             ctx.beginPath(); ctx.roundRect(btnX, onlineY, btnW, onlineH, 16); ctx.fill();
             ctx.save();
-            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 12;
-            ctx.strokeStyle = 'rgba(200,80,255,0.9)'; ctx.lineWidth = 2.2;
+            ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 14;
+            ctx.strokeStyle = 'rgba(0,200,255,0.85)'; ctx.lineWidth = 2.2;
             ctx.beginPath(); ctx.roundRect(btnX, onlineY, btnW, onlineH, 16); ctx.stroke();
             ctx.restore();
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
             ctx.beginPath(); ctx.roundRect(btnX + 5, onlineY + 5, btnW - 10, onlineH / 2 - 5, [11,11,0,0]); ctx.fill();
-            ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#ee88ff';
+            ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#66ddff';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 12;
             ctx.fillText('🌐  PLAY ONLINE', cx, onlineY + onlineH / 2);
             ctx.shadowBlur = 0;
 
@@ -12009,16 +11994,16 @@ function _drawMpHostEndBtn() {
             const leftX = cx - sideW - sideGap / 2, rightX = cx + sideGap / 2;
 
             // LOCKER
-            ctx.fillStyle = 'rgba(40,0,70,0.9)';
+            ctx.fillStyle = 'rgba(20,10,55,0.9)';
             ctx.beginPath(); ctx.roundRect(leftX, sideY, sideW, sideH, 15); ctx.fill();
-            ctx.save(); ctx.shadowColor = '#dd66ff'; ctx.shadowBlur = 10;
-            ctx.strokeStyle = 'rgba(200,80,255,0.75)'; ctx.lineWidth = 2;
+            ctx.save(); ctx.shadowColor = '#8866ff'; ctx.shadowBlur = 10;
+            ctx.strokeStyle = 'rgba(140,100,255,0.8)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(leftX, sideY, sideW, sideH, 15); ctx.stroke();
             ctx.restore();
             ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.beginPath(); ctx.roundRect(leftX + 4, sideY + 4, sideW - 8, sideH / 2 - 4, [11,11,0,0]); ctx.fill();
-            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#ee88ff';
-            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 6;
+            ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#bb99ff';
+            ctx.shadowColor = '#8855ff'; ctx.shadowBlur = 6;
             ctx.fillText('🔓 LOCKER', leftX + sideW / 2, sideY + sideH / 2);
             ctx.shadowBlur = 0;
 
@@ -12039,16 +12024,16 @@ function _drawMpHostEndBtn() {
             // ── FOOTER ──
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.font = '10px monospace';
-            ctx.fillStyle = 'rgba(180,140,220,0.3)';
+            ctx.fillStyle = 'rgba(140,180,255,0.3)';
             ctx.fillText('GAMES CONTROL  •  v1.0  •  © 2025', cx, BASE_H - 16);
 
             // ── SETTINGS GEAR — bottom left ──
             const gearS = 46, gearX = 12, gearY2 = BASE_H - gearS - 10;
-            ctx.fillStyle = 'rgba(120,0,180,0.35)';
+            ctx.fillStyle = 'rgba(20,30,80,0.5)';
             ctx.beginPath(); ctx.roundRect(gearX, gearY2, gearS, gearS, 12); ctx.fill();
-            ctx.strokeStyle = 'rgba(200,100,255,0.5)'; ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(100,140,255,0.5)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.roundRect(gearX, gearY2, gearS, gearS, 12); ctx.stroke();
-            ctx.font = '24px sans-serif'; ctx.fillStyle = 'rgba(220,160,255,0.9)';
+            ctx.font = '24px sans-serif'; ctx.fillStyle = 'rgba(160,200,255,0.9)';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('⚙', gearX + gearS / 2, gearY2 + gearS / 2);
 
@@ -12104,9 +12089,9 @@ function _drawMpHostEndBtn() {
             ctx.fillStyle = 'rgba(4,0,12,0.97)';
             ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Ambient purple glow behind panel area
+            // Ambient blue glow behind panel area
             const aG = ctx.createRadialGradient(cx, 320, 0, cx, 320, 200);
-            aG.addColorStop(0, 'rgba(120,50,255,0.18)'); aG.addColorStop(1, 'transparent');
+            aG.addColorStop(0, 'rgba(60,80,255,0.22)'); aG.addColorStop(1, 'transparent');
             ctx.fillStyle = aG; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
             // "PAUSED" title with blue-purple gradient
@@ -12183,11 +12168,11 @@ function _drawMpHostEndBtn() {
             } else {
                 const mainY = tutorialMode ? 322 : 392;
                 const mainH = 46;
-                ctx.fillStyle = 'rgba(18,5,40,0.85)';
+                ctx.fillStyle = 'rgba(10,15,45,0.85)';
                 ctx.beginPath(); ctx.roundRect(btnX, mainY, btnW, mainH, 10); ctx.fill();
-                ctx.strokeStyle = 'rgba(160,100,255,0.6)'; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = 'rgba(100,130,255,0.6)'; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.roundRect(btnX, mainY, btnW, mainH, 10); ctx.stroke();
-                ctx.font = 'bold 16px Orbitron, monospace'; ctx.fillStyle = '#cc99ff';
+                ctx.font = 'bold 16px Orbitron, monospace'; ctx.fillStyle = '#99bbff';
                 ctx.fillText('⊞  BACK TO LEVEL', cx, mainY + mainH / 2);
             }
 
