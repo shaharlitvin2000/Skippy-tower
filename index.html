@@ -4596,6 +4596,7 @@ await Promise.race([
         let mirrorDimPlatforms = [];     // Platforms inside the dimension
         let mirrorDimFloor = null, mirrorDimLeftPad = null, mirrorDimRightPad = null, mirrorDimCenterPad = null;
         let mirrorDimReturnX = 0, mirrorDimReturnY = 0, mirrorDimReturnCamY = 0, mirrorDimReturnPlats = null;
+        let mirrorDimReturnPowerups = [], mirrorDimReturnCoins = [];
         let mirrorDimTransFrames = 0;    // Transition frames remaining
         let mirrorDimTransDir = 0;       // 1=entering -1=exiting
         const MIRROR_DIM_TRANS = 45;
@@ -7255,24 +7256,80 @@ await Promise.race([
 
             if (!mirrorDimActive) return;
 
-            // Dimension background — dark otherworldly void
+            // Dimension background — clock tower sky
             const bg = ctx.createLinearGradient(0, 0, 0, BASE_H);
-            bg.addColorStop(0, '#060010');
-            bg.addColorStop(0.5, '#0d0025');
-            bg.addColorStop(1, '#060010');
+            bg.addColorStop(0, '#180c04');
+            bg.addColorStop(0.5, '#2c1808');
+            bg.addColorStop(1, '#1a0e06');
             ctx.fillStyle = bg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Stars
+            // Ambient lantern glows
             ctx.save();
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 10; i++) {
                 const sx = (Math.sin(i * 137.5 + 0.1) * 0.5 + 0.5) * BASE_W;
                 const sy = (Math.cos(i * 93.7) * 0.5 + 0.5) * BASE_H;
-                const a = 0.3 + 0.5 * Math.abs(Math.sin(t * 1.3 + i));
-                ctx.globalAlpha = a;
-                ctx.fillStyle = i % 5 === 0 ? '#cc88ff' : '#ffffff';
-                ctx.beginPath(); ctx.arc(sx, sy, i % 7 === 0 ? 2 : 1, 0, Math.PI * 2); ctx.fill();
+                const r = 50 + (i % 3) * 30;
+                const pulse = 0.5 + 0.5 * Math.sin(t * (0.6 + i * 0.18) + i * 1.8);
+                const gg = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+                gg.addColorStop(0, `rgba(210,140,30,${0.18 * pulse})`);
+                gg.addColorStop(1, 'transparent');
+                ctx.fillStyle = gg;
+                ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+
+            // Background clock faces
+            ctx.save();
+            for (let i = 0; i < 7; i++) {
+                const sx = (Math.sin(i * 73.1 + 2.3) * 0.5 + 0.5) * BASE_W;
+                const sy = (Math.cos(i * 51.7 + 1.1) * 0.5 + 0.5) * BASE_H;
+                const cr = 30 + (i % 4) * 18;
+                const fa = 0.10 + (i % 3) * 0.04;
+                ctx.globalAlpha = fa;
+                ctx.strokeStyle = '#c8901a'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(sx, sy, cr, 0, Math.PI * 2); ctx.stroke();
+                for (let h = 0; h < 12; h++) {
+                    const a = (h / 12) * Math.PI * 2 - Math.PI / 2;
+                    ctx.lineWidth = h % 3 === 0 ? 1.5 : 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(sx + Math.cos(a) * cr * 0.80, sy + Math.sin(a) * cr * 0.80);
+                    ctx.lineTo(sx + Math.cos(a) * cr * 0.92, sy + Math.sin(a) * cr * 0.92);
+                    ctx.stroke();
+                }
+                const hourA = t * 0.018 * (i % 2 === 0 ? 1 : -1) + i * 0.9;
+                const minA  = t * 0.11  * (i % 2 === 0 ? 1 : -1) + i * 0.5;
+                ctx.lineWidth = 2; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(sx, sy);
+                ctx.lineTo(sx + Math.cos(hourA) * cr * 0.52, sy + Math.sin(hourA) * cr * 0.52); ctx.stroke();
+                ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.moveTo(sx, sy);
+                ctx.lineTo(sx + Math.cos(minA) * cr * 0.72, sy + Math.sin(minA) * cr * 0.72); ctx.stroke();
+                ctx.globalAlpha = fa * 3;
+                ctx.fillStyle = '#c8901a';
+                ctx.beginPath(); ctx.arc(sx, sy, 2.5, 0, Math.PI * 2); ctx.fill();
             }
             ctx.globalAlpha = 1;
+            ctx.restore();
+
+            // Background gears
+            ctx.save();
+            for (let i = 0; i < 12; i++) {
+                const sx = (Math.sin(i * 44.1 + 3.7) * 0.5 + 0.5) * BASE_W;
+                const sy = (Math.cos(i * 29.3 + 0.8) * 0.5 + 0.5) * BASE_H;
+                const gr = 14 + (i % 5) * 10;
+                const teeth = 8 + (i % 5) * 2;
+                const toothH = gr * 0.18;
+                const rotDir = i % 2 === 0 ? 1 : -1;
+                const angle = t * (0.10 + i * 0.02) * rotDir;
+                const alpha = 0.07 + (i % 4) * 0.025;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(sx, sy); ctx.rotate(angle);
+                ctx.strokeStyle = '#a07020'; ctx.lineWidth = 1.2;
+                drawGearShape(ctx, gr, teeth, toothH);
+                ctx.stroke();
+                ctx.restore();
+            }
             ctx.restore();
 
             // ── Exit mirror — tall portrait frame (world y = -200 to -50) ──
@@ -7331,33 +7388,58 @@ await Promise.race([
                 ctx.restore();
             }
 
-            // ── Draw dimension platforms ──
+            // ── Draw dimension platforms (clock tower style) ──
             for (let pi = 0; pi < mirrorDimPlatforms.length; pi++) {
                 const p = mirrorDimPlatforms[pi];
                 const psy = p.y - camY;
                 if (psy < -20 || psy > BASE_H + 20) continue;
                 let col0, col1, stroke;
                 if (p === mirrorDimFloor) {
-                    col0 = '#223344'; col1 = '#112233'; stroke = '#446688';
+                    col0 = '#3a2008'; col1 = '#251404'; stroke = '#a07020';
                 } else {
                     const isLeft = p.x < BASE_W / 2;
-                    col0 = isLeft ? '#1a2a88' : '#551166';
-                    col1 = isLeft ? '#0d1a55' : '#330044';
-                    stroke = isLeft ? '#5577ff' : '#cc44ff';
+                    col0 = isLeft ? '#5a3010' : '#4a2808';
+                    col1 = isLeft ? '#3a1e08' : '#2e1804';
+                    stroke = isLeft ? '#c8901a' : '#e0a830';
                 }
                 const platG = ctx.createLinearGradient(p.x, psy, p.x, psy + p.h);
                 platG.addColorStop(0, col0 + 'ee');
                 platG.addColorStop(1, col1 + 'bb');
                 ctx.fillStyle = platG;
-                ctx.beginPath(); ctx.roundRect(p.x, psy, p.w, p.h, 4); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(p.x, psy, p.w, p.h, 3); ctx.fill();
                 ctx.strokeStyle = stroke; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.roundRect(p.x - 1, psy - 1, p.w + 2, p.h + 2, 4); ctx.stroke();
-                // Direction arrow on each stair platform
+                ctx.beginPath(); ctx.roundRect(p.x - 1, psy - 1, p.w + 2, p.h + 2, 3); ctx.stroke();
+                // Gear teeth along bottom edge
+                if (p !== mirrorDimFloor) {
+                    const toothW = 5, toothH2 = 4, spacing = toothW + 3;
+                    const rotOff = ((t * 1.5 * (pi % 2 === 0 ? 1 : -1) * spacing) % spacing + spacing) % spacing;
+                    ctx.save();
+                    ctx.fillStyle = stroke;
+                    ctx.globalAlpha = 0.7;
+                    for (let tx = p.x + rotOff; tx < p.x + p.w - toothW; tx += spacing) {
+                        ctx.fillRect(tx, psy + p.h, toothW, toothH2);
+                    }
+                    ctx.restore();
+                }
+                // Small center gear emblem
+                if (p !== mirrorDimFloor) {
+                    const ecx = p.x + p.w / 2, ecy = psy + p.h / 2;
+                    const gr2 = 5;
+                    ctx.save();
+                    ctx.globalAlpha = 0.5;
+                    ctx.translate(ecx, ecy);
+                    ctx.rotate(t * 0.8 * (pi % 2 === 0 ? 1 : -1));
+                    ctx.strokeStyle = '#e0b840'; ctx.lineWidth = 1;
+                    drawGearShape(ctx, gr2, 6, gr2 * 0.22);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                // Direction arrow
                 if (p !== mirrorDimFloor) {
                     const isLeft = p.x < BASE_W / 2;
                     ctx.save();
                     ctx.globalAlpha = 0.55 + 0.35*Math.sin(t*2 + pi);
-                    ctx.fillStyle = isLeft ? '#88aaff' : '#dd88ff';
+                    ctx.fillStyle = '#e0b030';
                     ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
                     ctx.fillText(isLeft ? '◄ LEFT' : 'RIGHT ►', p.x + p.w/2, psy - 2);
                     ctx.restore();
@@ -7367,19 +7449,19 @@ await Promise.race([
             // Walls
             ctx.save();
             const wallG = ctx.createLinearGradient(0, 0, WALL_W, 0);
-            wallG.addColorStop(0, '#1a0040'); wallG.addColorStop(1, 'transparent');
+            wallG.addColorStop(0, '#1e1006'); wallG.addColorStop(1, 'transparent');
             ctx.fillStyle = wallG; ctx.fillRect(0, 0, WALL_W, BASE_H);
             const wallR = ctx.createLinearGradient(BASE_W - WALL_W, 0, BASE_W, 0);
-            wallR.addColorStop(0, 'transparent'); wallR.addColorStop(1, '#1a0040');
+            wallR.addColorStop(0, 'transparent'); wallR.addColorStop(1, '#1e1006');
             ctx.fillStyle = wallR; ctx.fillRect(BASE_W - WALL_W, 0, WALL_W, BASE_H);
             ctx.restore();
 
             // Player
             player.draw(camY);
 
-            // Top HUD bar
+            // Bottom HUD bar
             ctx.save();
-            ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(200,160,255,0.75)';
+            ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(220,160,40,0.75)';
             ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
             ctx.fillText('— MIRROR DIMENSION —  controls reversed', cx, BASE_H - 10);
             ctx.restore();
@@ -7407,14 +7489,18 @@ await Promise.race([
             player.vy = 0; player.vx = 0; player.onGround = true; player.iframes = 30;
             player.landCooldown = 0; player.landPause = 0;
             player.powerHighJump = 0; player.powerSpeed = 0; player.powerShield = 0; player.powerSlow = 0;
+            mirrorDimReturnPowerups = powerups; mirrorDimReturnCoins = coins;
+            powerups = []; coins = [];
             mirrorDimActive = true; mirrorDimJumps = 0; mirrorDimLastSide = -1; mirrorDimExitReady = false;
-            camY = mirrorDimFloor.y - BASE_H + 60;
+            camYVel = 0;
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = 1;
             SFX.play('powerup');
         }
 
         function _exitMirrorDimension() {
             platforms = mirrorDimReturnPlats;
+            powerups = mirrorDimReturnPowerups; coins = mirrorDimReturnCoins;
+            mirrorDimReturnPowerups = []; mirrorDimReturnCoins = [];
             player.x = mirrorDimReturnX;
             player.y = mirrorDimReturnY - 1000; // 100 meters higher (1000px)
             player.vy = -3; player.vx = 0;
@@ -7426,7 +7512,7 @@ await Promise.race([
             mirrorDimPlatforms = [];
             mirrorDimTransFrames = MIRROR_DIM_TRANS; mirrorDimTransDir = -1;
             mirrorPortal = null;
-            nextMirrorM = lastRunHigh + rndInt(150, 300);
+            nextMirrorM = lastRunHigh + rndInt(190, 215);
             // Reward: +10 points + height boost text
             addPoints(10); runPointsEarned += 10;
             floatTexts.push(new FloatText(player.x + player.W / 2, player.y - 20, '+10 ◆', '#dd88ff'));
@@ -9172,6 +9258,7 @@ await Promise.race([
             roomUnsubscribe = _fbDb.collection('rooms').doc(code).onSnapshot(snap => {
                 if (!snap.exists) { _onlineLeaveRoom(true); return; }
                 const prevMode = lobbyMapMode, prevLevel = lobbyMapLevel, prevTheme = lobbyMapTheme;
+                const prevRoomType = currentRoomData?.type;
                 currentRoomData = snap.data();
                 roomPlayersMap = currentRoomData.players || {};
                 // Kick if we're no longer in the players map (e.g. code collision / host replaced room)
@@ -9193,6 +9280,9 @@ await Promise.race([
                         const hLabel = lobbyMapMode === 'infinite' ? 'INFINITE' : (HEIGHT_LABELS[lobbyMapLevel] || lobbyMapLevel + ' m');
                         lobbySettingsNotif = '📏 Height → ' + hLabel;
                         lobbySettingsNotifAt = Date.now();
+                    } else if (prevRoomType && currentRoomData.type !== prevRoomType) {
+                        if (currentRoomData.type === 'public') { lobbySettingsNotif = '🌍 Room is now PUBLIC'; lobbySettingsNotifAt = Date.now(); }
+                        else if (currentRoomData.type === 'private') { lobbySettingsNotif = '🔒 Room is now PRIVATE'; lobbySettingsNotifAt = Date.now(); }
                     }
                 }
                 // Detect HOST transfer in lobby — become new HOST if room now points to us
@@ -9265,6 +9355,11 @@ await Promise.race([
             if (!currentRoomId || !isRoomHost) return;
             lobbyMapMode = mapMode; lobbyMapLevel = mapLevel; lobbyMapTheme = mapTheme;
             await _fbDb.collection('rooms').doc(currentRoomId).update({ mapMode, mapLevel, mapTheme }).catch(() => {});
+        }
+        async function _onlineHostUpdateVisibility(type) {
+            if (!currentRoomId || !isRoomHost) return;
+            await _fbDb.collection('rooms').doc(currentRoomId).update({ type }).catch(() => {});
+            if (currentRoomData) currentRoomData.type = type;
         }
         function _onlineLaunchGame() {
             _stopHostHeartbeat();
@@ -11161,13 +11256,33 @@ function _drawMpHostEndBtn() {
                 ctx.font = '16px sans-serif';
                 ctx.fillText(lobbyCodeHidden ? '🙈' : '👁', eyeX + eyeW / 2, eyeY + eyeH / 2);
                 const isPublic = currentRoomData?.type === 'public';
-                ctx.font = 'bold 10px Orbitron, monospace';
-                ctx.fillStyle = isPublic ? '#88bbff' : '#cc88ff';
-                ctx.save(); if (isPublic) { ctx.shadowColor = '#5588ff'; ctx.shadowBlur = 8; }
-                ctx.fillText(isPublic ? '🌍 PUBLIC' : '🔒 PRIVATE', cx, codeBoxY + codeBoxH + 12);
-                ctx.restore();
-                ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(160,120,220,0.45)';
-                ctx.fillText('Share this code with friends to invite them', cx, codeBoxY + codeBoxH + 24);
+                if (isRoomHost) {
+                    // Clickable visibility toggle button for host
+                    const vBtnW = 140, vBtnH = 26, vBtnX = cx - vBtnW / 2, vBtnY = codeBoxY + codeBoxH + 4;
+                    ctx.save();
+                    ctx.fillStyle = isPublic ? 'rgba(20,30,70,0.92)' : 'rgba(40,10,60,0.92)';
+                    ctx.beginPath(); ctx.roundRect(vBtnX, vBtnY, vBtnW, vBtnH, 8); ctx.fill();
+                    if (isPublic) { ctx.shadowColor = '#5588ff'; ctx.shadowBlur = 10; }
+                    else { ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 8; }
+                    ctx.strokeStyle = isPublic ? 'rgba(80,140,255,0.75)' : 'rgba(180,80,255,0.65)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(vBtnX, vBtnY, vBtnW, vBtnH, 8); ctx.stroke();
+                    ctx.restore();
+                    ctx.font = 'bold 10px Orbitron, monospace';
+                    ctx.fillStyle = isPublic ? '#88bbff' : '#cc88ff';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(isPublic ? '🌍 PUBLIC  →  PRIVATE' : '🔒 PRIVATE  →  PUBLIC', cx, vBtnY + vBtnH / 2);
+                    ctx.textBaseline = 'alphabetic';
+                    ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(160,120,220,0.45)';
+                    ctx.fillText('Share this code with friends to invite them', cx, vBtnY + vBtnH + 14);
+                } else {
+                    ctx.font = 'bold 10px Orbitron, monospace';
+                    ctx.fillStyle = isPublic ? '#88bbff' : '#cc88ff';
+                    ctx.save(); if (isPublic) { ctx.shadowColor = '#5588ff'; ctx.shadowBlur = 8; }
+                    ctx.fillText(isPublic ? '🌍 PUBLIC' : '🔒 PRIVATE', cx, codeBoxY + codeBoxH + 12);
+                    ctx.restore();
+                    ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(160,120,220,0.45)';
+                    ctx.fillText('Share this code with friends to invite them', cx, codeBoxY + codeBoxH + 24);
+                }
             }
 
             // Player platform area
@@ -13206,12 +13321,28 @@ function menuAction(sx, sy) {
                         }
                         return; // block taps behind dialog
                     }
-                    // eye toggle
+                    // eye toggle + visibility toggle
                     if (!lobbyCreating && currentRoomId) {
-                        const codeBoxW = 300, codeBoxX = cx - codeBoxW / 2, codeBoxY = 78;
+                        const codeBoxW = 300, codeBoxH = 62, codeBoxX = cx - codeBoxW / 2, codeBoxY = 78;
                         const eyeX = codeBoxX + codeBoxW + 8, eyeY = codeBoxY + 14, eyeW = 32, eyeH = 34;
                         if (sx >= eyeX && sx <= eyeX + eyeW && sy >= eyeY && sy <= eyeY + eyeH) {
                             SFX.play('click'); lobbyCodeHidden = !lobbyCodeHidden; return;
+                        }
+                        // visibility toggle (host only)
+                        if (isRoomHost) {
+                            const vBtnW = 140, vBtnH = 26, vBtnX = cx - vBtnW / 2, vBtnY = codeBoxY + codeBoxH + 4;
+                            if (sx >= vBtnX && sx <= vBtnX + vBtnW && sy >= vBtnY && sy <= vBtnY + vBtnH) {
+                                SFX.play('click');
+                                const newType = currentRoomData?.type === 'public' ? 'private' : 'public';
+                                _onlineHostUpdateVisibility(newType);
+                                if (newType === 'private') {
+                                    lobbySettingsNotif = '🔒 Room is now PRIVATE';
+                                } else {
+                                    lobbySettingsNotif = '🌍 Room is now PUBLIC';
+                                }
+                                lobbySettingsNotifAt = Date.now();
+                                return;
+                            }
                         }
                     }
                     // settings selectors (host only)
