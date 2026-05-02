@@ -13012,25 +13012,18 @@ function _drawMpHostEndBtn() {
             ctx.save();
             const t = Date.now() / 1000;
             const cx2 = BASE_W / 2;
+            const hasSnap = _deathScreenshotImg && _deathScreenshotImg.complete && deathScreenshotUrl;
 
-            // Background — screenshot dimmed if available, else solid
-            if (_deathScreenshotImg && _deathScreenshotImg.complete) {
-                ctx.save();
-                ctx.drawImage(_deathScreenshotImg, 0, 0, BASE_W, BASE_H);
-                ctx.fillStyle = 'rgba(0,0,0,0.72)';
-                ctx.fillRect(0, 0, BASE_W, BASE_H);
-                ctx.restore();
-            } else {
-                ctx.fillStyle = '#04041a';
-                ctx.fillRect(0, 0, BASE_W, BASE_H);
-            }
+            // Background — solid dark
+            ctx.fillStyle = '#04041a';
+            ctx.fillRect(0, 0, BASE_W, BASE_H);
             const winBg = ctx.createRadialGradient(cx2, BASE_H/2, 10, cx2, BASE_H/2, 400);
             winBg.addColorStop(0, `rgba(80,60,220,${0.35 + 0.12*Math.sin(t*1.3)})`);
             winBg.addColorStop(0.6, 'rgba(80,20,180,0.15)');
             winBg.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = winBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Confetti rain — blue-purple
+            // Confetti rain
             const _winConfetti = ['#5577ff','#8855ff','#aa66ff','#4488ff','#cc88ff','#3366dd','#7744ee','#6699ff','#9966ff','#aabbff'];
             for (let i = 0; i < 30; i++) {
                 const ci = i * 137.508;
@@ -13045,54 +13038,94 @@ function _drawMpHostEndBtn() {
             }
 
             // Panel
-            const panelW = 468, panelH = deathScreenshotUrl ? 608 : 530;
-            const panelX = cx2 - panelW/2, panelY = 68;
+            const panelW = 468, panelH = hasSnap ? 700 : 530;
+            const panelX = cx2 - panelW/2, panelY = hasSnap ? 30 : 68;
             const panBg = ctx.createLinearGradient(panelX,panelY,panelX,panelY+panelH);
             panBg.addColorStop(0,'rgba(8,10,42,0.98)'); panBg.addColorStop(1,'rgba(4,4,22,0.98)');
             ctx.fillStyle = panBg;
             ctx.beginPath(); ctx.roundRect(panelX, panelY, panelW, panelH, 26); ctx.fill();
 
-            // Animated blue-purple border with glow
+            // Animated border
             const p1 = 0.55 + 0.4*Math.sin(t*2.6);
             ctx.save();
             ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 18*p1;
             ctx.strokeStyle = `rgba(100,140,255,${p1})`; ctx.lineWidth = 3.5;
-            ctx.beginPath(); ctx.roundRect(panelX+1,panelY+1,panelW-2,panelH-2, 25); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(panelX+1,panelY+1,panelW-2,panelH-2,25); ctx.stroke();
             ctx.shadowBlur = 0;
             ctx.strokeStyle = `rgba(140,100,255,${p1*0.45})`; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(panelX+6,panelY+6,panelW-12,panelH-12, 21); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(panelX+6,panelY+6,panelW-12,panelH-12,21); ctx.stroke();
             ctx.restore();
             ctx.fillStyle = 'rgba(255,255,255,0.04)';
-            ctx.beginPath(); ctx.roundRect(panelX+8,panelY+8,panelW-16,panelH/2-8,[20,20,0,0]); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(panelX+8,panelY+8,panelW-16,(hasSnap?160:panelH/2)-8,[20,20,0,0]); ctx.fill();
 
-            // Crown
-            drawCrown(ctx, cx2, panelY + 112, 148, 86, t);
+            // Crown (smaller when screenshot present)
+            const crownSize = hasSnap ? 110 : 148, crownH = hasSnap ? 64 : 86;
+            drawCrown(ctx, cx2, panelY + (hasSnap ? 76 : 112), crownSize, crownH, t);
 
-            // "VICTORY!" text — blue-purple
+            // "VICTORY!" text
             const vicG = ctx.createLinearGradient(cx2-160,0,cx2+160,0);
             vicG.addColorStop(0,'#5577ff'); vicG.addColorStop(0.33,'#9955ff'); vicG.addColorStop(0.66,'#aabbff'); vicG.addColorStop(1,'#6644ff');
-            ctx.fillStyle = vicG; ctx.font = '900 46px Orbitron, monospace';
+            ctx.fillStyle = vicG; ctx.font = `900 ${hasSnap?38:46}px Orbitron, monospace`;
             ctx.shadowColor = '#6644ff'; ctx.shadowBlur = 28;
             ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-            ctx.fillText('VICTORY!', cx2, panelY + 212); ctx.shadowBlur = 0;
+            ctx.fillText('VICTORY!', cx2, panelY + (hasSnap ? 158 : 212)); ctx.shadowBlur = 0;
 
-            ctx.fillStyle = 'rgba(160,180,255,0.8)'; ctx.font = 'bold 17px monospace';
-            ctx.fillText('You reached the top!', cx2, panelY + 240);
+            ctx.fillStyle = 'rgba(160,180,255,0.8)'; ctx.font = `bold ${hasSnap?14:17}px monospace`;
+            ctx.fillText('You reached the top!', cx2, panelY + (hasSnap ? 178 : 240));
 
             const modeLabel = currentMode === 'level' ? '✓ LEVEL COMPLETE' : `Height: ${lastRunHigh}m`;
-            ctx.fillStyle = '#fff'; ctx.font = 'bold 22px monospace';
+            ctx.fillStyle = '#fff'; ctx.font = `bold ${hasSnap?18:22}px monospace`;
             ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 12;
-            ctx.fillText(modeLabel, cx2, panelY + 276); ctx.shadowBlur = 0;
-            ctx.fillStyle = 'rgba(180,210,255,0.7)'; ctx.font = '16px monospace';
-            ctx.fillText(`Best: ${getBest() > 0 ? getBest()+'m' : '—'}`, cx2, panelY + 302);
+            ctx.fillText(modeLabel, cx2, panelY + (hasSnap ? 202 : 276)); ctx.shadowBlur = 0;
 
-            // Blue-purple divider
+            // Screenshot photo card — shown when available
+            const snapCardY = panelY + 216;
+            const snapCardW = panelW - 48, snapCardH = 168;
+            const snapCardX = panelX + 24;
+            if (hasSnap) {
+                ctx.save();
+                // Shadow
+                ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 6;
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, snapCardH, 12); ctx.fill();
+                ctx.restore();
+                // Clip and draw screenshot
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, snapCardH, 12); ctx.clip();
+                ctx.drawImage(_deathScreenshotImg, snapCardX, snapCardY, snapCardW, snapCardH);
+                // Slight dark overlay
+                ctx.fillStyle = 'rgba(0,0,20,0.18)';
+                ctx.fillRect(snapCardX, snapCardY, snapCardW, snapCardH);
+                ctx.restore();
+                // Gold animated border
+                const snapBord = 0.6 + 0.4*Math.sin(t*2.4);
+                const snapBg = ctx.createLinearGradient(snapCardX,snapCardY,snapCardX+snapCardW,snapCardY+snapCardH);
+                snapBg.addColorStop(0,`rgba(255,210,60,${snapBord})`);
+                snapBg.addColorStop(0.5,`rgba(200,140,255,${snapBord})`);
+                snapBg.addColorStop(1,`rgba(255,210,60,${snapBord})`);
+                ctx.save(); ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 12*snapBord;
+                ctx.strokeStyle = snapBg; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY, snapCardW, snapCardH, 12); ctx.stroke();
+                ctx.restore();
+                // "YOUR MOMENT" label strip at bottom of card
+                ctx.save();
+                ctx.beginPath(); ctx.roundRect(snapCardX, snapCardY+snapCardH-22, snapCardW, 22, [0,0,12,12]); ctx.clip();
+                ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(snapCardX, snapCardY+snapCardH-22, snapCardW, 22);
+                ctx.restore();
+                ctx.fillStyle = 'rgba(255,220,80,0.9)'; ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('YOUR MOMENT  ★  ' + lastRunHigh + 'm', cx2, snapCardY+snapCardH-11);
+            }
+
+            // Divider
+            const divY = hasSnap ? snapCardY + snapCardH + 12 : panelY + 318;
             const gdg = ctx.createLinearGradient(panelX+30,0,panelX+panelW-30,0);
             gdg.addColorStop(0,'rgba(80,120,255,0)'); gdg.addColorStop(0.5,'rgba(100,140,255,0.55)'); gdg.addColorStop(1,'rgba(80,120,255,0)');
-            ctx.fillStyle = gdg; ctx.fillRect(panelX+30, panelY+318, panelW-60, 2);
+            ctx.fillStyle = gdg; ctx.fillRect(panelX+30, divY, panelW-60, 2);
+            ctx.textBaseline = 'alphabetic';
 
-            // OPEN CHEST button — blue-purple
-            const rwW = 238, rwH = 54, rwX = cx2 - rwW/2, rwY = panelY + 330;
+            // OPEN CHEST button
+            const rwW = 238, rwH = hasSnap?46:54, rwX = cx2 - rwW/2, rwY = divY + 12;
             const cp = 0.55 + 0.45*Math.sin(t*3.8);
             ctx.save(); ctx.shadowColor = '#7766ff'; ctx.shadowBlur = 16*cp;
             const chestBg = ctx.createLinearGradient(rwX,rwY,rwX,rwY+rwH);
@@ -13102,33 +13135,29 @@ function _drawMpHostEndBtn() {
             ctx.strokeStyle = `rgba(120,160,255,${cp})`; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(rwX, rwY, rwW, rwH, 16); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
-            ctx.beginPath(); ctx.roundRect(rwX+5,rwY+5,rwW-10,rwH/2-5,[12,12,0,0]); ctx.fill();
-            ctx.fillStyle = '#aabbff'; ctx.font = 'bold 20px monospace';
+            ctx.fillStyle = '#aabbff'; ctx.font = `bold ${hasSnap?17:20}px monospace`;
             ctx.shadowColor = '#7766ff'; ctx.shadowBlur = cp*14;
             ctx.textBaseline = 'middle';
             ctx.fillText('★  OPEN CHEST  ★', cx2, rwY + rwH/2); ctx.shadowBlur = 0;
 
-            // Buttons
-            const btnW = 220, btnH = 54, btnX = cx2 - btnW/2;
-            const newY = panelY + 402;
+            // NEW GAME button
+            const btnW = 220, btnH = hasSnap?46:54, btnX = cx2 - btnW/2;
+            const newY = rwY + rwH + 10;
             const _winBtnGlow = 0.6 + Math.sin(t * 3) * 0.4;
             ctx.save(); ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 12 * _winBtnGlow;
             ctx.fillStyle = '#0a1240'; ctx.beginPath(); ctx.roundRect(btnX,newY,btnW,btnH,16); ctx.fill();
             ctx.strokeStyle = `rgba(100,150,255,${0.7 + _winBtnGlow * 0.3})`; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.roundRect(btnX,newY,btnW,btnH,16); ctx.stroke();
             ctx.restore();
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
-            ctx.beginPath(); ctx.roundRect(btnX+5,newY+5,btnW-10,btnH/2-5,[12,12,0,0]); ctx.fill();
-            ctx.fillStyle = '#aabbff'; ctx.font = 'bold 22px monospace';
+            ctx.fillStyle = '#aabbff'; ctx.font = `bold ${hasSnap?18:22}px monospace`;
             ctx.shadowColor = '#5577ff'; ctx.shadowBlur = 10;
             ctx.textBaseline = 'middle';
             ctx.fillText('NEW GAME', cx2, newY + btnH/2);
             ctx.shadowBlur = 0;
 
-            let exitY = newY + btnH + 12;
-
-            if (deathScreenshotUrl) {
+            // SHARE button (only when screenshot exists)
+            let exitY = newY + btnH + 10;
+            if (hasSnap) {
                 const shareY = exitY;
                 const shareGlow = 0.5 + Math.sin(t * 2.8) * 0.5;
                 ctx.save(); ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 14 * shareGlow;
@@ -13137,21 +13166,20 @@ function _drawMpHostEndBtn() {
                 ctx.strokeStyle = `rgba(0,220,160,${0.6 + shareGlow * 0.4})`; ctx.lineWidth = 2.5;
                 ctx.beginPath(); ctx.roundRect(btnX, shareY, btnW, btnH, 16); ctx.stroke();
                 ctx.restore();
-                ctx.fillStyle = 'rgba(255,255,255,0.06)';
-                ctx.beginPath(); ctx.roundRect(btnX+5, shareY+5, btnW-10, btnH/2-5, [11,11,0,0]); ctx.fill();
-                ctx.fillStyle = '#88ffdd'; ctx.font = 'bold 20px monospace';
+                ctx.fillStyle = '#88ffdd'; ctx.font = 'bold 18px monospace';
                 ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 10;
                 ctx.textBaseline = 'middle';
-                ctx.fillText('📤 SHARE SCREENSHOT', cx2, shareY + btnH/2);
+                ctx.fillText('📤  SHARE', cx2, shareY + btnH/2);
                 ctx.shadowBlur = 0;
-                exitY = shareY + btnH + 12;
+                exitY = shareY + btnH + 10;
             }
 
+            // MAIN MENU button
             ctx.fillStyle = 'rgba(30,0,40,0.9)';
             ctx.beginPath(); ctx.roundRect(btnX,exitY,btnW,btnH,16); ctx.fill();
             ctx.strokeStyle = 'rgba(200,80,255,0.6)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX,exitY,btnW,btnH,16); ctx.stroke();
-            ctx.fillStyle = 'rgba(210,140,255,0.9)'; ctx.font = 'bold 20px monospace';
+            ctx.fillStyle = 'rgba(210,140,255,0.9)'; ctx.font = `bold ${hasSnap?18:20}px monospace`;
             ctx.textBaseline = 'middle';
             ctx.fillText('MAIN MENU', cx2, exitY + btnH/2);
 
@@ -13717,24 +13745,26 @@ function menuAction(sx, sy) {
                 return;
             }
             if (state === STATE.WIN) {
-                const panelY = 68;
-                const btnW = 220, btnH = 54, btnX = BASE_W/2 - btnW/2;
-                const rwW = 238, rwH = 54, rwX = BASE_W/2 - rwW/2, rwY = panelY + 330;
+                const hasSnap = !!deathScreenshotUrl;
+                const panelY = hasSnap ? 30 : 68;
+                const snapCardH = 168, snapCardY = panelY + 216;
+                const divY = hasSnap ? snapCardY + snapCardH + 12 : panelY + 318;
+                const rwW = 238, rwH = hasSnap ? 46 : 54, rwX = BASE_W/2 - rwW/2, rwY = divY + 12;
+                const btnW = 220, btnH = hasSnap ? 46 : 54, btnX = BASE_W/2 - btnW/2;
+                const newY = rwY + rwH + 10;
                 if (sy >= rwY && sy <= rwY + rwH && sx >= rwX && sx <= rwX + rwW) {
-                    SFX.play('click'); // chest button - mechanic TBD
-                    return;
+                    SFX.play('click'); return; // chest - mechanic TBD
                 }
-                const newY = panelY + 402;
                 if (sy >= newY && sy <= newY + btnH && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                 }
-                let winExitY = newY + btnH + 12;
-                if (deathScreenshotUrl) {
+                let winExitY = newY + btnH + 10;
+                if (hasSnap) {
                     const shareY = winExitY;
                     if (sy >= shareY && sy <= shareY + btnH && sx >= btnX && sx <= btnX + btnW) {
                         SFX.play('click'); shareDeathScreenshot(); return;
                     }
-                    winExitY = shareY + btnH + 12;
+                    winExitY = shareY + btnH + 10;
                 }
                 if (sy >= winExitY && sy <= winExitY + btnH && sx >= btnX && sx <= btnX + btnW) {
                     SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
@@ -14628,6 +14658,7 @@ function gameUpdate() {
                         clearAllEffects();
                         player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
                         secondLifeReady = false; secondLifeActive = false; secondLifeProgress = 0; secondLifeVisited = new Set();
+                        lastRunHigh = Math.max(lastRunHigh, LEVEL_GOALS[currentLevel]);
                         deathScreenshotUrl = canvas.toDataURL('image/png');
                         _deathScreenshotImg = new Image(); _deathScreenshotImg.src = deathScreenshotUrl;
                         state = STATE.WIN; hasActiveGame = false;
