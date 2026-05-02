@@ -1322,6 +1322,7 @@ await Promise.race([
         let prevBestOnDeath = 0; // stored for record screen display
         let deathScreenshotUrl = null;
         let _deathScreenshotImg = null;
+        let deathWasSoClose = false;
         function clearAllEffects() {
             mushroomBadTimer = 0; mushroomHue = 0; mushroomHueTarget = 0; mushroomHueChangeTimer = 0; mushroomSpin = 0;
             drunkTimer = 0; drunkPhase = 0;
@@ -1364,11 +1365,17 @@ await Promise.race([
                 cornerAnimIsRecord = currentMode !== 'level' && lastRunHigh > prevBestOnDeath;
                 cornerAnimStart = Date.now();
             }
-            // Show DEAD screen only for new record in infinite mode
+            // Show DEAD screen for new record or SO CLOSE (within 10% of best)
+            const _isSoClose = currentMode !== 'level' && prevBestOnDeath > 0 && lastRunHigh < prevBestOnDeath && lastRunHigh >= prevBestOnDeath * 0.9;
             if (currentMode !== 'level' && lastRunHigh > prevBestOnDeath) {
                 deathScreenshotUrl = canvas.toDataURL('image/png');
-                _deathScreenshotImg = new Image();
-                _deathScreenshotImg.src = deathScreenshotUrl;
+                _deathScreenshotImg = new Image(); _deathScreenshotImg.src = deathScreenshotUrl;
+                deathWasSoClose = false;
+                state = STATE.DEAD; deathScreenTime = Date.now();
+            } else if (_isSoClose) {
+                deathScreenshotUrl = canvas.toDataURL('image/png');
+                _deathScreenshotImg = new Image(); _deathScreenshotImg.src = deathScreenshotUrl;
+                deathWasSoClose = true;
                 state = STATE.DEAD; deathScreenTime = Date.now();
             } else {
                 _syncTheme(); initWorld(); state = STATE.PLAY; // silent restart
@@ -12558,13 +12565,20 @@ function _drawMpHostEndBtn() {
                 ctx.fillRect(0, 0, BASE_W, BASE_H);
             }
             const deadBg = ctx.createRadialGradient(cx2, BASE_H/2, 10, cx2, BASE_H/2, 360);
-            deadBg.addColorStop(0, `rgba(80,50,220,${0.22 + 0.1*Math.sin(t*1.4)})`);
-            deadBg.addColorStop(0.5, `rgba(100,0,180,0.12)`);
+            if (deathWasSoClose) {
+                deadBg.addColorStop(0, `rgba(200,100,20,${0.22 + 0.1*Math.sin(t*1.4)})`);
+                deadBg.addColorStop(0.5, 'rgba(160,60,0,0.12)');
+            } else {
+                deadBg.addColorStop(0, `rgba(80,50,220,${0.22 + 0.1*Math.sin(t*1.4)})`);
+                deadBg.addColorStop(0.5, 'rgba(100,0,180,0.12)');
+            }
             deadBg.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = deadBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // Confetti burst — blue-purple shades
-            const _confettiCols = ['#5577ff','#8855ff','#aa66ff','#4488ff','#cc88ff','#3366dd','#7744ee','#6699ff'];
+            // Confetti burst
+            const _confettiCols = deathWasSoClose
+                ? ['#ff8833','#ffaa44','#ffcc55','#ff6622','#ffdd88','#ff9900','#ffbb33','#ff5500']
+                : ['#5577ff','#8855ff','#aa66ff','#4488ff','#cc88ff','#3366dd','#7744ee','#6699ff'];
             for (let i = 0; i < 28; i++) {
                 const ci = i * 137.508;
                 const cbx = (Math.sin(ci)*0.5+0.5)*BASE_W;
@@ -12593,22 +12607,30 @@ function _drawMpHostEndBtn() {
             panBg.addColorStop(0, 'rgba(8,10,40,0.97)'); panBg.addColorStop(1, 'rgba(4,4,22,0.97)');
             ctx.fillStyle = panBg;
             ctx.beginPath(); ctx.roundRect(panelX, panelY, panelW, panelH, 24); ctx.fill();
-            // Animated blue-purple border
+            // Animated border — orange for SO CLOSE, blue-purple for record
             const _bpa = 0.7 + 0.3 * Math.sin(t * 2.1);
             const rBorder = ctx.createLinearGradient(panelX, panelY, panelX+panelW, panelY+panelH);
-            rBorder.addColorStop(0, `rgba(80,120,255,${_bpa})`);
-            rBorder.addColorStop(0.5, `rgba(160,80,255,${_bpa})`);
-            rBorder.addColorStop(1, `rgba(80,120,255,${_bpa})`);
-            ctx.save(); ctx.shadowColor = '#7766ff'; ctx.shadowBlur = 16;
+            if (deathWasSoClose) {
+                rBorder.addColorStop(0, `rgba(255,140,30,${_bpa})`);
+                rBorder.addColorStop(0.5, `rgba(255,200,60,${_bpa})`);
+                rBorder.addColorStop(1, `rgba(255,140,30,${_bpa})`);
+            } else {
+                rBorder.addColorStop(0, `rgba(80,120,255,${_bpa})`);
+                rBorder.addColorStop(0.5, `rgba(160,80,255,${_bpa})`);
+                rBorder.addColorStop(1, `rgba(80,120,255,${_bpa})`);
+            }
+            ctx.save(); ctx.shadowColor = deathWasSoClose ? '#ff8800' : '#7766ff'; ctx.shadowBlur = 16;
             ctx.strokeStyle = rBorder; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.roundRect(panelX+1, panelY+1, panelW-2, panelH-2, 23); ctx.stroke();
             ctx.restore();
             ctx.fillStyle = 'rgba(255,255,255,0.04)';
             ctx.beginPath(); ctx.roundRect(panelX+8, panelY+8, panelW-16, panelH/2-8, [18,18,0,0]); ctx.fill();
 
-            // Star burst icon
+            // Icon burst
             const ix = cx2, iy = panelY + 76;
-            const _burstCols = ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4466ee','#9966ff','#7788ff','#bb66ff','#4499ff'];
+            const _burstCols = deathWasSoClose
+                ? ['#ff8833','#ffaa44','#ffcc55','#ff6622','#ffdd88','#ff9900','#ffbb33','#ff5500','#ffee66','#ff7711']
+                : ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4466ee','#9966ff','#7788ff','#bb66ff','#4499ff'];
             ctx.save();
             for (let i = 0; i < 10; i++) {
                 const a = (i/10)*Math.PI*2 + t*0.6;
@@ -12620,14 +12642,17 @@ function _drawMpHostEndBtn() {
                 ctx.lineTo(ix+Math.cos(a)*len, iy+Math.sin(a)*len); ctx.stroke();
             }
             const starG = ctx.createRadialGradient(ix,iy,0,ix,iy,22);
-            starG.addColorStop(0,'#aabbff'); starG.addColorStop(1,'#4455cc');
+            if (deathWasSoClose) { starG.addColorStop(0,'#ffdd88'); starG.addColorStop(1,'#cc5500'); }
+            else { starG.addColorStop(0,'#aabbff'); starG.addColorStop(1,'#4455cc'); }
             ctx.globalAlpha=1; ctx.fillStyle=starG;
             ctx.beginPath(); ctx.arc(ix, iy, 22, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#0a0830'; ctx.font = 'bold 24px monospace';
+            ctx.fillStyle = deathWasSoClose ? '#3a1500' : '#0a0830'; ctx.font = 'bold 24px monospace';
             ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText('★', ix, iy+1); ctx.restore();
-            // Orbiting dots — blue-purple
-            const _orbitCols = ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4488ff','#9966ff'];
+            ctx.fillText(deathWasSoClose ? '🔥' : '★', ix, iy+1); ctx.restore();
+            // Orbiting dots
+            const _orbitCols = deathWasSoClose
+                ? ['#ff8833','#ffaa44','#ffcc55','#ff6622','#ffdd88','#ff9900','#ffbb33']
+                : ['#5577ff','#8855ff','#aabbff','#6644ff','#cc88ff','#4488ff','#9966ff'];
             for (let i = 0; i < 7; i++) {
                 const a = (i/7)*Math.PI*2 + t*1.8;
                 ctx.fillStyle = _orbitCols[i];
@@ -12636,23 +12661,35 @@ function _drawMpHostEndBtn() {
             }
             ctx.globalAlpha = 1;
 
-            // "NEW RECORD!" text
+            // Title text
             ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-            const recG = ctx.createLinearGradient(cx2-140,0,cx2+140,0);
-            recG.addColorStop(0,'#88ccff'); recG.addColorStop(0.5,'#ffffff'); recG.addColorStop(1,'#88ccff');
-            ctx.fillStyle = recG; ctx.font = '900 38px Orbitron, monospace';
-            ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 24;
-            ctx.fillText('NEW RECORD!', cx2, panelY + 152); ctx.shadowBlur = 0;
-
-            ctx.fillStyle = 'rgba(255,255,255,0.32)'; ctx.font = '14px monospace';
-            ctx.fillText(`prev best: ${prevBestOnDeath > 0 ? prevBestOnDeath+'m' : 'none'}`, cx2, panelY + 178);
-
-            // New record height
-            const recHG = ctx.createLinearGradient(cx2-80,0,cx2+80,0);
-            recHG.addColorStop(0,'#ffee44'); recHG.addColorStop(0.5,'#fff'); recHG.addColorStop(1,'#ffee44');
-            ctx.fillStyle = recHG; ctx.font = '900 34px Orbitron, monospace';
-            ctx.shadowColor = '#ffdd00'; ctx.shadowBlur = 18;
-            ctx.fillText(`${lastRunHigh}m`, cx2, panelY + 220); ctx.shadowBlur = 0;
+            if (deathWasSoClose) {
+                const scG = ctx.createLinearGradient(cx2-140,0,cx2+140,0);
+                scG.addColorStop(0,'#ff8833'); scG.addColorStop(0.5,'#ffee88'); scG.addColorStop(1,'#ff8833');
+                ctx.fillStyle = scG; ctx.font = '900 38px Orbitron, monospace';
+                ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 28;
+                ctx.fillText('SO CLOSE!', cx2, panelY + 152); ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,200,120,0.6)'; ctx.font = '14px monospace';
+                ctx.fillText(`record: ${prevBestOnDeath}m`, cx2, panelY + 178);
+                const scHG = ctx.createLinearGradient(cx2-80,0,cx2+80,0);
+                scHG.addColorStop(0,'#ff9944'); scHG.addColorStop(0.5,'#ffee88'); scHG.addColorStop(1,'#ff9944');
+                ctx.fillStyle = scHG; ctx.font = '900 34px Orbitron, monospace';
+                ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 18;
+                ctx.fillText(`${lastRunHigh}m`, cx2, panelY + 220); ctx.shadowBlur = 0;
+            } else {
+                const recG = ctx.createLinearGradient(cx2-140,0,cx2+140,0);
+                recG.addColorStop(0,'#88ccff'); recG.addColorStop(0.5,'#ffffff'); recG.addColorStop(1,'#88ccff');
+                ctx.fillStyle = recG; ctx.font = '900 38px Orbitron, monospace';
+                ctx.shadowColor = '#6688ff'; ctx.shadowBlur = 24;
+                ctx.fillText('NEW RECORD!', cx2, panelY + 152); ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.32)'; ctx.font = '14px monospace';
+                ctx.fillText(`prev best: ${prevBestOnDeath > 0 ? prevBestOnDeath+'m' : 'none'}`, cx2, panelY + 178);
+                const recHG = ctx.createLinearGradient(cx2-80,0,cx2+80,0);
+                recHG.addColorStop(0,'#ffee44'); recHG.addColorStop(0.5,'#fff'); recHG.addColorStop(1,'#ffee44');
+                ctx.fillStyle = recHG; ctx.font = '900 34px Orbitron, monospace';
+                ctx.shadowColor = '#ffdd00'; ctx.shadowBlur = 18;
+                ctx.fillText(`${lastRunHigh}m`, cx2, panelY + 220); ctx.shadowBlur = 0;
+            }
 
             // Divider
             const dg = ctx.createLinearGradient(panelX+30,0,panelX+panelW-30,0);
@@ -12976,9 +13013,17 @@ function _drawMpHostEndBtn() {
             const t = Date.now() / 1000;
             const cx2 = BASE_W / 2;
 
-            // Background — blue-purple glow on dark
-            ctx.fillStyle = '#04041a';
-            ctx.fillRect(0, 0, BASE_W, BASE_H);
+            // Background — screenshot dimmed if available, else solid
+            if (_deathScreenshotImg && _deathScreenshotImg.complete) {
+                ctx.save();
+                ctx.drawImage(_deathScreenshotImg, 0, 0, BASE_W, BASE_H);
+                ctx.fillStyle = 'rgba(0,0,0,0.72)';
+                ctx.fillRect(0, 0, BASE_W, BASE_H);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#04041a';
+                ctx.fillRect(0, 0, BASE_W, BASE_H);
+            }
             const winBg = ctx.createRadialGradient(cx2, BASE_H/2, 10, cx2, BASE_H/2, 400);
             winBg.addColorStop(0, `rgba(80,60,220,${0.35 + 0.12*Math.sin(t*1.3)})`);
             winBg.addColorStop(0.6, 'rgba(80,20,180,0.15)');
@@ -13000,7 +13045,7 @@ function _drawMpHostEndBtn() {
             }
 
             // Panel
-            const panelW = 468, panelH = 530;
+            const panelW = 468, panelH = deathScreenshotUrl ? 608 : 530;
             const panelX = cx2 - panelW/2, panelY = 68;
             const panBg = ctx.createLinearGradient(panelX,panelY,panelX,panelY+panelH);
             panBg.addColorStop(0,'rgba(8,10,42,0.98)'); panBg.addColorStop(1,'rgba(4,4,22,0.98)');
@@ -13081,12 +13126,33 @@ function _drawMpHostEndBtn() {
             ctx.fillText('NEW GAME', cx2, newY + btnH/2);
             ctx.shadowBlur = 0;
 
-            const exitY = newY + btnH + 12;
+            let exitY = newY + btnH + 12;
+
+            if (deathScreenshotUrl) {
+                const shareY = exitY;
+                const shareGlow = 0.5 + Math.sin(t * 2.8) * 0.5;
+                ctx.save(); ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 14 * shareGlow;
+                ctx.fillStyle = 'rgba(0,30,24,0.92)';
+                ctx.beginPath(); ctx.roundRect(btnX, shareY, btnW, btnH, 16); ctx.fill();
+                ctx.strokeStyle = `rgba(0,220,160,${0.6 + shareGlow * 0.4})`; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.roundRect(btnX, shareY, btnW, btnH, 16); ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                ctx.beginPath(); ctx.roundRect(btnX+5, shareY+5, btnW-10, btnH/2-5, [11,11,0,0]); ctx.fill();
+                ctx.fillStyle = '#88ffdd'; ctx.font = 'bold 20px monospace';
+                ctx.shadowColor = '#00ddaa'; ctx.shadowBlur = 10;
+                ctx.textBaseline = 'middle';
+                ctx.fillText('📤 SHARE SCREENSHOT', cx2, shareY + btnH/2);
+                ctx.shadowBlur = 0;
+                exitY = shareY + btnH + 12;
+            }
+
             ctx.fillStyle = 'rgba(30,0,40,0.9)';
             ctx.beginPath(); ctx.roundRect(btnX,exitY,btnW,btnH,16); ctx.fill();
             ctx.strokeStyle = 'rgba(200,80,255,0.6)'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.roundRect(btnX,exitY,btnW,btnH,16); ctx.stroke();
             ctx.fillStyle = 'rgba(210,140,255,0.9)'; ctx.font = 'bold 20px monospace';
+            ctx.textBaseline = 'middle';
             ctx.fillText('MAIN MENU', cx2, exitY + btnH/2);
 
             ctx.restore();
@@ -13635,7 +13701,7 @@ function menuAction(sx, sy) {
                 const btnW = 218, btnH = 54, btnX = BASE_W/2 - btnW/2;
                 const newY = panelY + 248;
                 if (sy >= newY && sy <= newY + btnH && sx >= btnX && sx <= btnX + btnW) {
-                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
+                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; deathWasSoClose = false; _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                 }
                 let exitY = newY + btnH + 12;
                 if (deathScreenshotUrl) {
@@ -13646,7 +13712,7 @@ function menuAction(sx, sy) {
                     exitY = shareY + btnH + 12;
                 }
                 if (sy >= exitY && sy <= exitY + btnH && sx >= btnX && sx <= btnX + btnW) {
-                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
+                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; deathWasSoClose = false; state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
                 }
                 return;
             }
@@ -13660,11 +13726,18 @@ function menuAction(sx, sy) {
                 }
                 const newY = panelY + 402;
                 if (sy >= newY && sy <= newY + btnH && sx >= btnX && sx <= btnX + btnW) {
-                    SFX.play('click'); _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
+                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; _syncTheme(); initWorld(); _startGameMusic(); state = STATE.PLAY; return;
                 }
-                const exitY = newY + btnH + 12;
-                if (sy >= exitY && sy <= exitY + btnH && sx >= btnX && sx <= btnX + btnW) {
-                    SFX.play('click'); state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
+                let winExitY = newY + btnH + 12;
+                if (deathScreenshotUrl) {
+                    const shareY = winExitY;
+                    if (sy >= shareY && sy <= shareY + btnH && sx >= btnX && sx <= btnX + btnW) {
+                        SFX.play('click'); shareDeathScreenshot(); return;
+                    }
+                    winExitY = shareY + btnH + 12;
+                }
+                if (sy >= winExitY && sy <= winExitY + btnH && sx >= btnX && sx <= btnX + btnW) {
+                    SFX.play('click'); deathScreenshotUrl = null; _deathScreenshotImg = null; state = STATE.MAIN; hasActiveGame = false; currentMode = 'infinite'; currentLevel = 0; return;
                 }
                 return;
             }
@@ -14555,6 +14628,8 @@ function gameUpdate() {
                         clearAllEffects();
                         player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
                         secondLifeReady = false; secondLifeActive = false; secondLifeProgress = 0; secondLifeVisited = new Set();
+                        deathScreenshotUrl = canvas.toDataURL('image/png');
+                        _deathScreenshotImg = new Image(); _deathScreenshotImg.src = deathScreenshotUrl;
                         state = STATE.WIN; hasActiveGame = false;
                         saveBest(LEVEL_GOALS[currentLevel]);
                         levelWins[currentLevel] = true; if (_playerStore) _playerStore.set('wins', levelWins);
@@ -14580,6 +14655,8 @@ function gameUpdate() {
                         clearAllEffects();
                         player.powerSpeed = 0; player.powerHighJump = 0; player.powerShield = 0; player.powerSlow = 0; player.iframes = 0;
                         secondLifeReady = false; secondLifeActive = false; secondLifeProgress = 0; secondLifeVisited = new Set();
+                        deathScreenshotUrl = canvas.toDataURL('image/png');
+                        _deathScreenshotImg = new Image(); _deathScreenshotImg.src = deathScreenshotUrl;
                         state = STATE.WIN; hasActiveGame = false; saveBest(lastRunHigh);
                     }
                 }
