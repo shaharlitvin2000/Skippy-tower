@@ -1324,11 +1324,14 @@ await Promise.race([
         let _deathScreenshotImg = null;
         let deathWasSoClose = false;
 
-        // ── Screenshot gallery ──
+        // ── Screenshot gallery + profile overlay ──
         let savedMoments = [];   // [{url, height, mode, type, date}]
-        let galleryOpen = false;
-        let galleryExpandIdx = -1; // -1 = grid view
-        let _galleryImgs = [];     // pre-loaded Image objects for gallery
+        let galleryOpen = false;      // legacy (kept for compat)
+        let galleryExpandIdx = -1;
+        let _galleryImgs = [];
+        let profileOpen = false;
+        let profileTab = 'stats';    // 'stats' | 'moments'
+        let profileMomentExpand = -1;
 
         function _loadMoments() {
             try { savedMoments = JSON.parse(localStorage.getItem('skippy_moments') || '[]'); } catch(e) { savedMoments = []; }
@@ -11933,116 +11936,161 @@ function _drawMpHostEndBtn() {
             ctx.textBaseline = 'alphabetic';
         }
 
-        function drawGallery() {
+        function drawProfileOverlay() {
             const t = Date.now() / 1000;
             const cx = BASE_W / 2;
-            // Full-screen overlay
             ctx.save();
-            ctx.fillStyle = 'rgba(4,0,16,0.96)';
-            ctx.fillRect(0, 0, BASE_W, BASE_H);
-            const galBg = ctx.createRadialGradient(cx, BASE_H/2, 0, cx, BASE_H/2, 280);
-            galBg.addColorStop(0, `rgba(60,20,120,${0.3+0.1*Math.sin(t*1.2)})`);
-            galBg.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = galBg; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            if (galleryExpandIdx >= 0 && galleryExpandIdx < savedMoments.length) {
-                // ── EXPANDED VIEW ──
-                const m = savedMoments[galleryExpandIdx];
-                const img = _galleryImgs[galleryExpandIdx];
-                // Title
+            // ── EXPANDED MOMENT view ──
+            if (profileMomentExpand >= 0 && profileMomentExpand < savedMoments.length) {
+                ctx.fillStyle = 'rgba(4,0,16,0.97)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+                const m = savedMoments[profileMomentExpand];
+                const img = _galleryImgs[profileMomentExpand];
+                const _label = m.type === 'record' ? '🏆 NEW RECORD' : m.type === 'soclose' ? '🔥 SO CLOSE' : '⭐ VICTORY';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#cc99ff';
-                const _typeLabel = m.type === 'record' ? '🏆 NEW RECORD' : m.type === 'soclose' ? '🔥 SO CLOSE' : '⭐ VICTORY';
-                ctx.fillText(_typeLabel + '  •  ' + m.height + 'm', cx, 22);
-
-                // Full screenshot (contain within available area)
-                const dispH = BASE_H - 80, dispW = Math.round(dispH * (BASE_W / BASE_H));
-                const dispX = cx - dispW/2, dispY = 38;
+                ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#cc99ff';
+                ctx.fillText(_label + '  •  ' + m.height + 'm', cx, 22);
+                // Full-size portrait
+                const dH = BASE_H - 78, dW = Math.round(dH * (BASE_W / BASE_H));
+                const dX = cx - dW/2, dY = 36;
                 if (img && img.complete) {
-                    ctx.save();
-                    ctx.shadowColor = '#aa55ff'; ctx.shadowBlur = 18;
-                    ctx.fillStyle = '#000';
-                    ctx.beginPath(); ctx.roundRect(dispX, dispY, dispW, dispH, 10); ctx.fill();
-                    ctx.restore();
-                    ctx.save();
-                    ctx.beginPath(); ctx.roundRect(dispX, dispY, dispW, dispH, 10); ctx.clip();
-                    ctx.drawImage(img, dispX, dispY, dispW, dispH);
-                    ctx.restore();
-                    // Border
-                    const eb = 0.6+0.4*Math.sin(t*2);
+                    ctx.save(); ctx.shadowColor='#aa55ff'; ctx.shadowBlur=18; ctx.fillStyle='#000';
+                    ctx.beginPath(); ctx.roundRect(dX,dY,dW,dH,10); ctx.fill(); ctx.restore();
+                    ctx.save(); ctx.beginPath(); ctx.roundRect(dX,dY,dW,dH,10); ctx.clip();
+                    ctx.drawImage(img,dX,dY,dW,dH); ctx.restore();
+                    const eb=0.6+0.4*Math.sin(t*2);
                     ctx.save(); ctx.shadowColor='#cc88ff'; ctx.shadowBlur=12*eb;
                     ctx.strokeStyle=`rgba(180,100,255,${eb})`; ctx.lineWidth=2.5;
-                    ctx.beginPath(); ctx.roundRect(dispX, dispY, dispW, dispH, 10); ctx.stroke();
-                    ctx.restore();
+                    ctx.beginPath(); ctx.roundRect(dX,dY,dW,dH,10); ctx.stroke(); ctx.restore();
                 }
-                // Close / back button
-                const backW = 130, backH = 36, backX = cx - backW/2, backY = BASE_H - 44;
-                ctx.fillStyle = 'rgba(30,10,60,0.9)';
-                ctx.beginPath(); ctx.roundRect(backX, backY, backW, backH, 10); ctx.fill();
-                ctx.strokeStyle = 'rgba(160,80,255,0.6)'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.roundRect(backX, backY, backW, backH, 10); ctx.stroke();
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#cc99ff';
-                ctx.fillText('← BACK TO GRID', cx, backY + backH/2);
+                const bkW=130,bkH=36,bkX=cx-65,bkY=BASE_H-44;
+                ctx.fillStyle='rgba(30,10,60,0.9)'; ctx.beginPath(); ctx.roundRect(bkX,bkY,bkW,bkH,10); ctx.fill();
+                ctx.strokeStyle='rgba(160,80,255,0.6)'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(bkX,bkY,bkW,bkH,10); ctx.stroke();
+                ctx.fillStyle='#cc99ff'; ctx.font='bold 13px monospace'; ctx.textBaseline='middle';
+                ctx.fillText('← BACK', cx, bkY+bkH/2);
+                ctx.restore(); return;
+            }
+
+            // ── PROFILE PANEL ──
+            ctx.fillStyle = 'rgba(4,0,18,0.94)'; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            const panW = BASE_W - 24, panH = BASE_H - 30, panX = 12, panY = 12;
+            const panBg = ctx.createLinearGradient(panX,panY,panX,panY+panH);
+            panBg.addColorStop(0,'rgba(14,8,44,0.98)'); panBg.addColorStop(1,'rgba(6,3,22,0.98)');
+            ctx.fillStyle = panBg; ctx.beginPath(); ctx.roundRect(panX,panY,panW,panH,20); ctx.fill();
+            const pb = 0.5+0.4*Math.sin(t*2.2);
+            ctx.save(); ctx.shadowColor='#7755cc'; ctx.shadowBlur=14*pb;
+            ctx.strokeStyle=`rgba(120,80,220,${pb})`; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.roundRect(panX,panY,panW,panH,20); ctx.stroke(); ctx.restore();
+
+            // ── Header: avatar + name + close ──
+            const _uname = window.icyCurrentUser || 'PLAYER';
+            const avR = 22, avX = panX + 22 + avR, avY = panY + 22 + avR;
+            const avG2 = ctx.createRadialGradient(avX,avY,0,avX,avY,avR);
+            avG2.addColorStop(0,'#9966ff'); avG2.addColorStop(1,'#4422aa');
+            ctx.save(); ctx.shadowColor='#aa77ff'; ctx.shadowBlur=12;
+            ctx.fillStyle=avG2; ctx.beginPath(); ctx.arc(avX,avY,avR,0,Math.PI*2); ctx.fill(); ctx.restore();
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.font='bold 16px monospace'; ctx.fillStyle='#fff';
+            ctx.fillText(_uname[0].toUpperCase(), avX, avY+1);
+            ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+            ctx.font='bold 18px monospace'; ctx.fillStyle='#cc99ff';
+            ctx.fillText(_uname, avX+avR+12, avY-4);
+            ctx.font='11px monospace'; ctx.fillStyle='rgba(160,130,220,0.7)';
+            ctx.fillText('COINS: ' + lockerPoints.toLocaleString() + ' 🪙', avX+avR+12, avY+13);
+            // Close X
+            const xS=28, xX=panX+panW-xS-8, xY=panY+8;
+            ctx.fillStyle='rgba(40,10,60,0.8)'; ctx.beginPath(); ctx.roundRect(xX,xY,xS,xS,8); ctx.fill();
+            ctx.strokeStyle='rgba(180,80,255,0.4)'; ctx.lineWidth=1.5;
+            ctx.beginPath(); ctx.roundRect(xX,xY,xS,xS,8); ctx.stroke();
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.font='bold 16px monospace'; ctx.fillStyle='#cc88ff';
+            ctx.fillText('✕', xX+xS/2, xY+xS/2);
+
+            // ── Divider ──
+            const divY2 = panY+78;
+            const dvG = ctx.createLinearGradient(panX+20,0,panX+panW-20,0);
+            dvG.addColorStop(0,'rgba(80,40,180,0)'); dvG.addColorStop(0.5,'rgba(120,70,220,0.5)'); dvG.addColorStop(1,'rgba(80,40,180,0)');
+            ctx.fillStyle=dvG; ctx.fillRect(panX+20,divY2,panW-40,1.5);
+
+            // ── Tabs ──
+            const tabY=divY2+10, tabH=36, tabW=(panW-40)/2, tab1X=panX+20, tab2X=tab1X+tabW;
+            const _tabs = [['STATS','stats'],['MY MOMENTS','moments']];
+            for (const [label, key] of _tabs) {
+                const tx2 = key==='stats'?tab1X:tab2X;
+                const active = profileTab===key;
+                ctx.fillStyle = active ? 'rgba(100,60,200,0.85)' : 'rgba(20,10,50,0.5)';
+                ctx.beginPath(); ctx.roundRect(tx2,tabY,tabW-4,tabH,10); ctx.fill();
+                if (active) { ctx.save(); ctx.shadowColor='#aa66ff'; ctx.shadowBlur=8; }
+                ctx.strokeStyle = active ? 'rgba(170,100,255,0.9)' : 'rgba(80,50,130,0.4)';
+                ctx.lineWidth=1.5; ctx.beginPath(); ctx.roundRect(tx2,tabY,tabW-4,tabH,10); ctx.stroke();
+                if (active) ctx.restore();
+                ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.font='bold 13px monospace';
+                ctx.fillStyle = active ? '#ffffff' : 'rgba(180,140,255,0.6)';
+                ctx.fillText(label, tx2+(tabW-4)/2, tabY+tabH/2);
+            }
+
+            const contentY = tabY + tabH + 12;
+
+            if (profileTab === 'stats') {
+                // ── STATS TAB ──
+                const best = allTimeBests[0] || 0;
+                const wins = levelWins ? levelWins.filter(Boolean).length : 0;
+                const rows2 = [
+                    ['🏆  Best Height',  best > 0 ? best+'m' : '—'],
+                    ['⭐  Level Wins',    wins + ' / ' + (typeof LEVEL_GOALS !== 'undefined' ? LEVEL_GOALS.length : '?')],
+                    ['🪙  Coins',         lockerPoints.toLocaleString()],
+                    ['📷  Moments Saved', savedMoments.length + ' / 9'],
+                ];
+                const rH=54, rPad=8;
+                for (let i=0; i<rows2.length; i++) {
+                    const ry=contentY+i*(rH+rPad), rX=panX+16, rW=panW-32;
+                    ctx.fillStyle='rgba(20,10,45,0.7)';
+                    ctx.beginPath(); ctx.roundRect(rX,ry,rW,rH,12); ctx.fill();
+                    ctx.strokeStyle='rgba(80,50,140,0.4)'; ctx.lineWidth=1.2;
+                    ctx.beginPath(); ctx.roundRect(rX,ry,rW,rH,12); ctx.stroke();
+                    ctx.textAlign='left'; ctx.textBaseline='middle';
+                    ctx.font='bold 13px monospace'; ctx.fillStyle='rgba(180,160,255,0.85)';
+                    ctx.fillText(rows2[i][0], rX+14, ry+rH/2);
+                    ctx.textAlign='right'; ctx.font='bold 15px monospace'; ctx.fillStyle='#ffffff';
+                    ctx.fillText(rows2[i][1], rX+rW-14, ry+rH/2);
+                }
             } else {
-                // ── GRID VIEW ──
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#cc99ff';
-                ctx.shadowColor = '#aa55ff'; ctx.shadowBlur = 10;
-                ctx.fillText('📷  MY MOMENTS', cx, 22); ctx.shadowBlur = 0;
-
-                const cols = 3, pad = 10;
-                const cellW = Math.floor((BASE_W - pad*(cols+1)) / cols); // ~143
-                const cellH = Math.round(cellW / (BASE_W / BASE_H));      // ~238 → actually portrait: cellH = cellW / 0.6
-                const portraitH = Math.round(cellW / (BASE_W / BASE_H));
-                const rows = Math.ceil(savedMoments.length / cols);
-                const totalH = rows * (portraitH + pad) + pad;
-                const startY = 40;
-
-                for (let i = 0; i < savedMoments.length; i++) {
-                    const col = i % cols, row = Math.floor(i / cols);
-                    const cx2 = pad + col * (cellW + pad) + cellW/2;
-                    const cy2 = startY + pad + row * (portraitH + pad) + portraitH/2;
-                    const tx = cx2 - cellW/2, ty = cy2 - portraitH/2;
-                    const img = _galleryImgs[i];
-                    // Background
-                    ctx.fillStyle = 'rgba(10,5,30,0.9)';
-                    ctx.beginPath(); ctx.roundRect(tx, ty, cellW, portraitH, 8); ctx.fill();
-                    // Image
-                    if (img && img.complete) {
-                        ctx.save();
-                        ctx.beginPath(); ctx.roundRect(tx, ty, cellW, portraitH, 8); ctx.clip();
-                        ctx.drawImage(img, tx, ty, cellW, portraitH);
-                        ctx.restore();
+                // ── MOMENTS TAB ──
+                if (savedMoments.length === 0) {
+                    ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.font='14px monospace'; ctx.fillStyle='rgba(160,130,220,0.5)';
+                    ctx.fillText('No moments yet — keep playing!', cx, contentY+80);
+                } else {
+                    const cols=3, pad=8;
+                    const cellW2=Math.floor((panW-pad*(cols+1))/cols);
+                    const cellH2=Math.round(cellW2/(BASE_W/BASE_H));
+                    for (let i=0;i<savedMoments.length;i++) {
+                        const col=i%cols, row=Math.floor(i/cols);
+                        const tx3=panX+pad+col*(cellW2+pad), ty3=contentY+row*(cellH2+pad);
+                        const img=_galleryImgs[i];
+                        ctx.fillStyle='rgba(10,5,30,0.9)';
+                        ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.fill();
+                        if (img&&img.complete) {
+                            ctx.save(); ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.clip();
+                            ctx.drawImage(img,tx3,ty3,cellW2,cellH2); ctx.restore();
+                        }
+                        const ovG2=ctx.createLinearGradient(tx3,ty3+cellH2-30,tx3,ty3+cellH2);
+                        ovG2.addColorStop(0,'rgba(0,0,0,0)'); ovG2.addColorStop(1,'rgba(0,0,16,0.82)');
+                        ctx.save(); ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.clip();
+                        ctx.fillStyle=ovG2; ctx.fillRect(tx3,ty3,cellW2,cellH2); ctx.restore();
+                        const m=savedMoments[i];
+                        const _ic2=m.type==='record'?'🏆':m.type==='soclose'?'🔥':'⭐';
+                        ctx.textAlign='center'; ctx.textBaseline='bottom';
+                        ctx.font='bold 9px monospace';
+                        ctx.fillStyle=m.type==='record'?'#ffdd44':m.type==='soclose'?'#ff9944':'#88ffcc';
+                        ctx.fillText(_ic2+' '+m.height+'m', tx3+cellW2/2, ty3+cellH2-3);
+                        const bC2=m.type==='record'?'rgba(255,210,50,0.55)':m.type==='soclose'?'rgba(255,140,40,0.55)':'rgba(80,255,180,0.55)';
+                        ctx.strokeStyle=bC2; ctx.lineWidth=1.5;
+                        ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.stroke();
                     }
-                    // Overlay gradient at bottom
-                    const ovG = ctx.createLinearGradient(tx, ty+portraitH-40, tx, ty+portraitH);
-                    ovG.addColorStop(0,'rgba(0,0,0,0)'); ovG.addColorStop(1,'rgba(0,0,16,0.8)');
-                    ctx.save();
-                    ctx.beginPath(); ctx.roundRect(tx, ty, cellW, portraitH, 8); ctx.clip();
-                    ctx.fillStyle = ovG; ctx.fillRect(tx, ty, cellW, portraitH);
-                    ctx.restore();
-                    // Label
-                    const m = savedMoments[i];
-                    const _ic = m.type === 'record' ? '🏆' : m.type === 'soclose' ? '🔥' : '⭐';
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-                    ctx.font = 'bold 10px monospace';
-                    ctx.fillStyle = m.type === 'record' ? '#ffdd44' : m.type === 'soclose' ? '#ff9944' : '#88ffcc';
-                    ctx.fillText(_ic + ' ' + m.height + 'm', cx2, ty + portraitH - 4);
-                    // Border
-                    const bCol = m.type === 'record' ? 'rgba(255,210,50,0.6)' : m.type === 'soclose' ? 'rgba(255,140,40,0.6)' : 'rgba(80,255,180,0.6)';
-                    ctx.strokeStyle = bCol; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.roundRect(tx, ty, cellW, portraitH, 8); ctx.stroke();
                 }
-                // Close button
-                const clW = 130, clH = 36, clX = cx - clW/2, clY = BASE_H - 44;
-                ctx.fillStyle = 'rgba(30,10,60,0.9)';
-                ctx.beginPath(); ctx.roundRect(clX, clY, clW, clH, 10); ctx.fill();
-                ctx.strokeStyle = 'rgba(160,80,255,0.65)'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.roundRect(clX, clY, clW, clH, 10); ctx.stroke();
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#cc99ff';
-                ctx.fillText('✕  CLOSE', cx, clY + clH/2);
             }
             ctx.restore();
         }
@@ -12355,23 +12403,38 @@ function _drawMpHostEndBtn() {
 
             if (showSettings) drawSettingsPanel();
 
-            // ── MY MOMENTS button — top left ──
-            if (savedMoments.length > 0) {
-                const mmW = 110, mmH = 30, mmX = 8, mmY = 8;
-                ctx.fillStyle = 'rgba(20,10,50,0.88)';
-                ctx.beginPath(); ctx.roundRect(mmX, mmY, mmW, mmH, 10); ctx.fill();
-                ctx.save(); ctx.shadowColor = '#cc88ff'; ctx.shadowBlur = 8;
-                ctx.strokeStyle = 'rgba(180,100,255,0.75)'; ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.roundRect(mmX, mmY, mmW, mmH, 10); ctx.stroke();
+            // ── PROFILE button — top left ──
+            {
+                const _uname = window.icyCurrentUser || 'PLAYER';
+                const _initial = _uname[0].toUpperCase();
+                const t2 = Date.now() / 1000;
+                const pbH = 36, pbX = 8, pbY = 8;
+                // Avatar circle
+                const avR = 14, avX = pbX + avR + 2, avY = pbY + pbH/2;
+                const avG = ctx.createRadialGradient(avX, avY, 0, avX, avY, avR);
+                avG.addColorStop(0, '#8866ff'); avG.addColorStop(1, '#4422aa');
+                ctx.save(); ctx.shadowColor = '#aa77ff'; ctx.shadowBlur = 8;
+                ctx.fillStyle = avG; ctx.beginPath(); ctx.arc(avX, avY, avR, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#dd99ff';
-                ctx.shadowColor = '#aa55ff'; ctx.shadowBlur = 6;
-                ctx.fillText('📷  MY MOMENTS', mmX + mmW/2, mmY + mmH/2);
-                ctx.shadowBlur = 0;
+                ctx.font = 'bold 13px monospace'; ctx.fillStyle = '#fff';
+                ctx.fillText(_initial, avX, avY + 1);
+                // Name pill
+                ctx.font = 'bold 11px monospace';
+                const _nw = ctx.measureText(_uname).width;
+                const pillW = _nw + 24, pillX = avX + avR + 4, pillY = pbY;
+                ctx.fillStyle = 'rgba(20,10,50,0.88)';
+                ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pbH, 10); ctx.fill();
+                ctx.save(); ctx.shadowColor = '#7755cc'; ctx.shadowBlur = 6;
+                ctx.strokeStyle = `rgba(140,90,255,${0.5+0.3*Math.sin(t2*2)})`; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pbH, 10); ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = '#cc99ff'; ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText(_uname, pillX + 10, pbY + pbH/2);
             }
 
-            if (galleryOpen) drawGallery();
+            if (profileOpen) drawProfileOverlay();
 
             // ── COINS — top right ──
             const coinStr = `🪙 ${lockerPoints.toLocaleString()}`;
@@ -13682,38 +13745,45 @@ function menuAction(sx, sy) {
                 return;
             }
             if (state === STATE.MAIN) {
-                // Gallery overlay — handle first
-                if (galleryOpen) {
-                    const cols = 3, pad = 10;
-                    const cellW = Math.floor((BASE_W - pad*(cols+1)) / cols);
-                    const cellH = Math.round(cellW / (BASE_W / BASE_H));
-                    const startY = 40;
-                    const clW = 130, clH = 36, clX = BASE_W/2 - clW/2, clY = BASE_H - 44;
-                    if (galleryExpandIdx >= 0) {
-                        // Expanded: back button or tap anywhere
-                        if (sy >= clY && sy <= clY+clH && sx >= clX && sx <= clX+clW) {
-                            SFX.play('click'); galleryExpandIdx = -1; return;
-                        }
-                        SFX.play('click'); galleryExpandIdx = -1; return;
+                // Profile overlay — handle first
+                if (profileOpen) {
+                    const panX = 12, panY = 12, panW = BASE_W - 24;
+                    const xS = 28, xX = panX + panW - xS - 8, xY = panY + 8;
+                    if (profileMomentExpand >= 0) {
+                        // Expanded moment: any tap goes back to grid
+                        SFX.play('click'); profileMomentExpand = -1; return;
                     }
-                    // Grid: close button
-                    if (sy >= clY && sy <= clY+clH && sx >= clX && sx <= clX+clW) {
-                        SFX.play('click'); galleryOpen = false; return;
+                    // Close X
+                    if (sx >= xX && sx <= xX+xS && sy >= xY && sy <= xY+xS) {
+                        SFX.play('click'); profileOpen = false; return;
                     }
-                    // Grid: tap a cell
-                    for (let i = 0; i < savedMoments.length; i++) {
-                        const col = i % cols, row = Math.floor(i / cols);
-                        const tx = pad + col*(cellW+pad), ty = startY + pad + row*(cellH+pad);
-                        if (sx >= tx && sx <= tx+cellW && sy >= ty && sy <= ty+cellH) {
-                            SFX.play('click'); galleryExpandIdx = i; return;
+                    // Tabs
+                    const divY2 = panY + 78;
+                    const tabY = divY2 + 10, tabH = 36, tabW = (panW - 40) / 2;
+                    const tab1X = panX + 20, tab2X = tab1X + tabW;
+                    if (sy >= tabY && sy <= tabY + tabH) {
+                        if (sx >= tab1X && sx <= tab1X + tabW - 4) { SFX.play('click'); profileTab = 'stats'; return; }
+                        if (sx >= tab2X && sx <= tab2X + tabW - 4) { SFX.play('click'); profileTab = 'moments'; return; }
+                    }
+                    // Moments grid cells
+                    if (profileTab === 'moments' && savedMoments.length > 0) {
+                        const contentY = tabY + tabH + 12;
+                        const cols = 3, pad = 8;
+                        const cellW2 = Math.floor((panW - pad*(cols+1)) / cols);
+                        const cellH2 = Math.round(cellW2 / (BASE_W / BASE_H));
+                        for (let i = 0; i < savedMoments.length; i++) {
+                            const col = i % cols, row = Math.floor(i / cols);
+                            const tx3 = panX + pad + col*(cellW2+pad), ty3 = contentY + row*(cellH2+pad);
+                            if (sx >= tx3 && sx <= tx3+cellW2 && sy >= ty3 && sy <= ty3+cellH2) {
+                                SFX.play('click'); profileMomentExpand = i; return;
+                            }
                         }
                     }
                     return;
                 }
-                // MY MOMENTS button
-                const mmW = 110, mmH = 30, mmX = 8, mmY = 8;
-                if (savedMoments.length > 0 && sx >= mmX && sx <= mmX+mmW && sy >= mmY && sy <= mmY+mmH) {
-                    SFX.play('click'); galleryOpen = true; galleryExpandIdx = -1; return;
+                // Profile button (top-left): hit area covers avatar + pill
+                if (sx >= 8 && sx <= 240 && sy >= 8 && sy <= 44) {
+                    SFX.play('click'); profileOpen = true; profileTab = 'stats'; profileMomentExpand = -1; return;
                 }
                 // Character card area → LOCKER
                 if (sy >= 125 && sy <= 425 && sx >= BASE_W/2 - 160 && sx <= BASE_W/2 + 160) {
@@ -13722,7 +13792,7 @@ function menuAction(sx, sy) {
                 const btnW2 = 230, btnX2 = BASE_W/2 - btnW2/2;
                 // PLAY button: y 442–506
                 if (sy >= 442 && sy <= 506 && sx >= btnX2 && sx <= btnX2 + btnW2) {
-                    SFX.play('click'); showResetConfirm = false; galleryOpen = false; state = STATE.SELECT; return;
+                    SFX.play('click'); showResetConfirm = false; profileOpen = false; state = STATE.SELECT; return;
                 }
                 // ONLINE button: y 514–566
                 if (sy >= 514 && sy <= 566 && sx >= btnX2 && sx <= btnX2 + btnW2) {
@@ -15050,17 +15120,11 @@ function gameUpdate() {
             const dt = Math.min((ts - lastTime) / 1000, 0.1);
             lastTime = ts;
 
-            // Show user tag only on main menu — only touch DOM when state actually changes
-            const _wantTag = (state === STATE.MAIN && window.icyCurrentUser) ? 'flex' : 'none';
-            if (_wantTag !== _lastUserTagState) {
-                if (_userTagEl) _userTagEl.style.display = _wantTag;
-                _lastUserTagState = _wantTag;
-            }
-            // Offline badge — shown alongside user tag when no internet
-            const _wantOffline = (_wantTag === 'flex' && !navigator.onLine) ? 'flex' : 'none';
-            if (_wantOffline !== _lastOfflineState) {
-                if (_offlineBadgeEl) _offlineBadgeEl.style.display = _wantOffline;
-                _lastOfflineState = _wantOffline;
+            // User tag replaced by canvas profile button — always hide DOM element
+            if (_lastUserTagState !== 'none') {
+                if (_userTagEl) _userTagEl.style.display = 'none';
+                if (_offlineBadgeEl) _offlineBadgeEl.style.display = 'none';
+                _lastUserTagState = 'none'; _lastOfflineState = 'none';
             }
             // Music: per-level track during play, menu track everywhere else
             const _wantMusic = (state === STATE.PLAY)
