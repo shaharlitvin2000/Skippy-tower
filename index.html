@@ -11963,12 +11963,20 @@ function _drawMpHostEndBtn() {
                     ctx.strokeStyle=`rgba(180,100,255,${eb})`; ctx.lineWidth=2.5;
                     ctx.beginPath(); ctx.roundRect(dX,dY,dW,dH,10); ctx.stroke(); ctx.restore();
                 }
-                const bkW=130,bkH=36,bkX=cx-65,bkY=BASE_H-44;
-                ctx.fillStyle='rgba(30,10,60,0.9)'; ctx.beginPath(); ctx.roundRect(bkX,bkY,bkW,bkH,10); ctx.fill();
+                // Bottom buttons: BACK (left) + DELETE (right)
+                const btnY=BASE_H-44, btnH2=36;
+                const bkW=140,bkX=cx-148;
+                ctx.fillStyle='rgba(30,10,60,0.9)'; ctx.beginPath(); ctx.roundRect(bkX,btnY,bkW,btnH2,10); ctx.fill();
                 ctx.strokeStyle='rgba(160,80,255,0.6)'; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.roundRect(bkX,bkY,bkW,bkH,10); ctx.stroke();
-                ctx.fillStyle='#cc99ff'; ctx.font='bold 13px monospace'; ctx.textBaseline='middle';
-                ctx.fillText('← BACK', cx, bkY+bkH/2);
+                ctx.beginPath(); ctx.roundRect(bkX,btnY,bkW,btnH2,10); ctx.stroke();
+                ctx.fillStyle='#cc99ff'; ctx.font='bold 13px monospace'; ctx.textBaseline='middle'; ctx.textAlign='center';
+                ctx.fillText('← BACK', bkX+bkW/2, btnY+btnH2/2);
+                const dlW=140,dlX=cx+8;
+                ctx.fillStyle='rgba(80,10,20,0.92)'; ctx.beginPath(); ctx.roundRect(dlX,btnY,dlW,btnH2,10); ctx.fill();
+                ctx.strokeStyle='rgba(255,60,80,0.6)'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(dlX,btnY,dlW,btnH2,10); ctx.stroke();
+                ctx.fillStyle='#ff6677'; ctx.font='bold 13px monospace';
+                ctx.fillText('🗑 DELETE', dlX+dlW/2, btnY+btnH2/2);
                 ctx.restore(); return;
             }
 
@@ -13773,7 +13781,17 @@ function menuAction(sx, sy) {
                     const panX = 12, panY = 12, panW = BASE_W - 24;
                     const xS = 28, xX = panX + panW - xS - 8, xY = panY + 8;
                     if (profileMomentExpand >= 0) {
-                        // Expanded moment: any tap goes back to grid
+                        const cx2 = BASE_W / 2;
+                        const btnY2 = BASE_H - 44, btnH2 = 36;
+                        // DELETE button
+                        const dlW = 140, dlX = cx2 + 8;
+                        if (sx >= dlX && sx <= dlX+dlW && sy >= btnY2 && sy <= btnY2+btnH2) {
+                            savedMoments.splice(profileMomentExpand, 1);
+                            _galleryImgs.splice(profileMomentExpand, 1);
+                            try { localStorage.setItem('skippy_moments', JSON.stringify(savedMoments)); } catch(e) {}
+                            SFX.play('click'); profileMomentExpand = -1; return;
+                        }
+                        // BACK or any other tap
                         SFX.play('click'); profileMomentExpand = -1; return;
                     }
                     // Close X
