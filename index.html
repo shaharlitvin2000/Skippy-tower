@@ -12003,10 +12003,6 @@ function _drawMpHostEndBtn() {
             ctx.font='bold 58px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
             ctx.fillStyle='rgba(200,160,255,0.10)';
             ctx.fillText(_uname.toUpperCase(), panX+panW/2, panY+bannerH/2);
-            // Coins strip on the right half — background layer
-            ctx.font='bold 20px monospace'; ctx.textAlign='right'; ctx.textBaseline='middle';
-            ctx.fillStyle='rgba(255,210,80,0.18)';
-            ctx.fillText('🪙 '+lockerPoints.toLocaleString(), panX+panW-12, panY+bannerH/2);
             ctx.restore();
             // Avatar circle (left of banner)
             const avR=24, avX=panX+20+avR, avY=panY+bannerH/2;
@@ -12021,9 +12017,7 @@ function _drawMpHostEndBtn() {
             const nameX=avX+avR+12;
             ctx.textAlign='left'; ctx.textBaseline='middle';
             ctx.font='bold 16px monospace'; ctx.fillStyle='#ffffff';
-            ctx.fillText(_uname, nameX, avY-11);
-            ctx.font='bold 13px monospace'; ctx.fillStyle='rgba(255,215,80,0.95)';
-            ctx.fillText('🪙 '+lockerPoints.toLocaleString(), nameX, avY+11);
+            ctx.fillText(_uname, nameX, avY);
             // Close X
             const xS=28, xX=panX+panW-xS-8, xY=panY+8;
             ctx.fillStyle='rgba(40,10,60,0.8)'; ctx.beginPath(); ctx.roundRect(xX,xY,xS,xS,8); ctx.fill();
@@ -12467,7 +12461,8 @@ function _drawMpHostEndBtn() {
 
             if (profileOpen) drawProfileOverlay();
 
-            // ── COINS — top right ──
+            // ── COINS — top right (hidden while profile is open) ──
+            if (!profileOpen) {
             const coinStr = `🪙 ${lockerPoints.toLocaleString()}`;
             ctx.font = 'bold 15px monospace';
             const coinPad = 10, coinH = 30;
@@ -12485,6 +12480,7 @@ function _drawMpHostEndBtn() {
             ctx.fillText(coinStr, coinBoxX + coinBoxW / 2, coinBoxY + coinH / 2);
             ctx.shadowBlur = 0;
             ctx.textBaseline = 'alphabetic';
+            } // end if (!profileOpen)
         }
 
         // ── PAUSE MENU ─────────────────────────────────
