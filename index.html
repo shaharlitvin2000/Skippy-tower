@@ -1341,11 +1341,11 @@ await Promise.race([
             try {
                 const url = canvas.toDataURL('image/jpeg', 0.72);
                 savedMoments.unshift({ url, height, mode, type, date: Date.now() });
-                if (savedMoments.length > 9) savedMoments.length = 9;
+                if (savedMoments.length > 20) savedMoments.length = 20;
                 localStorage.setItem('skippy_moments', JSON.stringify(savedMoments));
                 const img = new Image(); img.src = url;
                 _galleryImgs.unshift(img);
-                if (_galleryImgs.length > 9) _galleryImgs.length = 9;
+                if (_galleryImgs.length > 20) _galleryImgs.length = 20;
             } catch(e) {
                 if (savedMoments.length > 0) { savedMoments.pop(); _galleryImgs.pop(); }
                 try { localStorage.setItem('skippy_moments', JSON.stringify(savedMoments)); } catch(e2) {}
@@ -11983,21 +11983,39 @@ function _drawMpHostEndBtn() {
             ctx.strokeStyle=`rgba(120,80,220,${pb})`; ctx.lineWidth=2;
             ctx.beginPath(); ctx.roundRect(panX,panY,panW,panH,20); ctx.stroke(); ctx.restore();
 
-            // ── Header: avatar + name + close ──
+            // ── Header banner (name + coins as background) ──
             const _uname = window.icyCurrentUser || 'PLAYER';
-            const avR = 22, avX = panX + 22 + avR, avY = panY + 22 + avR;
-            const avG2 = ctx.createRadialGradient(avX,avY,0,avX,avY,avR);
+            const bannerH = 78;
+            ctx.save();
+            ctx.beginPath(); ctx.roundRect(panX, panY, panW, bannerH, [20,20,0,0]); ctx.clip();
+            const bnG = ctx.createLinearGradient(panX,panY,panX+panW,panY+bannerH);
+            bnG.addColorStop(0,'rgba(70,20,180,0.95)'); bnG.addColorStop(1,'rgba(30,8,80,0.95)');
+            ctx.fillStyle=bnG; ctx.fillRect(panX,panY,panW,bannerH);
+            // Large watermark username in background
+            ctx.font='bold 58px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillStyle='rgba(200,160,255,0.10)';
+            ctx.fillText(_uname.toUpperCase(), panX+panW/2, panY+bannerH/2);
+            // Coins strip on the right half — background layer
+            ctx.font='bold 20px monospace'; ctx.textAlign='right'; ctx.textBaseline='middle';
+            ctx.fillStyle='rgba(255,210,80,0.18)';
+            ctx.fillText('🪙 '+lockerPoints.toLocaleString(), panX+panW-12, panY+bannerH/2);
+            ctx.restore();
+            // Avatar circle (left of banner)
+            const avR=24, avX=panX+20+avR, avY=panY+bannerH/2;
+            const avG2=ctx.createRadialGradient(avX,avY,0,avX,avY,avR);
             avG2.addColorStop(0,'#9966ff'); avG2.addColorStop(1,'#4422aa');
-            ctx.save(); ctx.shadowColor='#aa77ff'; ctx.shadowBlur=12;
+            ctx.save(); ctx.shadowColor='#bb88ff'; ctx.shadowBlur=16;
             ctx.fillStyle=avG2; ctx.beginPath(); ctx.arc(avX,avY,avR,0,Math.PI*2); ctx.fill(); ctx.restore();
             ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.font='bold 16px monospace'; ctx.fillStyle='#fff';
+            ctx.font='bold 18px monospace'; ctx.fillStyle='#fff';
             ctx.fillText(_uname[0].toUpperCase(), avX, avY+1);
-            ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-            ctx.font='bold 18px monospace'; ctx.fillStyle='#cc99ff';
-            ctx.fillText(_uname, avX+avR+12, avY-4);
-            ctx.font='11px monospace'; ctx.fillStyle='rgba(160,130,220,0.7)';
-            ctx.fillText('COINS: ' + lockerPoints.toLocaleString() + ' 🪙', avX+avR+12, avY+13);
+            // Name + coins labels (foreground, right of avatar)
+            const nameX=avX+avR+12;
+            ctx.textAlign='left'; ctx.textBaseline='middle';
+            ctx.font='bold 16px monospace'; ctx.fillStyle='#ffffff';
+            ctx.fillText(_uname, nameX, avY-11);
+            ctx.font='bold 13px monospace'; ctx.fillStyle='rgba(255,215,80,0.95)';
+            ctx.fillText('🪙 '+lockerPoints.toLocaleString(), nameX, avY+11);
             // Close X
             const xS=28, xX=panX+panW-xS-8, xY=panY+8;
             ctx.fillStyle='rgba(40,10,60,0.8)'; ctx.beginPath(); ctx.roundRect(xX,xY,xS,xS,8); ctx.fill();
@@ -12035,13 +12053,13 @@ function _drawMpHostEndBtn() {
 
             if (profileTab === 'stats') {
                 // ── STATS TAB ──
-                const best = allTimeBests[0] || 0;
+                const best = Math.max(0, ...(allTimeBests && allTimeBests.length ? allTimeBests : [0]));
                 const wins = levelWins ? levelWins.filter(Boolean).length : 0;
                 const rows2 = [
-                    ['🏆  Best Height',  best > 0 ? best+'m' : '—'],
+                    ['🏆  Record',        best > 0 ? best+'m' : '—'],
                     ['⭐  Level Wins',    wins + ' / ' + (typeof LEVEL_GOALS !== 'undefined' ? LEVEL_GOALS.length : '?')],
                     ['🪙  Coins',         lockerPoints.toLocaleString()],
-                    ['📷  Moments Saved', savedMoments.length + ' / 9'],
+                    ['📷  Moments',       savedMoments.length + ' / 20'],
                 ];
                 const rH=54, rPad=8;
                 for (let i=0; i<rows2.length; i++) {
@@ -12063,9 +12081,9 @@ function _drawMpHostEndBtn() {
                     ctx.font='14px monospace'; ctx.fillStyle='rgba(160,130,220,0.5)';
                     ctx.fillText('No moments yet — keep playing!', cx, contentY+80);
                 } else {
-                    const cols=3, pad=8;
+                    const cols=4, pad=7;
                     const cellW2=Math.floor((panW-pad*(cols+1))/cols);
-                    const cellH2=Math.round(cellW2/(BASE_W/BASE_H));
+                    const cellH2=cellW2; // square cells
                     for (let i=0;i<savedMoments.length;i++) {
                         const col=i%cols, row=Math.floor(i/cols);
                         const tx3=panX+pad+col*(cellW2+pad), ty3=contentY+row*(cellH2+pad);
@@ -12073,20 +12091,25 @@ function _drawMpHostEndBtn() {
                         ctx.fillStyle='rgba(10,5,30,0.9)';
                         ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.fill();
                         if (img&&img.complete) {
+                            // cover-crop portrait screenshot into square cell
+                            const iW=img.naturalWidth||BASE_W, iH=img.naturalHeight||BASE_H;
+                            let srcX2=0,srcY2=0,srcW2=iW,srcH2=iH;
+                            if (iW/iH>1){srcH2=iH;srcW2=iH;srcX2=(iW-srcW2)/2;}
+                            else{srcW2=iW;srcH2=iW;srcY2=(iH-srcH2)/4;}
                             ctx.save(); ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.clip();
-                            ctx.drawImage(img,tx3,ty3,cellW2,cellH2); ctx.restore();
+                            ctx.drawImage(img,srcX2,srcY2,srcW2,srcH2,tx3,ty3,cellW2,cellH2); ctx.restore();
                         }
-                        const ovG2=ctx.createLinearGradient(tx3,ty3+cellH2-30,tx3,ty3+cellH2);
-                        ovG2.addColorStop(0,'rgba(0,0,0,0)'); ovG2.addColorStop(1,'rgba(0,0,16,0.82)');
+                        const ovG2=ctx.createLinearGradient(tx3,ty3+cellH2-28,tx3,ty3+cellH2);
+                        ovG2.addColorStop(0,'rgba(0,0,0,0)'); ovG2.addColorStop(1,'rgba(0,0,16,0.85)');
                         ctx.save(); ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.clip();
                         ctx.fillStyle=ovG2; ctx.fillRect(tx3,ty3,cellW2,cellH2); ctx.restore();
                         const m=savedMoments[i];
                         const _ic2=m.type==='record'?'🏆':m.type==='soclose'?'🔥':'⭐';
                         ctx.textAlign='center'; ctx.textBaseline='bottom';
-                        ctx.font='bold 9px monospace';
+                        ctx.font='bold 8px monospace';
                         ctx.fillStyle=m.type==='record'?'#ffdd44':m.type==='soclose'?'#ff9944':'#88ffcc';
                         ctx.fillText(_ic2+' '+m.height+'m', tx3+cellW2/2, ty3+cellH2-3);
-                        const bC2=m.type==='record'?'rgba(255,210,50,0.55)':m.type==='soclose'?'rgba(255,140,40,0.55)':'rgba(80,255,180,0.55)';
+                        const bC2=m.type==='record'?'rgba(255,210,50,0.6)':m.type==='soclose'?'rgba(255,140,40,0.6)':'rgba(80,255,180,0.6)';
                         ctx.strokeStyle=bC2; ctx.lineWidth=1.5;
                         ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.stroke();
                     }
@@ -13768,9 +13791,9 @@ function menuAction(sx, sy) {
                     // Moments grid cells
                     if (profileTab === 'moments' && savedMoments.length > 0) {
                         const contentY = tabY + tabH + 12;
-                        const cols = 3, pad = 8;
+                        const cols = 4, pad = 7;
                         const cellW2 = Math.floor((panW - pad*(cols+1)) / cols);
-                        const cellH2 = Math.round(cellW2 / (BASE_W / BASE_H));
+                        const cellH2 = cellW2; // square cells
                         for (let i = 0; i < savedMoments.length; i++) {
                             const col = i % cols, row = Math.floor(i / cols);
                             const tx3 = panX + pad + col*(cellW2+pad), ty3 = contentY + row*(cellH2+pad);
