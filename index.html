@@ -1332,6 +1332,7 @@ await Promise.race([
         let profileOpen = false;
         let profileTab = 'stats';    // 'stats' | 'moments'
         let profileMomentExpand = -1;
+        let profileDeleteConfirm = false;
 
         function _loadMoments() {
             try { savedMoments = JSON.parse(localStorage.getItem('skippy_moments') || '[]'); } catch(e) { savedMoments = []; }
@@ -11963,20 +11964,55 @@ function _drawMpHostEndBtn() {
                     ctx.strokeStyle=`rgba(180,100,255,${eb})`; ctx.lineWidth=2.5;
                     ctx.beginPath(); ctx.roundRect(dX,dY,dW,dH,10); ctx.stroke(); ctx.restore();
                 }
-                // Bottom buttons: BACK (left) + DELETE (right)
-                const btnY=BASE_H-44, btnH2=36;
-                const bkW=140,bkX=cx-148;
-                ctx.fillStyle='rgba(30,10,60,0.9)'; ctx.beginPath(); ctx.roundRect(bkX,btnY,bkW,btnH2,10); ctx.fill();
+                // Bottom buttons: BACK | SHARE | DELETE
+                const btnY=BASE_H-46, btnH2=36, bW3=130, bGap=7;
+                const b1X=cx-Math.round((3*bW3+2*bGap)/2);
+                const b2X=b1X+bW3+bGap, b3X=b2X+bW3+bGap;
+                // BACK
+                ctx.fillStyle='rgba(30,10,60,0.9)'; ctx.beginPath(); ctx.roundRect(b1X,btnY,bW3,btnH2,10); ctx.fill();
                 ctx.strokeStyle='rgba(160,80,255,0.6)'; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.roundRect(bkX,btnY,bkW,btnH2,10); ctx.stroke();
-                ctx.fillStyle='#cc99ff'; ctx.font='bold 13px monospace'; ctx.textBaseline='middle'; ctx.textAlign='center';
-                ctx.fillText('← BACK', bkX+bkW/2, btnY+btnH2/2);
-                const dlW=140,dlX=cx+8;
-                ctx.fillStyle='rgba(80,10,20,0.92)'; ctx.beginPath(); ctx.roundRect(dlX,btnY,dlW,btnH2,10); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(b1X,btnY,bW3,btnH2,10); ctx.stroke();
+                ctx.fillStyle='#cc99ff'; ctx.font='bold 12px monospace'; ctx.textBaseline='middle'; ctx.textAlign='center';
+                ctx.fillText('← BACK', b1X+bW3/2, btnY+btnH2/2);
+                // SHARE
+                ctx.fillStyle='rgba(5,50,60,0.92)'; ctx.beginPath(); ctx.roundRect(b2X,btnY,bW3,btnH2,10); ctx.fill();
+                ctx.strokeStyle='rgba(40,200,220,0.6)'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(b2X,btnY,bW3,btnH2,10); ctx.stroke();
+                ctx.fillStyle='#44ddee'; ctx.font='bold 12px monospace';
+                ctx.fillText('↗ SHARE', b2X+bW3/2, btnY+btnH2/2);
+                // DELETE
+                ctx.fillStyle='rgba(80,10,20,0.92)'; ctx.beginPath(); ctx.roundRect(b3X,btnY,bW3,btnH2,10); ctx.fill();
                 ctx.strokeStyle='rgba(255,60,80,0.6)'; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.roundRect(dlX,btnY,dlW,btnH2,10); ctx.stroke();
-                ctx.fillStyle='#ff6677'; ctx.font='bold 13px monospace';
-                ctx.fillText('🗑 DELETE', dlX+dlW/2, btnY+btnH2/2);
+                ctx.beginPath(); ctx.roundRect(b3X,btnY,bW3,btnH2,10); ctx.stroke();
+                ctx.fillStyle='#ff6677'; ctx.font='bold 12px monospace';
+                ctx.fillText('🗑 DELETE', b3X+bW3/2, btnY+btnH2/2);
+                // ── CONFIRM DELETE overlay ──
+                if (profileDeleteConfirm) {
+                    ctx.fillStyle='rgba(0,0,0,0.82)'; ctx.fillRect(0,0,BASE_W,BASE_H);
+                    const cfW=300,cfH=160,cfX=cx-150,cfY=BASE_H/2-80;
+                    ctx.fillStyle='rgba(60,10,20,0.97)'; ctx.beginPath(); ctx.roundRect(cfX,cfY,cfW,cfH,18); ctx.fill();
+                    ctx.strokeStyle='rgba(255,60,80,0.7)'; ctx.lineWidth=2;
+                    ctx.beginPath(); ctx.roundRect(cfX,cfY,cfW,cfH,18); ctx.stroke();
+                    ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.font='bold 15px monospace'; ctx.fillStyle='#ffffff';
+                    ctx.fillText('DELETE THIS PHOTO?', cx, cfY+32);
+                    ctx.font='11px monospace'; ctx.fillStyle='rgba(255,180,180,0.7)';
+                    ctx.fillText('This cannot be undone.', cx, cfY+54);
+                    // YES button
+                    const yW=120,yH=38,yX=cfX+18,yY=cfY+cfH-54;
+                    ctx.fillStyle='rgba(180,20,40,0.95)'; ctx.beginPath(); ctx.roundRect(yX,yY,yW,yH,10); ctx.fill();
+                    ctx.strokeStyle='rgba(255,80,100,0.8)'; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.roundRect(yX,yY,yW,yH,10); ctx.stroke();
+                    ctx.font='bold 13px monospace'; ctx.fillStyle='#ffffff';
+                    ctx.fillText('YES, DELETE', yX+yW/2, yY+yH/2);
+                    // CANCEL button
+                    const cW=120,cH=38,cX=cfX+cfW-18-cW,cY=yY;
+                    ctx.fillStyle='rgba(20,10,50,0.95)'; ctx.beginPath(); ctx.roundRect(cX,cY,cW,cH,10); ctx.fill();
+                    ctx.strokeStyle='rgba(140,100,255,0.6)'; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.roundRect(cX,cY,cW,cH,10); ctx.stroke();
+                    ctx.fillStyle='#cc99ff';
+                    ctx.fillText('CANCEL', cX+cW/2, cY+cH/2);
+                }
                 ctx.restore(); return;
             }
 
@@ -12114,6 +12150,10 @@ function _drawMpHostEndBtn() {
                         const bC2=m.type==='record'?'rgba(255,210,50,0.6)':m.type==='soclose'?'rgba(255,140,40,0.6)':'rgba(80,255,180,0.6)';
                         ctx.strokeStyle=bC2; ctx.lineWidth=1.5;
                         ctx.beginPath(); ctx.roundRect(tx3,ty3,cellW2,cellH2,8); ctx.stroke();
+                        // Expand hint icon (top-right corner)
+                        ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.roundRect(tx3+cellW2-18,ty3+2,16,14,4); ctx.fill();
+                        ctx.font='8px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='rgba(255,255,255,0.8)';
+                        ctx.fillText('⤢', tx3+cellW2-10, ty3+9);
                     }
                 }
             }
@@ -12795,6 +12835,23 @@ function _drawMpHostEndBtn() {
             a.href = deathScreenshotUrl;
             a.download = fileName;
             a.click();
+        }
+
+        async function _shareMoment(m) {
+            if (!m || !m.url) return;
+            const heightLabel = m.height + 'm';
+            const typeLabel = m.type === 'record' ? 'New Record' : m.type === 'soclose' ? 'So Close' : 'Victory';
+            const fileName = 'skippy_' + heightLabel + '.jpg';
+            try {
+                const res = await fetch(m.url);
+                const blob = await res.blob();
+                const file = new File([blob], fileName, { type: 'image/jpeg' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'Skippy – ' + typeLabel + '!', text: 'I reached ' + heightLabel + ' in Skippy!' });
+                    return;
+                }
+            } catch (e) { /* cancelled or unavailable */ }
+            const a = document.createElement('a'); a.href = m.url; a.download = fileName; a.click();
         }
 
         function drawDead() {
@@ -13778,21 +13835,35 @@ function menuAction(sx, sy) {
                     const xS = 28, xX = panX + panW - xS - 8, xY = panY + 8;
                     if (profileMomentExpand >= 0) {
                         const cx2 = BASE_W / 2;
-                        const btnY2 = BASE_H - 44, btnH2 = 36;
-                        // DELETE button
-                        const dlW = 140, dlX = cx2 + 8;
-                        if (sx >= dlX && sx <= dlX+dlW && sy >= btnY2 && sy <= btnY2+btnH2) {
-                            savedMoments.splice(profileMomentExpand, 1);
-                            _galleryImgs.splice(profileMomentExpand, 1);
-                            try { localStorage.setItem('skippy_moments', JSON.stringify(savedMoments)); } catch(e) {}
-                            SFX.play('click'); profileMomentExpand = -1; return;
+                        const btnY2 = BASE_H - 46, btnH2 = 36, bW3 = 130, bGap = 7;
+                        const b1X = cx2 - Math.round((3*bW3+2*bGap)/2);
+                        const b2X = b1X+bW3+bGap, b3X = b2X+bW3+bGap;
+                        if (profileDeleteConfirm) {
+                            const cfW=300,cfH=160,cfX=cx2-150,cfY=BASE_H/2-80;
+                            const yW=120,yH=38,yX=cfX+18,yY=cfY+cfH-54;
+                            const cW=120,cH=38,cX=cfX+cfW-18-cW,cY=yY;
+                            if (sx>=yX&&sx<=yX+yW&&sy>=yY&&sy<=yY+yH) {
+                                savedMoments.splice(profileMomentExpand, 1);
+                                _galleryImgs.splice(profileMomentExpand, 1);
+                                try { localStorage.setItem('skippy_moments', JSON.stringify(savedMoments)); } catch(e) {}
+                                SFX.play('click'); profileDeleteConfirm=false; profileMomentExpand=-1; return;
+                            }
+                            SFX.play('click'); profileDeleteConfirm=false; return;
                         }
-                        // BACK or any other tap
-                        SFX.play('click'); profileMomentExpand = -1; return;
+                        // SHARE button
+                        if (sx>=b2X&&sx<=b2X+bW3&&sy>=btnY2&&sy<=btnY2+btnH2) {
+                            SFX.play('click'); _shareMoment(savedMoments[profileMomentExpand]); return;
+                        }
+                        // DELETE button
+                        if (sx>=b3X&&sx<=b3X+bW3&&sy>=btnY2&&sy<=btnY2+btnH2) {
+                            SFX.play('click'); profileDeleteConfirm=true; return;
+                        }
+                        // BACK or anywhere else
+                        SFX.play('click'); profileDeleteConfirm=false; profileMomentExpand=-1; return;
                     }
                     // Close X
                     if (sx >= xX && sx <= xX+xS && sy >= xY && sy <= xY+xS) {
-                        SFX.play('click'); profileOpen = false; return;
+                        SFX.play('click'); profileOpen = false; profileDeleteConfirm = false; return;
                     }
                     // Tabs
                     const divY2 = panY + 78;
@@ -15053,7 +15124,7 @@ function gameUpdate() {
                         lastRunHigh = Math.max(lastRunHigh, LEVEL_GOALS[currentLevel]);
                         deathScreenshotUrl = canvas.toDataURL('image/png');
                         _deathScreenshotImg = new Image(); _deathScreenshotImg.src = deathScreenshotUrl;
-                        _saveMomentToGallery(lastRunHigh, currentMode, 'victory');
+                        _saveMomentToGallery(LEVEL_GOALS[currentLevel], currentMode, 'victory');
                         state = STATE.WIN; hasActiveGame = false;
                         saveBest(LEVEL_GOALS[currentLevel]);
                         levelWins[currentLevel] = true; if (_playerStore) _playerStore.set('wins', levelWins);
