@@ -1203,6 +1203,8 @@ await Promise.race([
         async function _doInitPlayerData(userId) {
             playerDataReady = false;
             _playerStore = SaveSystem.forUser(userId);
+            _currentUserId = userId;
+            _loadMoments();
 
             // One-time migration from legacy flat localStorage to per-user format
             if (!(await _playerStore.get('__migrated_v1'))) {
@@ -1318,9 +1320,13 @@ await Promise.race([
         let profileTab = 'stats';    // 'stats' | 'moments'
         let profileMomentExpand = -1;
         let profileDeleteConfirm = false;
+        let _currentUserId = null;   // set by initPlayerData — used to key per-user moments
 
+        function _momentsKey() {
+            return _currentUserId ? 'skippy_moments_' + _currentUserId : 'skippy_moments';
+        }
         function _loadMoments() {
-            try { savedMoments = JSON.parse(localStorage.getItem('skippy_moments') || '[]'); } catch(e) { savedMoments = []; }
+            try { savedMoments = JSON.parse(localStorage.getItem(_momentsKey()) || '[]'); } catch(e) { savedMoments = []; }
             _galleryImgs = savedMoments.map(m => { const img = new Image(); img.src = m.url; return img; });
         }
         function _saveMomentToGallery(height, mode, type) {
@@ -1328,13 +1334,13 @@ await Promise.race([
                 const url = canvas.toDataURL('image/jpeg', 0.72);
                 savedMoments.unshift({ url, height, mode, type, date: Date.now() });
                 if (savedMoments.length > 20) savedMoments.length = 20;
-                localStorage.setItem('skippy_moments', JSON.stringify(savedMoments));
+                localStorage.setItem(_momentsKey(), JSON.stringify(savedMoments));
                 const img = new Image(); img.src = url;
                 _galleryImgs.unshift(img);
                 if (_galleryImgs.length > 20) _galleryImgs.length = 20;
             } catch(e) {
                 if (savedMoments.length > 0) { savedMoments.pop(); _galleryImgs.pop(); }
-                try { localStorage.setItem('skippy_moments', JSON.stringify(savedMoments)); } catch(e2) {}
+                try { localStorage.setItem(_momentsKey(), JSON.stringify(savedMoments)); } catch(e2) {}
             }
         }
         _loadMoments();
@@ -7823,9 +7829,7 @@ await Promise.race([
                 bg.addColorStop(0,'#3a6fdd'); bg.addColorStop(0.5,'#2858c2'); bg.addColorStop(1,'#1a3f99');
                 ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(-12,-14,24,22,5); ctx.fill();
                 ctx.fillStyle='rgba(140,190,255,0.22)'; ctx.beginPath(); ctx.roundRect(-12,-14,10,22,5); ctx.fill();
-                ctx.strokeStyle='rgba(0,0,50,0.2)'; ctx.lineWidth=0.8;
-                ctx.beginPath(); ctx.moveTo(0,-12); ctx.lineTo(0,5); ctx.stroke();
-                ctx.fillStyle='rgba(200,225,255,0.45)'; ctx.beginPath(); ctx.arc(0,-5,2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(0,0,50,0.14)'; ctx.beginPath(); ctx.roundRect(-12,0,24,8,3); ctx.fill();
                 // scarf + animated tail
                 const sg=ctx.createLinearGradient(-12,-3,12,-3);
                 sg.addColorStop(0,'#c02020'); sg.addColorStop(0.45,'#ee3030'); sg.addColorStop(0.55,'#ee3030'); sg.addColorStop(1,'#c02020');
@@ -7851,14 +7855,14 @@ await Promise.race([
                 // animated hood rim shimmer
                 ctx.strokeStyle=`rgba(180,230,255,${hoodShimmer})`; ctx.lineWidth=1.4;
                 ctx.beginPath(); ctx.arc(0,-37,10,Math.PI+0.15,-0.15); ctx.stroke();
-                // tiny rotating ice crystal on hood tip
+                // ice gem on hood tip (pulsing, no spinning)
                 ctx.save(); ctx.translate(0,-40);
-                ctx.shadowColor='#88ddff'; ctx.shadowBlur=5+3*Math.sin(t*3);
-                ctx.strokeStyle=`rgba(200,240,255,${0.7+0.3*Math.sin(t*2.8)})`; ctx.lineWidth=1;
-                for(let a=0;a<3;a++){
-                    ctx.save(); ctx.rotate(a*Math.PI/3+t*0.6);
-                    ctx.beginPath(); ctx.moveTo(0,-3.5); ctx.lineTo(0,3.5); ctx.stroke(); ctx.restore();
-                }
+                const gp=0.5+0.5*Math.sin(t*2.8);
+                ctx.shadowColor='#88ddff'; ctx.shadowBlur=6+4*gp;
+                ctx.fillStyle=`rgba(${140+80*gp|0},225,255,${0.72+0.2*gp})`;
+                ctx.beginPath(); ctx.moveTo(0,-4.5); ctx.lineTo(3,0); ctx.lineTo(0,4.5); ctx.lineTo(-3,0); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle=`rgba(220,248,255,${0.6+0.3*gp})`; ctx.lineWidth=0.8;
+                ctx.beginPath(); ctx.moveTo(0,-4.5); ctx.lineTo(3,0); ctx.lineTo(0,4.5); ctx.lineTo(-3,0); ctx.closePath(); ctx.stroke();
                 ctx.shadowBlur=0; ctx.restore();
                 // eyebrow
                 ctx.strokeStyle='#5a3010'; ctx.lineWidth=1.8; ctx.lineCap='round';
@@ -7979,20 +7983,17 @@ await Promise.race([
                 ctx.beginPath(); ctx.roundRect(2,6,8,10,2); ctx.fill();
                 ctx.fillStyle='#0a0a0a'; ctx.beginPath(); ctx.roundRect(-12,14,11,7,3); ctx.fill();
                 ctx.beginPath(); ctx.roundRect(1,14,11,7,3); ctx.fill();
-                // orbiting void particles
-                const orbits=[
-                    {r:16, vy:-4, speed:1.3, ph:0.0, sz:2.2},
-                    {r:15, vy:-14, speed:-1.0, ph:2.1, sz:1.8},
-                    {r:18, vy:-24, speed:1.6, ph:1.4, sz:1.5},
-                    {r:13, vy:-30, speed:-0.9, ph:3.3, sz:1.1},
-                ];
-                ctx.shadowColor='#9900ff'; ctx.shadowBlur=10;
-                ctx.fillStyle=`rgba(180,0,255,0.82)`;
-                orbits.forEach(({r,vy,speed,ph,sz})=>{
-                    const ang=t*speed+ph;
-                    ctx.beginPath(); ctx.arc(Math.cos(ang)*r, vy+Math.sin(ang)*r*0.32, sz, 0, Math.PI*2); ctx.fill();
+                // rising void wisps along body edges
+                ctx.save();
+                const wispPts=[[-11,-8],[-13,-18],[-10,-28],[11,-8],[13,-20],[10,-30]];
+                wispPts.forEach(([wx,wy],i)=>{
+                    const wp=0.5+0.5*Math.sin(t*2.1+i*1.05);
+                    ctx.shadowColor='#9900ff'; ctx.shadowBlur=8*wp;
+                    ctx.fillStyle=`rgba(160,0,240,${0.28+0.28*wp})`;
+                    const wsx=1.5+0.8*wp;
+                    ctx.beginPath(); ctx.ellipse(wx,wy-wp*3,wsx,wsx*1.6,0,0,Math.PI*2); ctx.fill();
                 });
-                ctx.shadowBlur=0;
+                ctx.shadowBlur=0; ctx.restore();
                 // collar
                 ctx.fillStyle='#2a2a2a'; ctx.beginPath(); ctx.roundRect(-12,-16,24,5,2); ctx.fill();
                 ctx.fillStyle=`rgba(130,0,255,${0.25+0.2*pulse})`; ctx.fillRect(-11,-16,22,2);
@@ -8080,13 +8081,11 @@ await Promise.race([
                 // cosmic smile
                 ctx.strokeStyle='rgba(0,200,255,0.55)'; ctx.lineWidth=1.4;
                 ctx.beginPath(); ctx.arc(3,-19,3.5,0.2,Math.PI-0.2); ctx.stroke();
-                // two rotating orbit rings
+                // edge nebula glow pulse (stays inside body boundary)
                 ctx.save();
-                ctx.shadowColor='#8844ff'; ctx.shadowBlur=8;
-                ctx.strokeStyle=`rgba(170,100,255,${0.45+0.2*Math.sin(t*2)})`; ctx.lineWidth=1.4;
-                ctx.beginPath(); ctx.ellipse(0,-25,18,5.5,t*0.9,0,Math.PI*2); ctx.stroke();
-                ctx.strokeStyle=`rgba(0,180,255,${0.25+0.12*Math.sin(t*2.3)})`; ctx.lineWidth=0.9;
-                ctx.beginPath(); ctx.ellipse(0,-25,15,4.5,-t*0.65,0,Math.PI*2); ctx.stroke();
+                ctx.shadowColor=`rgba(0,200,255,${0.3+0.2*neb})`; ctx.shadowBlur=14+8*neb;
+                ctx.strokeStyle=`rgba(180,100,255,${0.18+0.14*neb})`; ctx.lineWidth=2.5;
+                ctx.beginPath(); ctx.roundRect(-12,-36,24,58,6); ctx.stroke();
                 ctx.shadowBlur=0; ctx.restore();
                 ctx.restore();
               }
@@ -8134,12 +8133,12 @@ await Promise.race([
                 ctx.shadowBlur=0;
                 ctx.fillStyle='rgba(220,255,240,0.65)'; ctx.fillRect(-6,-9,12,1.5);
                 // vent slots
-                for(let i=0;i<3;i++){ctx.fillStyle='#1e1e1e'; ctx.fillRect(-6,-3+i*3,12,1.5);}
-                // indicator lights
+                for(let i=0;i<3;i++){ctx.fillStyle='#1e1e1e'; ctx.fillRect(-5,-3+i*3,10,1.5);}
+                // indicator lights (top-right of chest panel, not overlapping vents)
                 ctx.shadowColor=`rgba(255,50,50,${0.5+0.5*Math.sin(t*2.3)})`; ctx.shadowBlur=6;
-                ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.arc(-6,-4.5,1.5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.arc(5,-9,1.5,0,Math.PI*2); ctx.fill();
                 ctx.shadowColor=`rgba(255,170,0,${0.5+0.5*Math.sin(t*3.1+1)})`; ctx.shadowBlur=6;
-                ctx.fillStyle='#ff8800'; ctx.beginPath(); ctx.arc(-6,-1.5,1.5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#ff8800'; ctx.beginPath(); ctx.arc(5,-6,1.5,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0;
                 // shoulder pads
                 const spG=ctx.createLinearGradient(-15,-15,15,-15);
@@ -8249,14 +8248,14 @@ await Promise.race([
                 ctx.beginPath(); ctx.moveTo(3,-31); ctx.lineTo(11,-31); ctx.lineTo(19,-51); ctx.closePath(); ctx.stroke();
                 ctx.fillStyle='#ff9999';
                 ctx.beginPath(); ctx.moveTo(4,-32); ctx.lineTo(10,-32); ctx.lineTo(17,-48); ctx.closePath(); ctx.fill();
-                // animated ice crystal above left ear tip
+                // ice crystal gem on left ear tip (pulsing glow only, no rotation)
                 ctx.save(); ctx.translate(-19,-51);
-                ctx.shadowColor=`rgba(180,225,255,${0.35+0.3*Math.sin(sparkPhase)})`; ctx.shadowBlur=7;
-                ctx.strokeStyle=`rgba(210,240,255,${0.6+0.3*Math.sin(sparkPhase)})`; ctx.lineWidth=0.9;
-                for(let a=0;a<6;a++){
-                    ctx.save(); ctx.rotate(a*Math.PI/3+t*0.4);
-                    ctx.beginPath(); ctx.moveTo(0,-3.5); ctx.lineTo(0,3.5); ctx.stroke(); ctx.restore();
-                }
+                const cp=0.5+0.5*Math.sin(sparkPhase*0.8);
+                ctx.shadowColor=`rgba(180,225,255,${0.45+0.35*cp})`; ctx.shadowBlur=8+4*cp;
+                ctx.fillStyle=`rgba(${160+60*cp|0},230,255,${0.75+0.2*cp})`;
+                ctx.beginPath(); ctx.moveTo(0,-5); ctx.lineTo(2.5,0); ctx.lineTo(0,5); ctx.lineTo(-2.5,0); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle=`rgba(255,255,255,${0.6+0.3*cp})`; ctx.lineWidth=0.8;
+                ctx.beginPath(); ctx.moveTo(0,-5); ctx.lineTo(2.5,0); ctx.lineTo(0,5); ctx.lineTo(-2.5,0); ctx.closePath(); ctx.stroke();
                 ctx.shadowBlur=0; ctx.restore();
                 // eyebrows
                 ctx.strokeStyle='rgba(180,140,120,0.72)'; ctx.lineWidth=1.5; ctx.lineCap='round';
@@ -8337,13 +8336,15 @@ await Promise.race([
                 ctx.beginPath(); ctx.arc(8,-26,2.1,0,Math.PI*2); ctx.fill();
                 ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-0.5,-27,0.9,0,Math.PI*2); ctx.fill();
                 ctx.beginPath(); ctx.arc(8.5,-27,0.9,0,Math.PI*2); ctx.fill();
-                // two rotating aura rings
+                // spectral trailing wisps from cape edge
                 ctx.save();
-                ctx.shadowColor='#cc44ff'; ctx.shadowBlur=8;
-                ctx.strokeStyle=`rgba(200,80,255,${0.14+0.12*eyePulse})`; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.ellipse(0,-10,22,11,t*0.45,0,Math.PI*2); ctx.stroke();
-                ctx.strokeStyle=`rgba(160,60,255,${0.09+0.07*eyePulse})`; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.ellipse(0,-10,28,14,-t*0.32,0,Math.PI*2); ctx.stroke();
+                const wispAngs=[{x:-17,y:16},{x:17,y:16},{x:-14,y:4},{x:14,y:4}];
+                wispAngs.forEach(({x,y},i)=>{
+                    const wp2=0.5+0.5*Math.sin(t*2.8+i*0.9);
+                    ctx.shadowColor='#cc44ff'; ctx.shadowBlur=10*wp2;
+                    ctx.fillStyle=`rgba(180,60,255,${0.18+0.18*wp2})`;
+                    ctx.beginPath(); ctx.ellipse(x,y-wp2*4,2,3.5*wp2,0,0,Math.PI*2); ctx.fill();
+                });
                 ctx.shadowBlur=0; ctx.restore();
                 ctx.restore();
               }
@@ -8447,16 +8448,16 @@ await Promise.race([
                 rg.addColorStop(0,'#2a62cc'); rg.addColorStop(0.5,'#1a4aa0'); rg.addColorStop(1,'#0e2a60');
                 ctx.fillStyle=rg; ctx.beginPath(); ctx.roundRect(-13,-15,26,37,7); ctx.fill();
                 ctx.fillStyle='rgba(170,215,255,0.16)'; ctx.beginPath(); ctx.roundRect(-13,-15,10,37,7); ctx.fill();
-                // animated rotating snowflake on robe
+                // emblem snowflake on robe chest (static, clean)
                 ctx.save(); ctx.translate(0,-3);
-                ctx.globalAlpha=0.5+0.2*crystalP;
-                ctx.shadowColor='#aaddff'; ctx.shadowBlur=7*crystalP;
-                ctx.strokeStyle=`rgba(180,230,255,${0.75+0.25*crystalP})`; ctx.lineWidth=1.3;
+                ctx.globalAlpha=0.38+0.18*crystalP;
+                ctx.shadowColor='#aaddff'; ctx.shadowBlur=6*crystalP;
+                ctx.strokeStyle=`rgba(200,240,255,${0.8+0.2*crystalP})`; ctx.lineWidth=1.1;
                 for(let a=0;a<6;a++){
-                    ctx.save(); ctx.rotate(a*Math.PI/3+t*0.9);
+                    ctx.save(); ctx.rotate(a*Math.PI/3);
                     ctx.beginPath(); ctx.moveTo(0,-5.5); ctx.lineTo(0,5.5); ctx.stroke();
                     ctx.save(); ctx.translate(0,-3.5); ctx.rotate(Math.PI/4);
-                    ctx.beginPath(); ctx.moveTo(-2,0); ctx.lineTo(2,0); ctx.stroke(); ctx.restore();
+                    ctx.beginPath(); ctx.moveTo(-1.8,0); ctx.lineTo(1.8,0); ctx.stroke(); ctx.restore();
                     ctx.restore();
                 }
                 ctx.shadowBlur=0; ctx.restore();
@@ -12335,6 +12336,19 @@ function _drawMpHostEndBtn() {
                     ctx.textAlign='right'; ctx.font='bold 15px monospace'; ctx.fillStyle='#ffffff';
                     ctx.fillText(rows2[i][1], rX+rW-14, ry+rH/2);
                 }
+                // ── LOG OUT button ──
+                const loY = contentY + rows2.length*(rH+rPad) + 4;
+                const loX = panX+16, loW = panW-32, loH = 44;
+                const loGrad = ctx.createLinearGradient(loX, loY, loX, loY+loH);
+                loGrad.addColorStop(0, 'rgba(180,30,30,0.85)');
+                loGrad.addColorStop(1, 'rgba(100,10,10,0.85)');
+                ctx.fillStyle = loGrad;
+                ctx.beginPath(); ctx.roundRect(loX, loY, loW, loH, 12); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,80,80,0.5)'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.roundRect(loX, loY, loW, loH, 12); ctx.stroke();
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 14px monospace'; ctx.fillStyle = '#ffaaaa';
+                ctx.fillText('⏻  LOG OUT', loX+loW/2, loY+loH/2);
             } else {
                 // ── MOMENTS TAB ──
                 if (savedMoments.length === 0) {
@@ -14068,7 +14082,7 @@ function menuAction(sx, sy) {
                             if (sx>=yX&&sx<=yX+yW&&sy>=yY&&sy<=yY+yH) {
                                 savedMoments.splice(profileMomentExpand, 1);
                                 _galleryImgs.splice(profileMomentExpand, 1);
-                                try { localStorage.setItem('skippy_moments', JSON.stringify(savedMoments)); } catch(e) {}
+                                try { localStorage.setItem(_momentsKey(), JSON.stringify(savedMoments)); } catch(e) {}
                                 SFX.play('click'); profileDeleteConfirm=false; profileMomentExpand=-1; return;
                             }
                             SFX.play('click'); profileDeleteConfirm=false; return;
@@ -14108,6 +14122,19 @@ function menuAction(sx, sy) {
                             if (sx >= tx3 && sx <= tx3+cellW2 && sy >= ty3 && sy <= ty3+cellH2) {
                                 SFX.play('click'); profileMomentExpand = i; return;
                             }
+                        }
+                    }
+                    // LOG OUT button (stats tab only)
+                    if (profileTab === 'stats') {
+                        const contentY2 = tabY + tabH + 12;
+                        const rH2 = 54, rPad2 = 8, rowCount = 4;
+                        const loY2 = contentY2 + rowCount*(rH2+rPad2) + 4;
+                        const loX2 = panX+16, loW2 = panW-32, loH2 = 44;
+                        if (sx >= loX2 && sx <= loX2+loW2 && sy >= loY2 && sy <= loY2+loH2) {
+                            SFX.play('click');
+                            profileOpen = false;
+                            document.getElementById('logoutConfirm').style.display = 'flex';
+                            return;
                         }
                     }
                     return;
