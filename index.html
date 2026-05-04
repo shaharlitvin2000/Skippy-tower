@@ -8895,7 +8895,7 @@ await Promise.race([
 
                 // trailing wisps — more and larger
                 const wispPts=[[-18,14,0],[-8,20,1.2],[0,22,2.4],[8,20,3.6],[18,14,4.8],[-14,6,0.6],[14,6,3.0]];
-                wispPts.forEach(({0:wx, 1:wy, 2:ph},[a,b,c]=Array.from({length:3},(_,i)=>[wx,wy,ph][i]))=>{
+                wispPts.forEach(([wx,wy,ph])=>{
                     const wp=Math.max(0,Math.sin(t*2.6+ph));
                     if(wp<0.1)return;
                     ctx.save(); ctx.globalAlpha=wp*0.55;
@@ -9738,279 +9738,420 @@ await Promise.race([
             const t = Date.now() / 1000;
             const cxL = BASE_W / 2;
 
-            ctx.fillStyle = '#060610'; ctx.fillRect(0, 0, BASE_W, BASE_H);
-            const bg = ctx.createRadialGradient(cxL, 300, 10, cxL, 300, 320);
-            bg.addColorStop(0, 'rgba(30,0,70,0.5)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = bg; ctx.fillRect(0, 0, BASE_W, BASE_H);
+            // ── Deep space background ──
+            ctx.fillStyle = '#04020e'; ctx.fillRect(0, 0, BASE_W, BASE_H);
 
-            // ── Header bar ──
-            ctx.fillStyle = 'rgba(8,4,20,0.97)'; ctx.fillRect(0, 0, BASE_W, 58);
-            ctx.strokeStyle = 'rgba(120,60,220,0.35)'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(0,58); ctx.lineTo(BASE_W,58); ctx.stroke();
+            // Animated star field background
+            for (let i = 0; i < 40; i++) {
+                const sx = (Math.sin(i * 137.5) * 0.5 + 0.5) * BASE_W;
+                const sy = (Math.cos(i * 97.3) * 0.5 + 0.5) * BASE_H;
+                const sa = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.9 + i * 0.7));
+                ctx.fillStyle = `rgba(200,180,255,${sa * 0.35})`;
+                ctx.beginPath(); ctx.arc(sx, sy, 0.8 + (i % 3) * 0.4, 0, Math.PI * 2); ctx.fill();
+            }
 
-            // Back button
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
-            ctx.beginPath(); ctx.roundRect(10, 12, 44, 34, 9); ctx.fill();
-            ctx.strokeStyle = 'rgba(160,80,255,0.4)'; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(10, 12, 44, 34, 9); ctx.stroke();
+            // Ambient background radial glow
+            const bgG = ctx.createRadialGradient(cxL, BASE_H * 0.45, 20, cxL, BASE_H * 0.45, 280);
+            bgG.addColorStop(0, `rgba(${40 + 15 * Math.sin(t * 0.7)},0,${80 + 20 * Math.sin(t * 0.5)},0.55)`);
+            bgG.addColorStop(0.5, 'rgba(10,0,30,0.3)');
+            bgG.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = bgG; ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+            // ── Header bar — glassy dark ──
+            const hdrG = ctx.createLinearGradient(0, 0, 0, 62);
+            hdrG.addColorStop(0, 'rgba(16, 6, 38, 0.99)');
+            hdrG.addColorStop(1, 'rgba(8, 3, 20, 0.97)');
+            ctx.fillStyle = hdrG; ctx.fillRect(0, 0, BASE_W, 62);
+            // Header bottom border — glowing line
+            const hdrLine = ctx.createLinearGradient(0, 62, BASE_W, 62);
+            hdrLine.addColorStop(0, 'transparent');
+            hdrLine.addColorStop(0.3, `rgba(180,60,255,${0.4 + 0.3 * Math.sin(t * 2)})`);
+            hdrLine.addColorStop(0.7, `rgba(100,160,255,${0.3 + 0.25 * Math.sin(t * 2.4)})`);
+            hdrLine.addColorStop(1, 'transparent');
+            ctx.strokeStyle = hdrLine; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(0, 62); ctx.lineTo(BASE_W, 62); ctx.stroke();
+
+            // Back button — glassy with hover effect
+            ctx.fillStyle = 'rgba(160,60,255,0.1)';
+            ctx.beginPath(); ctx.roundRect(10, 12, 46, 36, 10); ctx.fill();
+            ctx.strokeStyle = `rgba(180,80,255,${0.35 + 0.25 * Math.sin(t * 2.5)})`; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(10, 12, 46, 36, 10); ctx.stroke();
+            ctx.save();
+            ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 8;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#bb66ff';
-            ctx.fillText('←', 32, 29);
+            ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#dd88ff';
+            ctx.fillText('←', 33, 30);
+            ctx.shadowBlur = 0; ctx.restore();
 
-            // Title
-            ctx.font = 'bold 22px monospace';
-            ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 14;
-            ctx.fillStyle = '#cc88ff';
-            ctx.fillText('LOCKER', cxL, 30);
-            ctx.shadowBlur = 0;
-            // Points
-            ctx.textAlign = 'right'; ctx.font = 'bold 14px monospace';
-            ctx.fillStyle = '#ffd700';
-            ctx.fillText(`⬡ ${lockerPoints} pts`, BASE_W - 12, 36);
+            // Title — animated glow
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.shadowColor = `rgba(${160 + 60 * Math.sin(t)},50,255,0.8)`; ctx.shadowBlur = 18 + 8 * Math.sin(t * 1.5);
+            ctx.font = 'bold 24px Orbitron, monospace';
+            const titleG = ctx.createLinearGradient(cxL - 70, 0, cxL + 70, 0);
+            titleG.addColorStop(0, '#cc66ff');
+            titleG.addColorStop(0.5, '#ffffff');
+            titleG.addColorStop(1, '#88aaff');
+            ctx.fillStyle = titleG;
+            ctx.fillText('LOCKER', cxL, 31);
+            ctx.shadowBlur = 0; ctx.restore();
 
-            // ── SKINS / TRAILS tabs ──
-            const tabY = 64, tabH = 32, tabW = 110, tabGap = 8;
+            // Points badge — top right
+            ctx.save();
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+            const pts_pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+            ctx.shadowColor = `rgba(255,210,0,${0.5 + 0.4 * pts_pulse})`; ctx.shadowBlur = 8 + 4 * pts_pulse;
+            ctx.font = 'bold 13px Orbitron, monospace';
+            ctx.fillStyle = `rgb(${220 + 35 * pts_pulse | 0},${185 + 40 * pts_pulse | 0},0)`;
+            ctx.fillText(`⬡ ${lockerPoints}`, BASE_W - 14, 24);
+            ctx.font = 'bold 9px monospace'; ctx.fillStyle = 'rgba(180,150,0,0.7)';
+            ctx.fillText('LOCKER PTS', BASE_W - 14, 40);
+            ctx.shadowBlur = 0; ctx.restore();
+
+            // ── Tabs ──
+            const tabY = 68, tabH = 34, tabW = 116, tabGap = 10;
             const tabSkinX = cxL - tabW - tabGap / 2;
             const tabTrailX = cxL + tabGap / 2;
-            const tabs = [{ label: 'SKINS', x: tabSkinX }, { label: 'TRAILS', x: tabTrailX }];
+            const tabs = [{ label: 'SKINS', x: tabSkinX, icon: '★' }, { label: 'TRAILS', x: tabTrailX, icon: '✦' }];
             for (let i = 0; i < 2; i++) {
                 const active = lockerTab === i;
-                const ep = active ? (0.55 + 0.4 * Math.sin(t * 3)) : 0;
-                ctx.fillStyle = active ? 'rgba(160,60,255,0.18)' : 'rgba(255,255,255,0.04)';
-                ctx.beginPath(); ctx.roundRect(tabs[i].x, tabY, tabW, tabH, 8); ctx.fill();
-                ctx.strokeStyle = active ? `rgba(200,80,255,${ep})` : 'rgba(80,60,100,0.4)';
-                ctx.lineWidth = active ? 2 : 1;
-                if (active) { ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 10 * ep; }
-                ctx.beginPath(); ctx.roundRect(tabs[i].x, tabY, tabW, tabH, 8); ctx.stroke();
-                ctx.shadowBlur = 0;
+                const ap = active ? (0.5 + 0.45 * Math.sin(t * 3.2)) : 0;
+                // Tab background
+                if (active) {
+                    const tabBg = ctx.createLinearGradient(tabs[i].x, tabY, tabs[i].x, tabY + tabH);
+                    tabBg.addColorStop(0, `rgba(${i === 0 ? '160,50,255' : '40,160,255'},0.28)`);
+                    tabBg.addColorStop(1, `rgba(${i === 0 ? '100,20,200' : '20,100,220'},0.15)`);
+                    ctx.fillStyle = tabBg;
+                } else {
+                    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+                }
+                ctx.beginPath(); ctx.roundRect(tabs[i].x, tabY, tabW, tabH, 9); ctx.fill();
+                // Tab border
+                if (active) {
+                    ctx.save();
+                    ctx.shadowColor = i === 0 ? `rgba(200,70,255,${ap})` : `rgba(60,180,255,${ap})`; ctx.shadowBlur = 12 + 8 * ap;
+                    ctx.strokeStyle = i === 0 ? `rgba(220,90,255,${ap})` : `rgba(80,200,255,${ap})`; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(tabs[i].x, tabY, tabW, tabH, 9); ctx.stroke();
+                    // Tab bottom highlight line
+                    ctx.strokeStyle = i === 0 ? `rgba(200,80,255,${ap * 0.8})` : `rgba(60,200,255,${ap * 0.8})`; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(tabs[i].x + 9, tabY + tabH); ctx.lineTo(tabs[i].x + tabW - 9, tabY + tabH); ctx.stroke();
+                    ctx.shadowBlur = 0; ctx.restore();
+                } else {
+                    ctx.strokeStyle = 'rgba(100,70,140,0.3)'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(tabs[i].x, tabY, tabW, tabH, 9); ctx.stroke();
+                }
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.font = `bold 13px monospace`;
-                ctx.fillStyle = active ? '#ee88ff' : '#886699';
+                ctx.font = `bold 12px Orbitron, monospace`;
+                ctx.fillStyle = active ? (i === 0 ? '#ee88ff' : '#66ddff') : '#664488';
                 ctx.fillText(tabs[i].label, tabs[i].x + tabW / 2, tabY + tabH / 2);
             }
 
-            const cols = 3, cellW = 110, cellH = 110, gap = 12;
+            const cols = 3, cellW = 112, cellH = 116, gap = 10;
             const gridW = cols * cellW + (cols - 1) * gap;
             const gx = cxL - gridW / 2;
-            // grid starts just below the tabs (tabs end at y=96)
-            const gridStartY = 106;
+            const gridStartY = 112;
 
-            // ── helper: draw a ??? coming-soon slot ──
+            // ── Helper: coming soon cell ──
             function drawComingSoonCell(cx2, cy2) {
+                // Dark base
                 ctx.fillStyle = 'rgba(255,255,255,0.02)';
-                ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
-                ctx.strokeStyle = 'rgba(80,60,100,0.25)'; ctx.lineWidth = 1;
-                ctx.setLineDash([4, 4]);
-                ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.save(); ctx.globalAlpha = 0.3 + 0.15 * Math.sin(t * 2);
-                ctx.font = 'bold 22px monospace'; ctx.fillStyle = '#886699';
+                ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.fill();
+                // Dashed border
+                ctx.save(); ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = `rgba(100,70,140,${0.2 + 0.15 * Math.sin(t * 1.5)})`; ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.stroke();
+                ctx.setLineDash([]); ctx.restore();
+                // Pulsing question mark
+                ctx.save(); ctx.globalAlpha = 0.25 + 0.18 * Math.sin(t * 2.2);
+                ctx.font = 'bold 28px Orbitron, monospace'; ctx.fillStyle = '#8855aa';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('?', cx2 + cellW/2, cy2 + cellH/2 - 6);
-                ctx.font = 'bold 9px monospace'; ctx.fillStyle = '#664488';
+                ctx.fillText('?', cx2 + cellW / 2, cy2 + cellH / 2 - 8);
+                ctx.font = 'bold 7px monospace'; ctx.fillStyle = '#553366';
                 ctx.textBaseline = 'alphabetic';
-                ctx.fillText('COMING SOON', cx2 + cellW/2, cy2 + cellH - 10);
+                ctx.fillText('COMING SOON', cx2 + cellW / 2, cy2 + cellH - 10);
                 ctx.restore();
             }
 
-            if (lockerTab === 0) {
-                // ── SKINS TAB ──
-                const sel = SKINS[selectedSkin];
+            // ── Helper: draw cell background with rarity glow ──
+            function drawCellBg(cx2, cy2, isSel, unlocked, col_accent, isEquipped) {
+                // Base fill
+                if (isSel) {
+                    const selG = ctx.createLinearGradient(cx2, cy2, cx2, cy2 + cellH);
+                    selG.addColorStop(0, `rgba(${col_accent},0.22)`);
+                    selG.addColorStop(1, `rgba(${col_accent},0.08)`);
+                    ctx.fillStyle = selG;
+                } else if (unlocked) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.055)';
+                } else {
+                    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+                }
+                ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.fill();
 
-                // Grid — ALL skins + ??? slot at end
+                // Border
+                if (isSel) {
+                    const ep = 0.55 + 0.4 * Math.sin(t * 3.2);
+                    ctx.save();
+                    ctx.shadowColor = `rgba(${col_accent},${ep})`; ctx.shadowBlur = 16 + 8 * ep;
+                    ctx.strokeStyle = `rgba(${col_accent},${ep})`; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.stroke();
+                    ctx.shadowBlur = 0; ctx.restore();
+                } else if (isEquipped) {
+                    ctx.strokeStyle = 'rgba(120,180,255,0.5)'; ctx.lineWidth = 1.8;
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.stroke();
+                } else {
+                    ctx.strokeStyle = unlocked ? 'rgba(140,80,200,0.28)' : 'rgba(60,40,80,0.28)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.stroke();
+                }
+            }
+
+            if (lockerTab === 0) {
+                // ══════ SKINS TAB ══════
+                const sel = SKINS[selectedSkin];
                 const totalSkinSlots = SKINS.length + 1;
                 const skinRows = Math.ceil(totalSkinSlots / cols);
+
                 for (let i = 0; i < totalSkinSlots; i++) {
                     const col = i % cols, row = Math.floor(i / cols);
-                    const cx2 = gx + col*(cellW+gap), cy2 = gridStartY + row*(cellH+gap);
+                    const cx2 = gx + col * (cellW + gap), cy2 = gridStartY + row * (cellH + gap);
                     if (i === SKINS.length) { drawComingSoonCell(cx2, cy2); continue; }
                     const sk = SKINS[i];
                     const isSel = i === selectedSkin;
-                    ctx.fillStyle = isSel ? 'rgba(160,60,255,0.22)' : 'rgba(255,255,255,0.04)';
-                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
-                    if (isSel) {
-                        const ep = 0.55 + 0.4 * Math.sin(t * 3);
-                        ctx.strokeStyle = `rgba(200,80,255,${ep})`; ctx.lineWidth = 2.5;
-                        ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 12;
-                    } else {
-                        ctx.strokeStyle = sk.unlocked ? 'rgba(120,80,200,0.35)' : 'rgba(60,50,80,0.35)';
-                        ctx.lineWidth = 1; ctx.shadowBlur = 0;
-                    }
-                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    drawPlayerSkin(sk, cx2+cellW/2, cy2+cellH/2 - 8, 1.2);
+                    const isEq = i === equippedSkin;
+                    const accent = isEq ? '100,160,255' : '200,80,255';
+                    drawCellBg(cx2, cy2, isSel, sk.unlocked, accent, isEq);
+
+                    // Skin preview (clip to cell so nothing overflows)
+                    ctx.save();
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.clip();
+                    drawPlayerSkin(sk, cx2 + cellW / 2, cy2 + cellH / 2 - 10, 1.22);
+                    ctx.restore();
+
+                    // Lock overlay for locked skins
                     if (!sk.unlocked) {
-                        ctx.fillStyle = 'rgba(0,0,0,0.52)';
-                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
-                        ctx.font = '20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.fillStyle = 'rgba(200,200,255,0.5)';
-                        ctx.fillText('🔒', cx2+cellW/2, cy2+cellH/2 - 10);
-                        // Name above price
-                        ctx.font = 'bold 9px monospace'; ctx.textBaseline = 'alphabetic';
-                        ctx.fillStyle = 'rgba(200,180,255,0.75)';
-                        ctx.fillText(sk.name, cx2+cellW/2, cy2+cellH-22);
-                        ctx.font = 'bold 10px monospace';
+                        ctx.fillStyle = 'rgba(2,1,12,0.6)';
+                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.fill();
+                        // Lock icon
+                        ctx.font = '22px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillStyle = 'rgba(180,160,220,0.55)';
+                        ctx.fillText('🔒', cx2 + cellW / 2, cy2 + cellH / 2 - 14);
+                        // Name
+                        ctx.font = 'bold 8px Orbitron, monospace'; ctx.textBaseline = 'alphabetic';
+                        ctx.fillStyle = 'rgba(200,170,255,0.75)';
+                        ctx.fillText(sk.name, cx2 + cellW / 2, cy2 + cellH - 22);
+                        // Price tag
+                        ctx.font = 'bold 9px monospace';
                         if (sk.shopOnly) {
-                            ctx.fillStyle = '#8899ff';
-                            ctx.fillText('🛒 SHOP', cx2+cellW/2, cy2+cellH-10);
+                            ctx.fillStyle = '#7799ff';
+                            ctx.fillText('SHOP ONLY', cx2 + cellW / 2, cy2 + cellH - 10);
                         } else if (sk.price) {
-                            ctx.fillStyle = '#aa88cc';
-                            ctx.fillText(`${sk.price} pts`, cx2+cellW/2, cy2+cellH-10);
-                        } else {
-                            ctx.fillStyle = '#664488';
-                            ctx.fillText('???', cx2+cellW/2, cy2+cellH-10);
+                            const afford = lockerPoints >= sk.price;
+                            ctx.fillStyle = afford ? '#aaddff' : '#664488';
+                            ctx.fillText(`⬡ ${sk.price}`, cx2 + cellW / 2, cy2 + cellH - 10);
                         }
                     } else {
-                        ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
-                        ctx.fillStyle = '#aa66dd'; ctx.textBaseline = 'alphabetic';
-                        ctx.fillText(sk.name, cx2+cellW/2, cy2+cellH-10);
+                        // Name label — bottom
+                        ctx.font = 'bold 9px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+                        ctx.fillStyle = isEq ? '#aaccff' : '#bb77ee';
+                        ctx.fillText(sk.name, cx2 + cellW / 2, cy2 + cellH - 10);
+                        // EQUIPPED badge
+                        if (isEq) {
+                            ctx.save();
+                            ctx.fillStyle = 'rgba(6,12,40,0.88)';
+                            ctx.beginPath(); ctx.roundRect(cx2 + 6, cy2 + 6, 62, 16, 6); ctx.fill();
+                            ctx.strokeStyle = `rgba(80,160,255,${0.5 + 0.3 * Math.sin(t * 3)})`; ctx.lineWidth = 1;
+                            ctx.beginPath(); ctx.roundRect(cx2 + 6, cy2 + 6, 62, 16, 6); ctx.stroke();
+                            ctx.font = 'bold 7px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillStyle = '#88bbff';
+                            ctx.fillText('✓ EQUIPPED', cx2 + 37, cy2 + 14);
+                            ctx.restore();
+                        }
                     }
                 }
-                // Action button — lower (extra gap below grid)
-                const btnY2 = gridStartY + skinRows*(cellH+gap) + 20;
-                const btnW2 = 210, btnH2 = 46, btnX2 = cxL - btnW2/2;
+
+                // ── Action button ──
+                const btnY = gridStartY + skinRows * (cellH + gap) + 16;
+                const btnW = 220, btnH = 50, btnX = cxL - btnW / 2;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                const ep2 = 0.5 + 0.45 * Math.sin(t * 3.2);
+
                 if (sel.unlocked) {
                     const isEq = equippedSkin === selectedSkin;
-                    const ep2 = 0.5 + 0.45 * Math.sin(t * 3);
-                    ctx.fillStyle = isEq ? '#080e38' : '#1a003a';
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = isEq ? `rgba(80,140,255,${ep2})` : `rgba(200,80,255,${ep2})`;
-                    ctx.lineWidth = 2; ctx.shadowColor = isEq ? '#5577ff' : '#cc44ff'; ctx.shadowBlur = 14*ep2;
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    ctx.font = 'bold 18px monospace'; ctx.fillStyle = isEq ? '#aabbff' : '#ee88ff';
-                    ctx.fillText(isEq ? '✓ EQUIPPED' : 'EQUIP', cxL, btnY2 + btnH2/2);
+                    const btnG = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
+                    if (isEq) {
+                        btnG.addColorStop(0, 'rgba(8,20,60,0.96)');
+                        btnG.addColorStop(1, 'rgba(4,10,40,0.96)');
+                    } else {
+                        btnG.addColorStop(0, 'rgba(50,8,100,0.96)');
+                        btnG.addColorStop(1, 'rgba(25,4,65,0.96)');
+                    }
+                    ctx.fillStyle = btnG; ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
+                    ctx.save();
+                    const bc = isEq ? `80,150,255,${ep2}` : `210,80,255,${ep2}`;
+                    ctx.shadowColor = `rgba(${bc})`; ctx.shadowBlur = 18 + 10 * ep2;
+                    ctx.strokeStyle = `rgba(${bc})`; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
+                    ctx.shadowBlur = 0; ctx.restore();
+                    // Button text gradient
+                    const txtG = ctx.createLinearGradient(btnX, 0, btnX + btnW, 0);
+                    if (isEq) { txtG.addColorStop(0, '#88aaff'); txtG.addColorStop(1, '#aabbff'); }
+                    else { txtG.addColorStop(0, '#ee88ff'); txtG.addColorStop(1, '#dd44ff'); }
+                    ctx.font = 'bold 17px Orbitron, monospace'; ctx.fillStyle = txtG;
+                    ctx.fillText(isEq ? '✓  EQUIPPED' : 'EQUIP SKIN', cxL, btnY + btnH / 2);
                 } else if (sel.shopOnly) {
-                    ctx.fillStyle = '#080c30';
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = 'rgba(100,140,255,0.4)'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.font = 'bold 15px monospace'; ctx.fillStyle = '#8899ff';
-                    ctx.fillText('🛒 BUY IN SHOP', cxL, btnY2 + btnH2/2);
+                    ctx.fillStyle = 'rgba(6,10,38,0.96)';
+                    ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
+                    ctx.strokeStyle = `rgba(80,120,255,${0.35 + 0.2 * ep2})`; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
+                    ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = '#7799ff';
+                    ctx.fillText('🛒  BUY IN SHOP', cxL, btnY + btnH / 2);
                 } else if (sel.price) {
                     const canAfford = lockerPoints >= sel.price;
-                    ctx.fillStyle = canAfford ? '#080e38' : '#0a0820';
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = canAfford ? 'rgba(80,140,255,0.7)' : 'rgba(60,60,120,0.5)'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.font = 'bold 18px monospace'; ctx.fillStyle = canAfford ? '#aabbff' : '#445588';
-                    ctx.fillText(`BUY  ⬡ ${sel.price}`, cxL, btnY2 + btnH2/2);
+                    const btnG2 = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
+                    btnG2.addColorStop(0, canAfford ? 'rgba(6,18,55,0.96)' : 'rgba(8,6,22,0.96)');
+                    btnG2.addColorStop(1, canAfford ? 'rgba(3,9,35,0.96)' : 'rgba(4,3,14,0.96)');
+                    ctx.fillStyle = btnG2; ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
+                    if (canAfford) {
+                        ctx.save(); ctx.shadowColor = `rgba(80,160,255,${ep2})`; ctx.shadowBlur = 14 + 8 * ep2;
+                        ctx.strokeStyle = `rgba(80,160,255,${ep2})`; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
+                        ctx.shadowBlur = 0; ctx.restore();
+                    } else {
+                        ctx.strokeStyle = 'rgba(60,50,120,0.45)'; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
+                    }
+                    ctx.font = 'bold 17px Orbitron, monospace'; ctx.fillStyle = canAfford ? '#aaccff' : '#445577';
+                    ctx.fillText(`BUY  ⬡ ${sel.price}`, cxL, btnY + btnH / 2);
                 } else {
-                    ctx.fillStyle = '#0a0a0a';
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = 'rgba(80,50,80,0.4)'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.roundRect(btnX2, btnY2, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.font = 'bold 16px monospace'; ctx.fillStyle = 'rgba(140,100,140,0.5)';
-                    ctx.fillText('🔒 NOT FOR SALE', cxL, btnY2 + btnH2/2);
+                    ctx.fillStyle = 'rgba(6,6,12,0.9)';
+                    ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
+                    ctx.strokeStyle = 'rgba(70,40,70,0.35)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
+                    ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = 'rgba(120,80,120,0.5)';
+                    ctx.fillText('🔒  NOT FOR SALE', cxL, btnY + btnH / 2);
                 }
 
             } else {
-                // ── TRAILS TAB ──
+                // ══════ TRAILS TAB ══════
                 const selT = TRAILS[selectedTrail];
-
-                // Trail grid — ALL trails + ??? slot at end
                 const totalTrailSlots = TRAILS.length + 1;
                 const trailRows = Math.ceil(totalTrailSlots / cols);
-                const tGridY = gridStartY;
+
                 for (let i = 0; i < totalTrailSlots; i++) {
                     const col = i % cols, row = Math.floor(i / cols);
-                    const cx2 = gx + col*(cellW+gap), cy2 = tGridY + row*(cellH+gap);
+                    const cx2 = gx + col * (cellW + gap), cy2 = gridStartY + row * (cellH + gap);
                     if (i === TRAILS.length) { drawComingSoonCell(cx2, cy2); continue; }
                     const tr = TRAILS[i];
                     const isSel = i === selectedTrail;
                     const isEqT = i === equippedTrail;
-                    ctx.fillStyle = isSel ? 'rgba(40,160,220,0.18)' : 'rgba(255,255,255,0.04)';
-                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
-                    if (isSel) {
-                        const ep = 0.55 + 0.4 * Math.sin(t * 3);
-                        ctx.strokeStyle = `rgba(80,200,255,${ep})`; ctx.lineWidth = 2.5;
-                        ctx.shadowColor = '#44bbff'; ctx.shadowBlur = 12;
-                    } else {
-                        ctx.strokeStyle = tr.unlocked ? 'rgba(60,140,180,0.4)' : 'rgba(50,50,70,0.35)';
-                        ctx.lineWidth = 1; ctx.shadowBlur = 0;
+                    const accent = isEqT ? '80,180,255' : '60,200,255';
+                    drawCellBg(cx2, cy2, isSel, tr.unlocked, accent, isEqT);
+
+                    // Trail particle preview — animated ring of particles
+                    const pcxT = cx2 + cellW / 2, pcyT = cy2 + cellH / 2 - 8;
+                    ctx.save();
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.clip();
+                    const pCount = 12;
+                    for (let j = 0; j < pCount; j++) {
+                        const age = ((t * 1.4 + j * (1 / pCount)) % 1);
+                        const ang = (j / pCount) * Math.PI * 2 + t * 0.35;
+                        const radius = 14 + age * 16;
+                        const px = pcxT + Math.cos(ang) * radius;
+                        const py = pcyT + Math.sin(ang) * radius * 0.5;
+                        const pa = tr.unlocked ? (1 - age) * 0.85 : (1 - age) * 0.2;
+                        tr.draw({ x: px, y: py, r: 1.8 + (1 - age) * 2.5, hue: 185 + j * 15, life: (1 - age) * 22, maxLife: 22,
+                            wobble: ang, spin: t * 0.3, segs: [[2, 2], [-2, 2], [1, -2], [0, 3]] }, pa);
                     }
-                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    const pcxT = cx2 + cellW/2, pcyT = cy2 + cellH/2 - 8;
-                    for (let j = 0; j < 8; j++) {
-                        const age = ((t * 1.6 + j * 0.18) % 1);
-                        const ang = (j / 8) * Math.PI * 2 + t * 0.4;
-                        const r2 = 6 + age * 16;
-                        tr.draw({ x: pcxT + Math.cos(ang)*r2, y: pcyT + Math.sin(ang)*r2*0.5,
-                                  r: 1.5+(1-age)*2, hue: 190+j*18, life: (1-age)*20, maxLife: 20,
-                                  wobble: ang, segs: [[1,2],[-1,2],[1,-1],[0,2]] },
-                                 tr.unlocked ? (1-age)*0.75 : (1-age)*0.18);
-                    }
-                    ctx.save(); ctx.globalAlpha = tr.unlocked ? 1 : 0.3;
-                    ctx.fillStyle = tr.color; ctx.shadowColor = tr.color; ctx.shadowBlur = tr.unlocked ? 8 : 0;
-                    ctx.beginPath(); ctx.arc(pcxT, cy2+cellH-22, 4, 0, Math.PI*2); ctx.fill();
-                    ctx.shadowBlur = 0; ctx.restore();
+                    // Center color dot
+                    ctx.globalAlpha = tr.unlocked ? 1 : 0.25;
+                    ctx.shadowColor = tr.color; ctx.shadowBlur = tr.unlocked ? (8 + 5 * Math.sin(t * 2.5 + i)) : 0;
+                    ctx.fillStyle = tr.color;
+                    ctx.beginPath(); ctx.arc(pcxT, pcyT, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+                    ctx.restore();
+
+                    // Lock overlay
                     if (!tr.unlocked) {
-                        ctx.fillStyle = 'rgba(0,0,0,0.45)';
-                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
-                        ctx.font = '20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.fillStyle = 'rgba(180,220,255,0.45)';
-                        ctx.fillText('🔒', cx2+cellW/2, cy2+cellH/2-8);
-                        // Name above price
-                        ctx.font = 'bold 9px monospace'; ctx.textBaseline = 'alphabetic';
-                        ctx.fillStyle = 'rgba(160,220,255,0.75)';
-                        ctx.fillText(tr.name, cx2+cellW/2, cy2+cellH-22);
-                        ctx.font = 'bold 10px monospace';
+                        ctx.fillStyle = 'rgba(2,1,12,0.58)';
+                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.fill();
+                        ctx.font = '22px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillStyle = 'rgba(160,210,255,0.5)';
+                        ctx.fillText('🔒', cx2 + cellW / 2, cy2 + cellH / 2 - 14);
+                        ctx.font = 'bold 8px Orbitron, monospace'; ctx.textBaseline = 'alphabetic';
+                        ctx.fillStyle = 'rgba(140,210,255,0.75)';
+                        ctx.fillText(tr.name, cx2 + cellW / 2, cy2 + cellH - 22);
+                        ctx.font = 'bold 9px monospace';
                         if (tr.shopOnly) {
-                            ctx.fillStyle = '#8899ff';
-                            ctx.fillText('🛒 SHOP', cx2+cellW/2, cy2+cellH-10);
+                            ctx.fillStyle = '#7799ff';
+                            ctx.fillText('SHOP ONLY', cx2 + cellW / 2, cy2 + cellH - 10);
                         } else {
-                            ctx.fillStyle = '#6688bb';
-                            ctx.fillText(`${tr.price} pts`, cx2+cellW/2, cy2+cellH-10);
+                            const afford = lockerPoints >= tr.price;
+                            ctx.fillStyle = afford ? '#88ddff' : '#446688';
+                            ctx.fillText(`⬡ ${tr.price}`, cx2 + cellW / 2, cy2 + cellH - 10);
                         }
                     } else {
-                        // Name label
-                        ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-                        ctx.fillStyle = isEqT ? '#aabbff' : '#6688cc';
-                        ctx.fillText(tr.name, cx2+cellW/2, cy2+cellH-10);
-                        // EQUIPPED badge on cell
+                        ctx.font = 'bold 9px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+                        ctx.fillStyle = isEqT ? '#88ccff' : '#5599bb';
+                        ctx.fillText(tr.name, cx2 + cellW / 2, cy2 + cellH - 10);
                         if (isEqT) {
-                            ctx.fillStyle = 'rgba(10,18,50,0.88)';
-                            ctx.beginPath(); ctx.roundRect(cx2+6, cy2+6, 58, 16, 5); ctx.fill();
-                            ctx.strokeStyle = 'rgba(80,140,255,0.65)'; ctx.lineWidth = 1;
-                            ctx.beginPath(); ctx.roundRect(cx2+6, cy2+6, 58, 16, 5); ctx.stroke();
-                            ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                            ctx.fillStyle = '#aabbff';
-                            ctx.fillText('✓ EQUIPPED', cx2+35, cy2+14);
+                            ctx.save();
+                            ctx.fillStyle = 'rgba(6,12,40,0.88)';
+                            ctx.beginPath(); ctx.roundRect(cx2 + 6, cy2 + 6, 62, 16, 6); ctx.fill();
+                            ctx.strokeStyle = `rgba(60,180,255,${0.5 + 0.3 * Math.sin(t * 3)})`; ctx.lineWidth = 1;
+                            ctx.beginPath(); ctx.roundRect(cx2 + 6, cy2 + 6, 62, 16, 6); ctx.stroke();
+                            ctx.font = 'bold 7px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillStyle = '#66ccff';
+                            ctx.fillText('✓ EQUIPPED', cx2 + 37, cy2 + 14);
+                            ctx.restore();
                         }
                     }
                 }
-                // Action button — lower
-                const tBtnY = tGridY + trailRows*(cellH+gap) + 20;
-                const btnW2 = 210, btnH2 = 46, btnX2 = cxL - btnW2/2;
+
+                // ── Trail Action button ──
+                const tBtnY = gridStartY + trailRows * (cellH + gap) + 16;
+                const btnW = 220, btnH = 50, btnX = cxL - btnW / 2;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                const ep2 = 0.5 + 0.45 * Math.sin(t * 3.2);
+
                 if (selT.unlocked) {
                     const isEqT = equippedTrail === selectedTrail;
-                    const ep2 = 0.5 + 0.45 * Math.sin(t * 3);
-                    ctx.fillStyle = isEqT ? '#080e38' : '#080e38';
-                    ctx.beginPath(); ctx.roundRect(btnX2, tBtnY, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = isEqT ? `rgba(80,140,255,${ep2})` : `rgba(100,160,255,${ep2})`;
-                    ctx.lineWidth = 2; ctx.shadowColor = isEqT ? '#5577ff' : '#6699ff'; ctx.shadowBlur = 14*ep2;
-                    ctx.beginPath(); ctx.roundRect(btnX2, tBtnY, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.shadowBlur = 0;
-                    ctx.font = 'bold 18px monospace'; ctx.fillStyle = isEqT ? '#aabbff' : '#88aaff';
-                    ctx.fillText(isEqT ? '✓ EQUIPPED' : 'EQUIP', cxL, tBtnY + btnH2/2);
+                    const btnG = ctx.createLinearGradient(btnX, tBtnY, btnX, tBtnY + btnH);
+                    btnG.addColorStop(0, 'rgba(4,16,52,0.96)');
+                    btnG.addColorStop(1, 'rgba(2,8,32,0.96)');
+                    ctx.fillStyle = btnG; ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.fill();
+                    ctx.save();
+                    const bc = isEqT ? `60,180,255,${ep2}` : `80,200,255,${ep2}`;
+                    ctx.shadowColor = `rgba(${bc})`; ctx.shadowBlur = 18 + 10 * ep2;
+                    ctx.strokeStyle = `rgba(${bc})`; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.stroke();
+                    ctx.shadowBlur = 0; ctx.restore();
+                    const txtG = ctx.createLinearGradient(btnX, 0, btnX + btnW, 0);
+                    if (isEqT) { txtG.addColorStop(0, '#66bbff'); txtG.addColorStop(1, '#aaddff'); }
+                    else { txtG.addColorStop(0, '#66ddff'); txtG.addColorStop(1, '#22aaff'); }
+                    ctx.font = 'bold 17px Orbitron, monospace'; ctx.fillStyle = txtG;
+                    ctx.fillText(isEqT ? '✓  EQUIPPED' : 'EQUIP TRAIL', cxL, tBtnY + btnH / 2);
                 } else if (selT.shopOnly) {
-                    ctx.fillStyle = '#080c30';
-                    ctx.beginPath(); ctx.roundRect(btnX2, tBtnY, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = 'rgba(100,140,255,0.4)'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.roundRect(btnX2, tBtnY, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.font = 'bold 15px monospace'; ctx.fillStyle = '#8899ff';
-                    ctx.fillText('🛒 BUY IN SHOP', cxL, tBtnY + btnH2/2);
+                    ctx.fillStyle = 'rgba(6,10,38,0.96)';
+                    ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.fill();
+                    ctx.strokeStyle = `rgba(80,120,255,${0.35 + 0.2 * ep2})`; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.stroke();
+                    ctx.font = 'bold 14px Orbitron, monospace'; ctx.fillStyle = '#7799ff';
+                    ctx.fillText('🛒  BUY IN SHOP', cxL, tBtnY + btnH / 2);
                 } else {
                     const canAfford = lockerPoints >= selT.price;
-                    ctx.fillStyle = canAfford ? '#080e38' : '#0a0820';
-                    ctx.beginPath(); ctx.roundRect(btnX2, tBtnY, btnW2, btnH2, 14); ctx.fill();
-                    ctx.strokeStyle = canAfford ? 'rgba(80,140,255,0.7)' : 'rgba(60,60,120,0.5)'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.roundRect(btnX2, tBtnY, btnW2, btnH2, 14); ctx.stroke();
-                    ctx.font = 'bold 18px monospace'; ctx.fillStyle = canAfford ? '#aabbff' : '#445577';
-                    ctx.fillText(`BUY  ⬡ ${selT.price}`, cxL, tBtnY + btnH2/2);
+                    ctx.fillStyle = canAfford ? 'rgba(4,14,48,0.96)' : 'rgba(6,6,20,0.96)';
+                    ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.fill();
+                    if (canAfford) {
+                        ctx.save(); ctx.shadowColor = `rgba(60,180,255,${ep2})`; ctx.shadowBlur = 14 + 8 * ep2;
+                        ctx.strokeStyle = `rgba(60,180,255,${ep2})`; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.stroke();
+                        ctx.shadowBlur = 0; ctx.restore();
+                    } else {
+                        ctx.strokeStyle = 'rgba(50,60,120,0.4)'; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.roundRect(btnX, tBtnY, btnW, btnH, 14); ctx.stroke();
+                    }
+                    ctx.font = 'bold 17px Orbitron, monospace'; ctx.fillStyle = canAfford ? '#88ddff' : '#335566';
+                    ctx.fillText(`BUY  ⬡ ${selT.price}`, cxL, tBtnY + btnH / 2);
                 }
             }
             ctx.textBaseline = 'alphabetic';
@@ -14861,8 +15002,8 @@ function menuAction(sx, sy) {
                 if (sx >= 10 && sx <= 54 && sy >= 12 && sy <= 46) {
                     SFX.play('click'); state = STATE.MAIN; return;
                 }
-                // Tab buttons
-                const tabY = 64, tabH = 32, tabW = 110, tabGap = 8;
+                // Tab buttons — must match drawLocker() layout constants
+                const tabY = 68, tabH = 34, tabW = 116, tabGap = 10;
                 const tabSkinX = BASE_W/2 - tabW - tabGap/2;
                 const tabTrailX = BASE_W/2 + tabGap/2;
                 if (sy >= tabY && sy <= tabY+tabH) {
@@ -14870,11 +15011,11 @@ function menuAction(sx, sy) {
                     if (sx >= tabTrailX && sx <= tabTrailX+tabW) { SFX.play('click'); lockerTab = 1; return; }
                 }
 
-                const cols = 3, cellW = 110, cellH = 110, gap = 12;
+                const cols = 3, cellW = 112, cellH = 116, gap = 10;
                 const gx = BASE_W/2 - (cols*cellW+(cols-1)*gap)/2;
 
                 if (lockerTab === 0) {
-                    const gridStartY = 106;
+                    const gridStartY = 112;
                     const totalSkinSlots = SKINS.length + 1;
                     const skinRows = Math.ceil(totalSkinSlots / cols);
                     for (let i = 0; i < SKINS.length; i++) {
@@ -14883,8 +15024,8 @@ function menuAction(sx, sy) {
                             selectedSkin = i; return;
                         }
                     }
-                    const btnY2 = gridStartY + skinRows*(cellH+gap) + 20;
-                    if (sy >= btnY2 && sy <= btnY2+46 && sx >= BASE_W/2-105 && sx <= BASE_W/2+105) {
+                    const btnY2 = gridStartY + skinRows*(cellH+gap) + 16;
+                    if (sy >= btnY2 && sy <= btnY2+50 && sx >= BASE_W/2-110 && sx <= BASE_W/2+110) {
                         const sk = SKINS[selectedSkin];
                         if (sk.unlocked) { equippedSkin = selectedSkin; saveSkins(); }
                         else if (sk.shopOnly) { shopFrom = 'locker'; state = STATE.SHOP; }
@@ -14894,7 +15035,7 @@ function menuAction(sx, sy) {
                         return;
                     }
                 } else {
-                    const tGridY = 106;
+                    const tGridY = 112;
                     const totalTrailSlots = TRAILS.length + 1;
                     const trailRows = Math.ceil(totalTrailSlots / cols);
                     for (let i = 0; i < TRAILS.length; i++) {
@@ -14903,8 +15044,8 @@ function menuAction(sx, sy) {
                             selectedTrail = i; return;
                         }
                     }
-                    const tBtnY = tGridY + trailRows*(cellH+gap) + 20;
-                    if (sy >= tBtnY && sy <= tBtnY+46 && sx >= BASE_W/2-105 && sx <= BASE_W/2+105) {
+                    const tBtnY = tGridY + trailRows*(cellH+gap) + 16;
+                    if (sy >= tBtnY && sy <= tBtnY+50 && sx >= BASE_W/2-110 && sx <= BASE_W/2+110) {
                         const tr = TRAILS[selectedTrail];
                         if (tr.unlocked) { equippedTrail = selectedTrail; saveTrails(); }
                         else if (tr.shopOnly) { shopFrom = 'locker'; state = STATE.SHOP; }
