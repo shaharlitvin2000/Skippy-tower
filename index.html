@@ -595,12 +595,12 @@
             <!-- SIGNUP FIELDS -->
             <div id="signupFields">
                 <label>Username</label>
-                <input id="suUsername" type="text" maxlength="20" autocomplete="username" placeholder="Choose a username">
+                <input id="suUsername" type="text" maxlength="20" autocomplete="off" placeholder="Choose a username">
                 <div id="authErrorUsername"></div>
                 <label>Password</label>
-                <input id="suPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters">
+                <input id="suPassword" type="password" autocomplete="off" placeholder="At least 6 characters">
                 <label>Confirm Password</label>
-                <input id="suConfirm" type="password" autocomplete="new-password" placeholder="Repeat password">
+                <input id="suConfirm" type="password" autocomplete="off" placeholder="Repeat password">
                 <div id="authError"></div>
                 <button class="authBtn" id="signupBtn">SIGN UP</button>
                 <hr class="authDivider">
@@ -610,9 +610,9 @@
             <!-- LOGIN FIELDS -->
             <div id="loginFields" style="display:none">
                 <label>Username</label>
-                <input id="liIdentifier" type="text" autocomplete="username" placeholder="Your username">
+                <input id="liIdentifier" type="text" autocomplete="off" placeholder="Your username">
                 <label>Password</label>
-                <input id="liPassword" type="password" autocomplete="current-password" placeholder="Your password">
+                <input id="liPassword" type="password" autocomplete="off" placeholder="Your password">
                 <div id="authError2"></div>
                 <button class="authBtn" id="loginBtn">LOG IN</button>
                 <hr class="authDivider">
@@ -986,25 +986,12 @@ async get(rawKey) {
             document.getElementById('suConfirm').addEventListener('keydown',  e => { if (e.key === 'Enter') document.getElementById('signupBtn').click(); });
             document.getElementById('liPassword').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
 
-            // ── User tag helpers ──
-            function _showUserTag(name) {
-                const tag = document.getElementById('userTag');
-                if (!tag) return;
-                document.getElementById('userTagName').textContent = name;
-                tag.style.display = 'flex';
-            }
-            function _hideUserTag() {
-                const tag = document.getElementById('userTag');
-                if (tag) tag.style.display = 'none';
-            }
-
             // ── Hide auth overlay + load player data ──
             async function _hideAuth() {
                 overlay.classList.remove('visible');
                 const user = UserSystem.currentUser;
                 window.icyCurrentUser = user ? user.username : null;
                 if (user) {
-                    _showUserTag(user.username);
                     if (typeof window.initPlayerData === 'function') {
 await Promise.race([
     window.initPlayerData(user.userId),
@@ -1021,7 +1008,6 @@ await Promise.race([
                 logoutConfirm.style.display = 'none';
                 await UserSystem.logout();
                 window.icyCurrentUser = null;
-                _hideUserTag();
                 document.getElementById('suUsername').value  = '';
                 document.getElementById('suPassword').value  = '';
                 document.getElementById('suConfirm').value   = '';
@@ -1036,7 +1022,6 @@ await Promise.race([
                 overlay.classList.add('visible');
             } else {
                 window.icyCurrentUser = existing.username;
-                _showUserTag(existing.username);
                 // initPlayerData will be called by the game init IIFE below
             }
         })();
