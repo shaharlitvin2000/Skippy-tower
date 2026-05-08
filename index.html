@@ -8973,7 +8973,13 @@ await Promise.race([
               }
             },
         ];
-        SKINS.length = 1; // keep only default skin
+
+        // Display order: sorted by rarity (common→uncommon→rare→epic→legendary).
+        // SKINS indices are stable — save data (equippedSkin/selectedSkin) always uses original indices.
+        const _RARITY_RANK = {common:0, uncommon:1, rare:2, epic:3, legendary:4};
+        const SKIN_DISPLAY = [...SKINS.keys()].sort((a,b) =>
+            (_RARITY_RANK[SKINS[a].rarity||'common']) - (_RARITY_RANK[SKINS[b].rarity||'common'])
+        );
 
         let selectedSkin = 0;
         let equippedSkin = 0;
@@ -9378,9 +9384,10 @@ await Promise.race([
                     const col = i % cols, row = Math.floor(i / cols);
                     const cx2 = gx + col * (cellW + gap), cy2 = gridStartY + row * (cellH + gap);
                     if (i === SKINS.length) { drawComingSoonCell(cx2, cy2); continue; }
-                    const sk = SKINS[i];
-                    const isSel = i === selectedSkin;
-                    const isEq  = i === equippedSkin;
+                    const skinIdx = SKIN_DISPLAY[i];
+                    const sk = SKINS[skinIdx];
+                    const isSel = skinIdx === selectedSkin;
+                    const isEq  = skinIdx === equippedSkin;
                     const rc    = RARITY_CFG[sk.rarity || 'common'];
                     const ep    = isSel ? (0.55 + 0.4 * Math.sin(t * 3.2)) : 0;
 
@@ -14568,7 +14575,7 @@ function menuAction(sx, sy) {
                     for (let i = 0; i < SKINS.length; i++) {
                         const cx2 = gx + (i%cols)*(cellW+gap), cy2 = gridStartY + Math.floor(i/cols)*(cellH+gap);
                         if (sx >= cx2 && sx <= cx2+cellW && sy >= cy2 && sy <= cy2+cellH) {
-                            selectedSkin = i; return;
+                            selectedSkin = SKIN_DISPLAY[i]; return;
                         }
                     }
                     const btnY2 = gridStartY + skinRows*(cellH+gap) + 16;
