@@ -9129,31 +9129,31 @@ await Promise.race([
         // ─────────────────────────────────────────────
         //  SHOP ITEMS
         // ─────────────────────────────────────────────
-        // SKINS[5]=ArcticFox, [6]=Phantom, [7]=CyberNinja, [8]=FrostMage, [9]=DemonLord
+        // SKINS[5]=SnowFox, [6]=ShadowBlade, [7]=SolarKnight, [8]=ToxicPunk, [9]=DemonOverlord
         const SHOP_ITEMS = [
             {
-                id: 'phantom', type: 'skin', skinIdx: 6,
-                name: 'Phantom', price: 1200,
-                tag: 'EXCLUSIVE', tagColor: '#cc88ff',
-                desc: 'Ghostly spirit with glowing eyes',
+                id: 'shadow_blade', type: 'skin', skinIdx: 6,
+                name: 'Shadow Blade', price: 1200,
+                tag: 'EXCLUSIVE', tagColor: '#00ddcc',
+                desc: 'Dark ninja with glowing teal runes',
             },
             {
-                id: 'cyber_ninja', type: 'skin', skinIdx: 7,
-                name: 'Cyber Ninja', price: 1500,
-                tag: 'EXCLUSIVE', tagColor: '#00ffcc',
-                desc: 'Neon-visor assassin from the future',
+                id: 'solar_knight', type: 'skin', skinIdx: 7,
+                name: 'Solar Knight', price: 1500,
+                tag: 'EXCLUSIVE', tagColor: '#ffcc00',
+                desc: 'Golden armored warrior with solar crown',
             },
             {
-                id: 'blizzard_bundle', type: 'skin', skinIdx: 8,
-                name: 'Frost Mage', price: 1800,
-                tag: 'EXCLUSIVE', tagColor: '#aaeeff',
-                desc: 'Ancient ice wizard with enchanted staff',
+                id: 'toxic_bundle', type: 'bundle', skinIdx: 8, trailIdx: 3,
+                name: 'Toxic Bundle', price: 2000,
+                tag: 'BUNDLE', tagColor: '#80ff00',
+                desc: 'Toxic Punk skin + Inferno trail',
             },
             {
-                id: 'inferno_bundle', type: 'bundle', skinIdx: 9, trailIdx: 3,
-                name: 'Inferno Bundle', price: 2800,
-                tag: 'BUNDLE', tagColor: '#ff8844',
-                desc: 'Demon Lord skin + Inferno trail',
+                id: 'demon_bundle', type: 'bundle', skinIdx: 9, trailIdx: 3,
+                name: 'Demon Bundle', price: 2800,
+                tag: 'BUNDLE', tagColor: '#ff5500',
+                desc: 'Demon Overlord skin + Inferno trail',
             },
             {
                 id: 'plasma_trail', type: 'trail', trailIdx: 5,
@@ -9375,6 +9375,7 @@ await Promise.race([
                 // Rarity config — mirrors Sling Kong / Brawl Stars visual language
                 const RARITY_CFG = {
                     common:    { rgb:'160,160,185', label:'COMMON',    stars:1 },
+                    uncommon:  { rgb:'60,200,100',  label:'UNCOMMON',  stars:2 },
                     rare:      { rgb:'60,140,255',  label:'RARE',      stars:2 },
                     epic:      { rgb:'190,60,255',  label:'EPIC',      stars:3 },
                     legendary: { rgb:'255,185,20',  label:'LEGEND',    stars:4 },
