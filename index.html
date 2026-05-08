@@ -7799,7 +7799,7 @@ await Promise.race([
         // skin definitions — drawn procedurally
         const SKINS = [
             // 0: Ice Kid — default
-            { name:'Ice Kid', unlocked:true,
+            { name:'Ice Kid', unlocked:true, rarity:'common',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const blink = (Math.sin(t*2.3)>0.92) ? Math.max(0.08,Math.abs(Math.sin((t%0.5)*Math.PI*6))) : 1;
@@ -7971,7 +7971,7 @@ await Promise.race([
               }
             },
             // 1: Fire Guy
-            { name:'Fire Guy', unlocked:false, price:300,
+            { name:'Fire Guy', unlocked:false, price:300, rarity:'rare',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const fl  = 0.5+0.5*Math.sin(t*13.7);
@@ -8121,7 +8121,7 @@ await Promise.race([
               }
             },
             // 2: Shadow
-            { name:'Shadow', unlocked:false, price:500,
+            { name:'Shadow', unlocked:false, price:500, rarity:'epic',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const p1 = 0.5+0.5*Math.sin(t*2.2);
@@ -8247,7 +8247,7 @@ await Promise.race([
               }
             },
             // 3: Galaxy
-            { name:'Galaxy', unlocked:false, price:800,
+            { name:'Galaxy', unlocked:false, price:800, rarity:'epic',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const nb  = 0.5+0.5*Math.sin(t*1.8);
@@ -8410,7 +8410,7 @@ await Promise.race([
               }
             },
             // 4: Robot
-            { name:'Robot', unlocked:false, price:1200,
+            { name:'Robot', unlocked:false, price:1200, rarity:'legendary',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const led  = 0.5+0.5*Math.sin(t*4.2);
@@ -8610,7 +8610,7 @@ await Promise.race([
             },
             // ── SHOP-EXCLUSIVE SKINS (indices 5-9) ──
             // 5: Arctic Fox
-            { name:'Arctic Fox', unlocked:false, shopOnly:true,
+            { name:'Arctic Fox', unlocked:false, shopOnly:true, rarity:'rare',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const tailSway = Math.sin(t*2.4)*0.26;
@@ -8807,7 +8807,7 @@ await Promise.race([
               }
             },
             // 6: Phantom
-            { name:'Phantom', unlocked:false, shopOnly:true,
+            { name:'Phantom', unlocked:false, shopOnly:true, rarity:'epic',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const floatY = Math.sin(t*2.0)*2.8;
@@ -8958,7 +8958,7 @@ await Promise.race([
               }
             },
             // 7: Cyber Ninja
-            { name:'Cyber Ninja', unlocked:false, shopOnly:true,
+            { name:'Cyber Ninja', unlocked:false, shopOnly:true, rarity:'epic',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const ne  = 0.5+0.5*Math.sin(t*3.2);
@@ -9116,7 +9116,7 @@ await Promise.race([
               }
             },
             // 8: Frost Mage
-            { name:'Frost Mage', unlocked:false, shopOnly:true,
+            { name:'Frost Mage', unlocked:false, shopOnly:true, rarity:'legendary',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const cp  = 0.5+0.5*Math.sin(t*2.5);
@@ -9307,7 +9307,7 @@ await Promise.race([
               }
             },
             // 9: Demon Lord
-            { name:'Demon Lord', unlocked:false, shopOnly:true,
+            { name:'Demon Lord', unlocked:false, shopOnly:true, rarity:'legendary',
               draw(cx,cy,s) {
                 const t = Date.now()/1000;
                 const lv  = 0.5+0.5*Math.sin(t*4.5);
@@ -9911,61 +9911,152 @@ await Promise.race([
                 const totalSkinSlots = SKINS.length + 1;
                 const skinRows = Math.ceil(totalSkinSlots / cols);
 
+                // Rarity config — mirrors Sling Kong / Brawl Stars visual language
+                const RARITY_CFG = {
+                    common:    { rgb:'160,160,185', label:'COMMON',    stars:1 },
+                    rare:      { rgb:'60,140,255',  label:'RARE',      stars:2 },
+                    epic:      { rgb:'190,60,255',  label:'EPIC',      stars:3 },
+                    legendary: { rgb:'255,185,20',  label:'LEGEND',    stars:4 },
+                };
+
                 for (let i = 0; i < totalSkinSlots; i++) {
                     const col = i % cols, row = Math.floor(i / cols);
                     const cx2 = gx + col * (cellW + gap), cy2 = gridStartY + row * (cellH + gap);
                     if (i === SKINS.length) { drawComingSoonCell(cx2, cy2); continue; }
                     const sk = SKINS[i];
                     const isSel = i === selectedSkin;
-                    const isEq = i === equippedSkin;
-                    const accent = isEq ? '100,160,255' : '200,80,255';
-                    drawCellBg(cx2, cy2, isSel, sk.unlocked, accent, isEq);
+                    const isEq  = i === equippedSkin;
+                    const rc    = RARITY_CFG[sk.rarity || 'common'];
+                    const ep    = isSel ? (0.55 + 0.4 * Math.sin(t * 3.2)) : 0;
 
-                    // Skin preview (clip to cell so nothing overflows)
+                    // ── Cell base + rarity radial glow ──
+                    ctx.fillStyle = sk.unlocked ? 'rgba(255,255,255,0.065)' : 'rgba(255,255,255,0.025)';
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
+                    const radG = ctx.createRadialGradient(cx2+cellW/2, cy2+cellH*0.44, 0, cx2+cellW/2, cy2+cellH*0.44, 52);
+                    radG.addColorStop(0, `rgba(${rc.rgb},${sk.unlocked ? 0.16 : 0.06})`);
+                    radG.addColorStop(1, 'transparent');
+                    ctx.fillStyle = radG;
+                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.fill();
+
+                    // ── Cell border — rarity-coloured, pulse when selected ──
+                    if (isSel) {
+                        ctx.save();
+                        ctx.shadowColor = `rgba(${rc.rgb},${ep})`; ctx.shadowBlur = 20 + 8 * ep;
+                        ctx.strokeStyle = `rgba(${rc.rgb},${0.75 + 0.25 * ep})`; ctx.lineWidth = 2.5;
+                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.stroke();
+                        ctx.shadowBlur = 0; ctx.restore();
+                    } else if (isEq) {
+                        ctx.strokeStyle = `rgba(${rc.rgb},0.6)`; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.stroke();
+                    } else {
+                        ctx.strokeStyle = `rgba(${rc.rgb},${sk.unlocked ? 0.3 : 0.13})`; ctx.lineWidth = 1;
+                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 14); ctx.stroke();
+                    }
+
+                    // ── Character preview (clip above the name bar) ──
                     ctx.save();
-                    ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.clip();
-                    drawPlayerSkin(sk, cx2 + cellW / 2, cy2 + cellH / 2 - 10, 1.22);
+                    ctx.beginPath(); ctx.roundRect(cx2+1, cy2+1, cellW-2, cellH-24, 13); ctx.clip();
+                    ctx.globalAlpha = sk.unlocked ? 1 : 0.28;
+                    drawPlayerSkin(sk, cx2 + cellW / 2, cy2 + cellH / 2 - 12, 1.22);
+                    ctx.globalAlpha = 1;
+                    // Diagonal shine sweep on unlocked cells (like Sling Kong cards)
+                    if (sk.unlocked) {
+                        const shineX = cx2 + ((t * 26) % (cellW + 50)) - 25;
+                        const shineG = ctx.createLinearGradient(shineX - 10, cy2, shineX + 10, cy2 + cellH);
+                        shineG.addColorStop(0, 'transparent');
+                        shineG.addColorStop(0.4, 'rgba(255,255,255,0.055)');
+                        shineG.addColorStop(0.5, 'rgba(255,255,255,0.10)');
+                        shineG.addColorStop(0.6, 'rgba(255,255,255,0.055)');
+                        shineG.addColorStop(1, 'transparent');
+                        ctx.fillStyle = shineG;
+                        ctx.fillRect(cx2, cy2, cellW, cellH);
+                    }
                     ctx.restore();
 
-                    // Lock overlay for locked skins
+                    // ── Name bar — always visible at bottom ──
+                    const barH2 = 23, barY2 = cy2 + cellH - barH2;
+                    const barBg = ctx.createLinearGradient(cx2, barY2, cx2, cy2 + cellH);
+                    barBg.addColorStop(0, `rgba(${rc.rgb},0.20)`);
+                    barBg.addColorStop(1, 'rgba(0,0,0,0.90)');
+                    ctx.fillStyle = barBg;
+                    ctx.beginPath(); ctx.roundRect(cx2, barY2, cellW, barH2, [0,0,14,14]); ctx.fill();
+                    // Name text
+                    ctx.font = 'bold 7.5px Orbitron, monospace';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = sk.unlocked ? '#ffffff' : `rgba(${rc.rgb},0.65)`;
+                    const nameMaxW = cellW - 30;
+                    ctx.save(); ctx.beginPath(); ctx.rect(cx2 + 2, barY2, nameMaxW, barH2); ctx.clip();
+                    ctx.fillText(sk.name.toUpperCase(), cx2 + nameMaxW / 2 + 2, barY2 + 11.5);
+                    ctx.restore();
+                    // Rarity stars (right side of name bar)
+                    for (let ss = 0; ss < rc.stars; ss++) {
+                        const sx2 = cx2 + cellW - 5 - (rc.stars - 1 - ss) * 7;
+                        ctx.save();
+                        ctx.shadowColor = `rgba(${rc.rgb},0.9)`; ctx.shadowBlur = sk.unlocked ? 5 : 0;
+                        ctx.fillStyle   = sk.unlocked ? `rgba(${rc.rgb},1)` : `rgba(${rc.rgb},0.3)`;
+                        ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText('★', sx2, barY2 + 11.5);
+                        ctx.shadowBlur = 0; ctx.restore();
+                    }
+
+                    // ── Rarity badge (top-right corner, non-common only) ──
+                    if (sk.rarity && sk.rarity !== 'common') {
+                        ctx.font = 'bold 6.5px Orbitron, monospace';
+                        const lbl = rc.label;
+                        const badgeW = ctx.measureText(lbl).width + 10;
+                        const badgeX = cx2 + cellW - badgeW - 4;
+                        ctx.save();
+                        ctx.fillStyle = 'rgba(0,0,0,0.80)';
+                        ctx.beginPath(); ctx.roundRect(badgeX, cy2 + 4, badgeW, 13, 4); ctx.fill();
+                        ctx.strokeStyle = `rgba(${rc.rgb},0.85)`; ctx.lineWidth = 0.8;
+                        ctx.beginPath(); ctx.roundRect(badgeX, cy2 + 4, badgeW, 13, 4); ctx.stroke();
+                        ctx.fillStyle = `rgba(${rc.rgb},1)`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(lbl, badgeX + badgeW / 2, cy2 + 10.5);
+                        ctx.restore();
+                    }
+
+                    // ── Lock overlay (locked skins — character dimly visible underneath) ──
                     if (!sk.unlocked) {
-                        ctx.fillStyle = 'rgba(2,1,12,0.6)';
-                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH, 16); ctx.fill();
+                        const lockVig = ctx.createRadialGradient(cx2+cellW/2, cy2+cellH/2-12, 8, cx2+cellW/2, cy2+cellH/2-12, 52);
+                        lockVig.addColorStop(0, 'rgba(0,0,0,0.0)');
+                        lockVig.addColorStop(1, 'rgba(0,0,8,0.60)');
+                        ctx.fillStyle = lockVig;
+                        ctx.beginPath(); ctx.roundRect(cx2, cy2, cellW, cellH - barH2, 14); ctx.fill();
                         // Lock icon
-                        ctx.font = '22px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.fillStyle = 'rgba(180,160,220,0.55)';
-                        ctx.fillText('🔒', cx2 + cellW / 2, cy2 + cellH / 2 - 14);
-                        // Name
-                        ctx.font = 'bold 8px Orbitron, monospace'; ctx.textBaseline = 'alphabetic';
-                        ctx.fillStyle = 'rgba(200,170,255,0.75)';
-                        ctx.fillText(sk.name, cx2 + cellW / 2, cy2 + cellH - 22);
-                        // Price tag
-                        ctx.font = 'bold 9px monospace';
-                        if (sk.shopOnly) {
-                            ctx.fillStyle = '#7799ff';
-                            ctx.fillText('SHOP ONLY', cx2 + cellW / 2, cy2 + cellH - 10);
-                        } else if (sk.price) {
+                        ctx.font = '19px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillStyle = `rgba(${rc.rgb},0.82)`;
+                        ctx.fillText('🔒', cx2 + cellW / 2, cy2 + cellH / 2 - 16);
+                        // Price or SHOP label
+                        if (!sk.shopOnly && sk.price) {
                             const afford = lockerPoints >= sk.price;
-                            ctx.fillStyle = afford ? '#aaddff' : '#664488';
-                            ctx.fillText(`⬡ ${sk.price}`, cx2 + cellW / 2, cy2 + cellH - 10);
-                        }
-                    } else {
-                        // Name label — bottom
-                        ctx.font = 'bold 9px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-                        ctx.fillStyle = isEq ? '#aaccff' : '#bb77ee';
-                        ctx.fillText(sk.name, cx2 + cellW / 2, cy2 + cellH - 10);
-                        // EQUIPPED badge
-                        if (isEq) {
                             ctx.save();
-                            ctx.fillStyle = 'rgba(6,12,40,0.88)';
-                            ctx.beginPath(); ctx.roundRect(cx2 + 6, cy2 + 6, 62, 16, 6); ctx.fill();
-                            ctx.strokeStyle = `rgba(80,160,255,${0.5 + 0.3 * Math.sin(t * 3)})`; ctx.lineWidth = 1;
-                            ctx.beginPath(); ctx.roundRect(cx2 + 6, cy2 + 6, 62, 16, 6); ctx.stroke();
-                            ctx.font = 'bold 7px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                            ctx.fillStyle = '#88bbff';
-                            ctx.fillText('✓ EQUIPPED', cx2 + 37, cy2 + 14);
-                            ctx.restore();
+                            ctx.font = 'bold 10px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            if (afford) { ctx.shadowColor = '#aaddff'; ctx.shadowBlur = 6; ctx.fillStyle = '#aaddff'; }
+                            else { ctx.fillStyle = '#554466'; }
+                            ctx.fillText(`⬡ ${sk.price}`, cx2 + cellW / 2, cy2 + cellH / 2 + 5);
+                            ctx.shadowBlur = 0; ctx.restore();
+                        } else if (sk.shopOnly) {
+                            ctx.font = 'bold 8px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillStyle = '#7799ff';
+                            ctx.fillText('SHOP', cx2 + cellW / 2, cy2 + cellH / 2 + 5);
                         }
+                    }
+
+                    // ── EQUIPPED badge (top-left, green pill) ──
+                    if (isEq) {
+                        ctx.save();
+                        const eqBg = ctx.createLinearGradient(cx2 + 4, cy2 + 4, cx2 + 4, cy2 + 20);
+                        eqBg.addColorStop(0, 'rgba(40,215,95,0.97)');
+                        eqBg.addColorStop(1, 'rgba(18,155,58,0.93)');
+                        ctx.fillStyle = eqBg;
+                        ctx.shadowColor = 'rgba(40,230,85,0.65)'; ctx.shadowBlur = 9;
+                        ctx.beginPath(); ctx.roundRect(cx2 + 4, cy2 + 4, 52, 15, 5); ctx.fill();
+                        ctx.shadowBlur = 0;
+                        ctx.font = 'bold 7px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText('✓ EQUIPPED', cx2 + 30, cy2 + 11.5);
+                        ctx.restore();
                     }
                 }
 
@@ -9974,6 +10065,7 @@ await Promise.race([
                 const btnW = 220, btnH = 50, btnX = cxL - btnW / 2;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 const ep2 = 0.5 + 0.45 * Math.sin(t * 3.2);
+                const selRc = RARITY_CFG[sel.rarity || 'common'];
 
                 if (sel.unlocked) {
                     const isEq = equippedSkin === selectedSkin;
@@ -9982,20 +10074,19 @@ await Promise.race([
                         btnG.addColorStop(0, 'rgba(8,20,60,0.96)');
                         btnG.addColorStop(1, 'rgba(4,10,40,0.96)');
                     } else {
-                        btnG.addColorStop(0, 'rgba(50,8,100,0.96)');
-                        btnG.addColorStop(1, 'rgba(25,4,65,0.96)');
+                        btnG.addColorStop(0, `rgba(${selRc.rgb},0.22)`);
+                        btnG.addColorStop(1, 'rgba(0,0,0,0.90)');
                     }
                     ctx.fillStyle = btnG; ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
                     ctx.save();
-                    const bc = isEq ? `80,150,255,${ep2}` : `210,80,255,${ep2}`;
+                    const bc = isEq ? `80,150,255,${ep2}` : `${selRc.rgb},${ep2}`;
                     ctx.shadowColor = `rgba(${bc})`; ctx.shadowBlur = 18 + 10 * ep2;
                     ctx.strokeStyle = `rgba(${bc})`; ctx.lineWidth = 2;
                     ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
                     ctx.shadowBlur = 0; ctx.restore();
-                    // Button text gradient
                     const txtG = ctx.createLinearGradient(btnX, 0, btnX + btnW, 0);
                     if (isEq) { txtG.addColorStop(0, '#88aaff'); txtG.addColorStop(1, '#aabbff'); }
-                    else { txtG.addColorStop(0, '#ee88ff'); txtG.addColorStop(1, '#dd44ff'); }
+                    else { txtG.addColorStop(0, `rgba(${selRc.rgb},1)`); txtG.addColorStop(1, '#ffffff'); }
                     ctx.font = 'bold 17px Orbitron, monospace'; ctx.fillStyle = txtG;
                     ctx.fillText(isEq ? '✓  EQUIPPED' : 'EQUIP SKIN', cxL, btnY + btnH / 2);
                 } else if (sel.shopOnly) {
@@ -10008,19 +10099,20 @@ await Promise.race([
                 } else if (sel.price) {
                     const canAfford = lockerPoints >= sel.price;
                     const btnG2 = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
-                    btnG2.addColorStop(0, canAfford ? 'rgba(6,18,55,0.96)' : 'rgba(8,6,22,0.96)');
-                    btnG2.addColorStop(1, canAfford ? 'rgba(3,9,35,0.96)' : 'rgba(4,3,14,0.96)');
+                    btnG2.addColorStop(0, canAfford ? `rgba(${selRc.rgb},0.20)` : 'rgba(8,6,22,0.96)');
+                    btnG2.addColorStop(1, canAfford ? 'rgba(0,0,0,0.88)' : 'rgba(4,3,14,0.96)');
                     ctx.fillStyle = btnG2; ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.fill();
                     if (canAfford) {
-                        ctx.save(); ctx.shadowColor = `rgba(80,160,255,${ep2})`; ctx.shadowBlur = 14 + 8 * ep2;
-                        ctx.strokeStyle = `rgba(80,160,255,${ep2})`; ctx.lineWidth = 2;
+                        ctx.save(); ctx.shadowColor = `rgba(${selRc.rgb},${ep2})`; ctx.shadowBlur = 14 + 8 * ep2;
+                        ctx.strokeStyle = `rgba(${selRc.rgb},${ep2})`; ctx.lineWidth = 2;
                         ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
                         ctx.shadowBlur = 0; ctx.restore();
                     } else {
                         ctx.strokeStyle = 'rgba(60,50,120,0.45)'; ctx.lineWidth = 1.5;
                         ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 14); ctx.stroke();
                     }
-                    ctx.font = 'bold 17px Orbitron, monospace'; ctx.fillStyle = canAfford ? '#aaccff' : '#445577';
+                    ctx.font = 'bold 17px Orbitron, monospace';
+                    ctx.fillStyle = canAfford ? `rgba(${selRc.rgb},1)` : '#445577';
                     ctx.fillText(`BUY  ⬡ ${sel.price}`, cxL, btnY + btnH / 2);
                 } else {
                     ctx.fillStyle = 'rgba(6,6,12,0.9)';
