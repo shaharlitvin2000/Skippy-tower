@@ -7801,611 +7801,268 @@ await Promise.race([
             // 0: Ice Kid — default
             { name:'Ice Kid', unlocked:true, rarity:'common',
               draw(cx,cy,s) {
-                const t = Date.now()/1000;
-                const blink = (Math.sin(t*2.3)>0.92) ? Math.max(0.08,Math.abs(Math.sin((t%0.5)*Math.PI*6))) : 1;
-                const breathP = 0.5+0.5*Math.sin(t*1.4);
-                const scarfA = Math.sin(t*3.4);
-                const scarfB = Math.sin(t*3.4+0.6);
-                const shimP = 0.5+0.5*Math.sin(t*2.1);
-                const gemP = 0.5+0.5*Math.sin(t*2.8);
-                const bodyIce = 0.5+0.5*Math.sin(t*1.7+0.5);
+                const t=Date.now()/1000;
+                const blink=(Math.sin(t*2.3)>0.92)?Math.max(0.05,Math.abs(Math.sin((t%0.4)*Math.PI*8))):1;
                 ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s);
-
-                // ground frost shadow
-                const shadowG=ctx.createRadialGradient(0,20,0,0,20,16);
-                shadowG.addColorStop(0,'rgba(100,180,255,0.18)');
-                shadowG.addColorStop(0.5,'rgba(60,120,200,0.08)');
-                shadowG.addColorStop(1,'transparent');
-                ctx.fillStyle=shadowG; ctx.beginPath(); ctx.ellipse(0,20,16,5,0,0,Math.PI*2); ctx.fill();
-
-                // floating ice crystal particles around body
-                const icePts=[[-16,-5,0],[-17,2,1.2],[14,-8,2.4],[16,0,3.6],[-14,8,4.8],[13,7,0.8]];
-                icePts.forEach(([px,py,ph])=>{
-                    const ip=0.5+0.5*Math.sin(t*2.2+ph);
-                    const iy=py-ip*3;
-                    ctx.save(); ctx.globalAlpha=0.35+0.4*ip;
-                    ctx.shadowColor='#aaeeff'; ctx.shadowBlur=5+3*ip;
-                    ctx.fillStyle=`rgba(${160+80*ip|0},230,255,0.85)`;
-                    ctx.translate(px,iy);
-                    ctx.beginPath(); ctx.moveTo(0,-2.2); ctx.lineTo(1.4,0); ctx.lineTo(0,2.2); ctx.lineTo(-1.4,0); ctx.closePath(); ctx.fill();
-                    ctx.shadowBlur=0; ctx.restore();
-                });
-
-                // boots — dark fur-trimmed
-                const bootG=ctx.createLinearGradient(-12,14,12,22);
-                bootG.addColorStop(0,'#2a1c10'); bootG.addColorStop(0.6,'#1c1208'); bootG.addColorStop(1,'#100a04');
-                ctx.fillStyle=bootG; ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill();
-                // boot ice trim
-                const btrimG=ctx.createLinearGradient(-12,14,12,14);
-                btrimG.addColorStop(0,'rgba(140,210,255,0.5)'); btrimG.addColorStop(0.5,'rgba(200,240,255,0.7)'); btrimG.addColorStop(1,'rgba(140,210,255,0.5)');
-                ctx.fillStyle=btrimG; ctx.fillRect(-12,14,11,2.5); ctx.fillRect(1,14,11,2.5);
-                ctx.strokeStyle='rgba(180,230,255,0.4)'; ctx.lineWidth=0.8;
-                ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.stroke();
-                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.stroke();
-
-                // pants — layered blue
-                const pantsG=ctx.createLinearGradient(-10,6,10,17);
-                pantsG.addColorStop(0,'#1a448a'); pantsG.addColorStop(0.4,'#122e6a'); pantsG.addColorStop(1,'#0a1e4c');
-                ctx.fillStyle=pantsG; ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill();
-                // pants highlight stripe
-                ctx.fillStyle='rgba(100,160,255,0.22)'; ctx.fillRect(-10,6,3,11); ctx.fillRect(2,6,3,11);
-                // pants crease shadow
-                ctx.fillStyle='rgba(0,0,40,0.28)'; ctx.fillRect(-10,12,8,5); ctx.fillRect(2,12,8,5);
-                // knee badges
-                ctx.fillStyle='rgba(160,210,255,0.3)'; ctx.beginPath(); ctx.ellipse(-6,12,3.5,1.5,0,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(6,12,3.5,1.5,0,0,Math.PI*2); ctx.fill();
-
-                // body jacket — rich layered gradient
-                const bg=ctx.createLinearGradient(-12,-15,12,8);
-                bg.addColorStop(0,'#4a80f0'); bg.addColorStop(0.3,'#3268d8'); bg.addColorStop(0.7,'#2050b8'); bg.addColorStop(1,'#163898');
-                ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(-12,-15,24,23,6); ctx.fill();
-                // left side highlight
-                ctx.fillStyle='rgba(160,210,255,0.28)'; ctx.beginPath(); ctx.roundRect(-12,-15,9,23,6); ctx.fill();
-                // bottom shadow
-                ctx.fillStyle='rgba(0,0,60,0.2)'; ctx.beginPath(); ctx.roundRect(-12,2,24,6,3); ctx.fill();
-                // animated frost crack pattern on body
-                ctx.save();
-                ctx.shadowColor=`rgba(140,220,255,${0.3+0.25*bodyIce})`; ctx.shadowBlur=6+4*bodyIce;
-                ctx.strokeStyle=`rgba(180,235,255,${0.22+0.2*bodyIce})`; ctx.lineWidth=0.9;
-                ctx.beginPath(); ctx.moveTo(-6,-10); ctx.lineTo(-3,-6); ctx.lineTo(-7,-2); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(4,-8); ctx.lineTo(7,-4); ctx.lineTo(4,0); ctx.lineTo(8,3); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-2,2); ctx.lineTo(2,5); ctx.lineTo(-1,7); ctx.stroke();
-                ctx.shadowBlur=0; ctx.restore();
-                // chest snowflake emblem
-                ctx.save(); ctx.translate(0,-5); ctx.globalAlpha=0.22+0.14*shimP;
-                ctx.strokeStyle='rgba(200,240,255,0.9)'; ctx.lineWidth=0.9;
-                for(let a=0;a<6;a++){ctx.save();ctx.rotate(a*Math.PI/3);ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(0,5);ctx.stroke();ctx.restore();}
-                ctx.globalAlpha=1; ctx.restore();
-
-                // scarf — multi-segment animated
-                const sg=ctx.createLinearGradient(-12,-4,12,-4);
-                sg.addColorStop(0,'#b01818'); sg.addColorStop(0.3,'#ee2828'); sg.addColorStop(0.5,'#ff3838'); sg.addColorStop(0.7,'#ee2828'); sg.addColorStop(1,'#b01818');
-                ctx.fillStyle=sg; ctx.beginPath(); ctx.roundRect(-12,-4,24,7,4); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.fillRect(-11,-4,22,2);
-                // scarf tail — bezier animated
-                ctx.save();
-                const s1=scarfA*2.2, s2=scarfB*1.4;
-                ctx.fillStyle='#c02020';
-                ctx.beginPath();
-                ctx.moveTo(-12,3);
-                ctx.bezierCurveTo(-16+s1,8,-18+s2,12,-14+s1,16);
-                ctx.lineTo(-11,16);
-                ctx.bezierCurveTo(-15+s2,12,-13+s1,8,-10,3);
-                ctx.closePath(); ctx.fill();
-                ctx.fillStyle='rgba(255,100,100,0.3)';
-                ctx.beginPath(); ctx.moveTo(-12,3); ctx.bezierCurveTo(-14+s1,7,-15+s2,11,-12+s1,15); ctx.lineTo(-12,15); ctx.closePath(); ctx.fill();
-                ctx.restore();
-
+                // boots
+                ctx.fillStyle='#2a1c10'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.lineJoin='round';
+                ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle='rgba(140,210,255,0.9)'; ctx.fillRect(-12,14,11,2.5); ctx.fillRect(1,14,11,2.5);
+                // pants
+                const pantsG=ctx.createLinearGradient(0,6,0,17); pantsG.addColorStop(0,'#1a448a'); pantsG.addColorStop(1,'#0a1e4c');
+                ctx.fillStyle=pantsG; ctx.strokeStyle='#051235'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill(); ctx.stroke();
+                // jacket
+                const bodyG=ctx.createLinearGradient(0,-15,0,8); bodyG.addColorStop(0,'#5a9eff'); bodyG.addColorStop(1,'#1e4dd0');
+                ctx.fillStyle=bodyG; ctx.strokeStyle='#0a2580'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-12,-15,24,23,6); ctx.fill(); ctx.stroke();
+                // scarf
+                ctx.fillStyle='#ee2222'; ctx.strokeStyle='#880000'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-13,-5,26,7,4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fillRect(-12,-5,24,2.5);
                 // neck
-                const neckG=ctx.createLinearGradient(-4,-17,4,-13);
-                neckG.addColorStop(0,'#d8b898'); neckG.addColorStop(1,'#c8a078');
-                ctx.fillStyle=neckG; ctx.beginPath(); ctx.roundRect(-4,-17,8,5,2); ctx.fill();
-
-                // head — warm skin tones
-                const hg=ctx.createLinearGradient(-8,-34,8,-13);
-                hg.addColorStop(0,'#f8dcba'); hg.addColorStop(0.5,'#f0c898'); hg.addColorStop(1,'#e4b880');
-                ctx.fillStyle=hg; ctx.beginPath(); ctx.roundRect(-10,-33,20,19,8); ctx.fill();
-                // cheek blush
-                ctx.fillStyle='rgba(255,140,100,0.28)'; ctx.beginPath(); ctx.ellipse(-4,-21,4,2.5,0,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(8,-21,3.5,2.2,0,0,Math.PI*2); ctx.fill();
-                // chin shadow
-                ctx.fillStyle='rgba(0,0,0,0.07)'; ctx.beginPath(); ctx.roundRect(-9,-17,18,5,4); ctx.fill();
-
-                // hood — deep layered blue
-                const hood=ctx.createLinearGradient(-12,-41,12,-17);
-                hood.addColorStop(0,'#5590ff'); hood.addColorStop(0.3,'#4078e8'); hood.addColorStop(0.6,'#2c60cc'); hood.addColorStop(1,'#1e4aaa');
-                ctx.fillStyle=hood; ctx.beginPath(); ctx.roundRect(-12,-41,24,23,10); ctx.fill();
-                // hood inner shadow
-                ctx.fillStyle='rgba(0,0,40,0.22)'; ctx.beginPath(); ctx.roundRect(-12,-20,24,5,4); ctx.fill();
-                // hood shimmer rim
-                ctx.save();
-                ctx.shadowColor=`rgba(180,230,255,${0.4+0.3*shimP})`; ctx.shadowBlur=8+4*shimP;
-                ctx.strokeStyle=`rgba(200,240,255,${0.35+0.3*shimP})`; ctx.lineWidth=1.6;
-                ctx.beginPath(); ctx.arc(0,-38,11,Math.PI+0.12,-0.12); ctx.stroke();
+                ctx.fillStyle='#f0c898'; ctx.strokeStyle='#b07840'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.roundRect(-4,-17,8,5,2); ctx.fill(); ctx.stroke();
+                // head
+                const hg=ctx.createLinearGradient(0,-33,0,-14); hg.addColorStop(0,'#f8dcba'); hg.addColorStop(1,'#e4b880');
+                ctx.fillStyle=hg; ctx.strokeStyle='#b07840'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-10,-33,20,19,8); ctx.fill(); ctx.stroke();
+                // hood
+                const hoodG=ctx.createLinearGradient(0,-41,0,-17); hoodG.addColorStop(0,'#6aacff'); hoodG.addColorStop(1,'#1e4dd0');
+                ctx.fillStyle=hoodG; ctx.strokeStyle='#0a2580'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-12,-41,24,23,10); ctx.fill(); ctx.stroke();
+                // ice gem on hood tip
+                ctx.save(); ctx.translate(0,-41); ctx.shadowColor='#88ddff'; ctx.shadowBlur=10;
+                const gG=ctx.createRadialGradient(0,0,0,0,0,5); gG.addColorStop(0,'#eefbff'); gG.addColorStop(1,'#44ccff');
+                ctx.fillStyle=gG; ctx.strokeStyle='#00aadd'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.moveTo(0,-5.5); ctx.lineTo(3.5,0); ctx.lineTo(0,5.5); ctx.lineTo(-3.5,0); ctx.closePath(); ctx.fill(); ctx.stroke();
                 ctx.shadowBlur=0; ctx.restore();
-                // hood side panels
-                ctx.fillStyle='rgba(80,130,255,0.18)'; ctx.beginPath(); ctx.roundRect(-12,-41,8,23,10); ctx.fill();
-
-                // ice gem on hood tip — animated glow + facets
-                ctx.save(); ctx.translate(0,-41);
-                ctx.shadowColor='#88ddff'; ctx.shadowBlur=10+8*gemP;
-                ctx.fillStyle=`rgba(${130+90*gemP|0},228,255,${0.75+0.2*gemP})`;
-                ctx.beginPath(); ctx.moveTo(0,-5.5); ctx.lineTo(3.5,0); ctx.lineTo(0,5.5); ctx.lineTo(-3.5,0); ctx.closePath(); ctx.fill();
-                ctx.fillStyle=`rgba(220,250,255,${0.5+0.3*gemP})`;
-                ctx.beginPath(); ctx.moveTo(0,-5.5); ctx.lineTo(3.5,0); ctx.lineTo(0,0); ctx.closePath(); ctx.fill();
-                ctx.strokeStyle=`rgba(240,252,255,${0.7+0.25*gemP})`; ctx.lineWidth=0.9;
-                ctx.beginPath(); ctx.moveTo(0,-5.5); ctx.lineTo(3.5,0); ctx.lineTo(0,5.5); ctx.lineTo(-3.5,0); ctx.closePath(); ctx.stroke();
-                ctx.shadowBlur=0; ctx.restore();
-
                 // eyebrows
                 ctx.strokeStyle='#6a3818'; ctx.lineWidth=2; ctx.lineCap='round';
-                ctx.beginPath(); ctx.moveTo(-1,-30); ctx.quadraticCurveTo(3,-32.5,8,-31); ctx.stroke();
-
-                // eyes (with smooth blink)
-                ctx.fillStyle='#fff';
-                ctx.beginPath(); ctx.ellipse(3.5,-25.5,4.5,5.5*blink,0.12,0,Math.PI*2); ctx.fill();
-                // iris — deep blue with shimmer
-                const irisG=ctx.createRadialGradient(4,-25.5,0,4,-25.5,3.2);
-                irisG.addColorStop(0,'#3060dd'); irisG.addColorStop(0.6,'#1840aa'); irisG.addColorStop(1,'#0c2870');
-                ctx.fillStyle=irisG; ctx.beginPath(); ctx.arc(4,-25.5,3.2*blink,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='#030e28'; ctx.beginPath(); ctx.arc(4,-25.5,1.8*blink,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.beginPath(); ctx.arc(5.8,-27,1.4*blink,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(2.8,-24,0.8*blink,0,Math.PI*2); ctx.fill();
-
+                ctx.beginPath(); ctx.moveTo(-7,-30); ctx.quadraticCurveTo(-4,-32.5,0,-31); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(7,-30); ctx.quadraticCurveTo(4,-32.5,0,-31); ctx.stroke();
+                // eyes (two, symmetric)
+                ctx.fillStyle='#fff'; ctx.strokeStyle='#222'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.ellipse(-4,-25,4,5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(4,-25,4,5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                const irG=ctx.createRadialGradient(-4,-25,0,-4,-25,2.8); irG.addColorStop(0,'#5599ff'); irG.addColorStop(1,'#0a2080');
+                ctx.fillStyle=irG; ctx.beginPath(); ctx.arc(-4,-25,2.8*blink,0,Math.PI*2); ctx.fill();
+                const irG2=ctx.createRadialGradient(4,-25,0,4,-25,2.8); irG2.addColorStop(0,'#5599ff'); irG2.addColorStop(1,'#0a2080');
+                ctx.fillStyle=irG2; ctx.beginPath(); ctx.arc(4,-25,2.8*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#060e28'; ctx.beginPath(); ctx.arc(-4,-25,1.4*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-25,1.4*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(-2.5,-26.2,1.1*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5.5,-26.2,1.1*blink,0,Math.PI*2); ctx.fill();
                 // smile
-                ctx.strokeStyle='rgba(160,80,40,0.7)'; ctx.lineWidth=1.5; ctx.lineCap='round';
-                ctx.beginPath(); ctx.arc(1.5,-18,3.8,0.18,Math.PI-0.18); ctx.stroke();
-
-                // animated breath puff
-                ctx.save(); ctx.globalAlpha=(0.12+0.1*breathP)*Math.max(0,(Math.sin(t*1.4)*0.5+0.5));
-                const puffX=6, puffY=-16;
-                ctx.fillStyle='rgba(210,240,255,0.7)';
-                ctx.beginPath(); ctx.arc(puffX,puffY,2.5+breathP,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(puffX+3,puffY-1.5,1.8+breathP*0.7,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(puffX+5.5,puffY-0.5,1.2+breathP*0.4,0,Math.PI*2); ctx.fill();
-                ctx.restore();
-
+                ctx.strokeStyle='#a05030'; ctx.lineWidth=1.5; ctx.lineCap='round';
+                ctx.beginPath(); ctx.arc(0,-19,3.5,0.2,Math.PI-0.2); ctx.stroke();
                 ctx.restore();
               }
             },
             // 1: Fire Guy
             { name:'Fire Guy', unlocked:false, price:300, rarity:'rare',
               draw(cx,cy,s) {
-                const t = Date.now()/1000;
-                const fl  = 0.5+0.5*Math.sin(t*13.7);
-                const fl2 = 0.5+0.5*Math.sin(t*9.3+1.4);
-                const fl3 = 0.5+0.5*Math.sin(t*7.1+2.8);
-                const heatWave = 0.5+0.5*Math.sin(t*5.5);
+                const t=Date.now()/1000;
+                const fl=0.5+0.5*Math.sin(t*8);
+                const blink=(Math.sin(t*1.8)>0.9)?Math.max(0.05,Math.abs(Math.sin((t%0.4)*Math.PI*8))):1;
                 ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s);
-
-                // ground lava glow
-                const groundG=ctx.createRadialGradient(0,20,0,0,20,18);
-                groundG.addColorStop(0,`rgba(200,60,0,${0.22+0.12*fl})`);
-                groundG.addColorStop(0.5,`rgba(120,20,0,${0.1+0.06*fl})`);
-                groundG.addColorStop(1,'transparent');
-                ctx.fillStyle=groundG; ctx.beginPath(); ctx.ellipse(0,20,18,5,0,0,Math.PI*2); ctx.fill();
-
-                // floating ember sparks (low, large, bright)
-                const sparks=[[-7,-42,1.4,0,5.8],[ 8,-46,1.1,1.5,6.2],[ 1,-50,1.7,0.7,7.0],[-4,-54,1.0,2.8,6.6],[6,-52,1.2,4.2,5.5],[-9,-56,0.9,3.3,6.9],[3,-59,1.3,1.1,7.4]];
-                sparks.forEach(([sx,sy,sr,ph,spd])=>{
-                    const sa=Math.max(0,Math.sin(t*spd+ph));
-                    if(sa<0.05)return;
-                    ctx.save();
-                    ctx.shadowColor='#ff8800'; ctx.shadowBlur=12*sa;
-                    ctx.fillStyle=`rgba(255,${90+120*sa|0},0,${sa*0.9})`;
-                    ctx.beginPath(); ctx.arc(sx+Math.sin(t*3.8+ph)*3, sy-sa*6, sr*sa, 0, Math.PI*2); ctx.fill();
-                    ctx.shadowBlur=0; ctx.restore();
-                });
-
-                // boots — scorched
-                const bootG=ctx.createLinearGradient(-12,14,12,23);
-                bootG.addColorStop(0,'#3e0800'); bootG.addColorStop(0.5,'#280500'); bootG.addColorStop(1,'#150300');
-                ctx.fillStyle=bootG; ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill();
-                // boot lava trim
-                ctx.save();
-                ctx.shadowColor=`rgba(255,80,0,${0.5+0.4*fl})`; ctx.shadowBlur=6+4*fl;
-                ctx.fillStyle=`rgba(255,${55+70*fl|0},0,${0.35+0.25*fl})`;
-                ctx.fillRect(-12,14,11,2.5); ctx.fillRect(1,14,11,2.5);
+                // boots
+                ctx.fillStyle='#3e0800'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.lineJoin='round';
+                ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.save(); ctx.shadowColor='#ff4400'; ctx.shadowBlur=6;
+                ctx.fillStyle=`rgba(255,${60+60*fl|0},0,0.9)`; ctx.fillRect(-12,14,11,2.5); ctx.fillRect(1,14,11,2.5);
                 ctx.shadowBlur=0; ctx.restore();
-
-                // pants — dark crimson
-                const pantsG=ctx.createLinearGradient(-10,6,10,17);
-                pantsG.addColorStop(0,'#7e1600'); pantsG.addColorStop(0.5,'#5c1000'); pantsG.addColorStop(1,'#3e0a00');
-                ctx.fillStyle=pantsG; ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill();
-                ctx.fillStyle=`rgba(255,60,0,${0.12+0.08*fl2})`; ctx.fillRect(-10,6,3,11); ctx.fillRect(2,6,3,11);
-                ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(-10,12,8,5); ctx.fillRect(2,12,8,5);
-
-                // body — lava armor
-                const bg=ctx.createLinearGradient(-13,-15,13,9);
-                bg.addColorStop(0,'#e83000'); bg.addColorStop(0.3,'#c42200'); bg.addColorStop(0.7,'#981800'); bg.addColorStop(1,'#6e1000');
-                ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(-13,-15,26,25,6); ctx.fill();
-                ctx.fillStyle='rgba(255,110,0,0.22)'; ctx.beginPath(); ctx.roundRect(-13,-15,11,25,6); ctx.fill();
-                ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.roundRect(-13,4,26,6,3); ctx.fill();
-
-                // animated lava cracks — multiple branching
-                ctx.save();
-                const lc=`rgba(255,${60+100*fl|0},0,0.9)`;
-                ctx.shadowColor=`rgba(255,${60+100*fl|0},0,${0.6+0.4*fl})`; ctx.shadowBlur=10+8*fl;
-                ctx.strokeStyle=lc; ctx.lineWidth=1.3;
-                ctx.beginPath(); ctx.moveTo(-7,-12); ctx.bezierCurveTo(-5,-8,0,-10,2,-5); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(2,-5); ctx.bezierCurveTo(0,-2,-4,-1,-2,3); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(5,-9); ctx.bezierCurveTo(7,-6,5,-3,7,1); ctx.stroke();
-                ctx.strokeStyle=`rgba(255,${160+80*fl2|0},0,0.7)`; ctx.lineWidth=0.7;
-                ctx.beginPath(); ctx.moveTo(-6,-12); ctx.lineTo(-9,-8); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(2,-5); ctx.lineTo(5,-3); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-2,3); ctx.lineTo(-5,6); ctx.stroke();
+                // pants
+                const pantsG=ctx.createLinearGradient(0,6,0,17); pantsG.addColorStop(0,'#7e1600'); pantsG.addColorStop(1,'#3e0a00');
+                ctx.fillStyle=pantsG; ctx.strokeStyle='#1a0000'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill(); ctx.stroke();
+                // body
+                const bodyG=ctx.createLinearGradient(0,-15,0,9); bodyG.addColorStop(0,'#ee3500'); bodyG.addColorStop(1,'#7a0e00');
+                ctx.fillStyle=bodyG; ctx.strokeStyle='#1a0000'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-13,-15,26,25,6); ctx.fill(); ctx.stroke();
+                // lava cracks
+                ctx.save(); ctx.shadowColor='#ff6600'; ctx.shadowBlur=8+4*fl;
+                ctx.strokeStyle=`rgba(255,${80+80*fl|0},0,0.95)`; ctx.lineWidth=1.5; ctx.lineCap='round';
+                ctx.beginPath(); ctx.moveTo(-6,-12); ctx.bezierCurveTo(-4,-7,1,-9,3,-4); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(5,-10); ctx.bezierCurveTo(7,-6,5,-2,7,2); ctx.stroke();
                 ctx.shadowBlur=0; ctx.restore();
-
-                // lava glow overlay pulse
-                ctx.fillStyle=`rgba(255,40,0,${0.04+0.05*heatWave})`; ctx.beginPath(); ctx.roundRect(-13,-15,26,25,6); ctx.fill();
-
-                // fire belt — animated flame shape
-                ctx.save();
-                ctx.shadowColor=`rgba(255,150,0,${0.6+0.4*fl})`; ctx.shadowBlur=14+8*fl;
-                const beltG=ctx.createLinearGradient(-13,-5,13,-5);
-                beltG.addColorStop(0,'#bb3300'); beltG.addColorStop(0.3,`hsl(${18+8*fl},100%,${45+15*fl}%)`);
-                beltG.addColorStop(0.5,`hsl(${30+10*fl2},100%,${58+16*fl2}%)`);
-                beltG.addColorStop(0.7,`hsl(${18+8*fl},100%,${45+15*fl}%)`); beltG.addColorStop(1,'#bb3300');
-                ctx.fillStyle=beltG; ctx.beginPath(); ctx.roundRect(-13,-5,26,7,4); ctx.fill();
-                ctx.fillStyle=`rgba(255,230,80,${0.35+0.3*fl})`; ctx.fillRect(-12,-5,24,2.5);
-                ctx.shadowBlur=0; ctx.restore();
-
-                // shoulder armor ridges
-                ctx.fillStyle='#550800'; ctx.beginPath(); ctx.roundRect(-14,-14,5,8,2); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(9,-14,5,8,2); ctx.fill();
-                ctx.fillStyle=`rgba(255,80,0,${0.2+0.15*fl})`; ctx.fillRect(-14,-14,5,2); ctx.fillRect(9,-14,5,2);
-
+                // fire belt
+                ctx.save(); ctx.shadowColor=`rgba(255,140,0,${0.7+0.3*fl})`; ctx.shadowBlur=12+6*fl;
+                const beltG=ctx.createLinearGradient(-13,-5,13,-5); beltG.addColorStop(0,'#aa1e00'); beltG.addColorStop(0.5,`hsl(${22+10*fl},100%,52%)`); beltG.addColorStop(1,'#aa1e00');
+                ctx.fillStyle=beltG; ctx.beginPath(); ctx.roundRect(-13,-5,26,7,4); ctx.fill(); ctx.shadowBlur=0; ctx.restore();
+                // shoulder guards
+                ctx.fillStyle='#600a00'; ctx.strokeStyle='#1a0000'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-15,-14,5,8,2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(10,-14,5,8,2); ctx.fill(); ctx.stroke();
                 // neck
-                ctx.fillStyle='#d8bfa0'; ctx.beginPath(); ctx.roundRect(-4,-17,8,5,2); ctx.fill();
-
+                ctx.fillStyle='#d8bfa0'; ctx.strokeStyle='#a07840'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.roundRect(-4,-17,8,5,2); ctx.fill(); ctx.stroke();
                 // head
-                const hg=ctx.createLinearGradient(-8,-34,8,-14);
-                hg.addColorStop(0,'#f7d8b2'); hg.addColorStop(0.5,'#f0c898'); hg.addColorStop(1,'#e8b880');
-                ctx.fillStyle=hg; ctx.beginPath(); ctx.roundRect(-10,-33,20,19,8); ctx.fill();
-                // subtle heat flush
-                ctx.fillStyle=`rgba(255,80,30,${0.1+0.08*fl})`; ctx.beginPath(); ctx.roundRect(-10,-33,20,19,8); ctx.fill();
-                // chin shadow
-                ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.beginPath(); ctx.roundRect(-9,-17,18,5,4); ctx.fill();
-                // brow bone shadow
-                ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.beginPath(); ctx.roundRect(-9,-33,18,5,4); ctx.fill();
-
-                // hair base — dark red
-                ctx.fillStyle='#8a0000'; ctx.beginPath(); ctx.roundRect(-11,-37,22,19,8); ctx.fill();
-
-                // FLAME HAIR — 6 tongues, very dynamic
-                const flameData=[[-9,7,0,0.9],[-5,10,1,1.1],[0,13,2,1.0],[5,10,3,0.95],[9,7,4,1.05],[-2,8.5,5,1.15]];
-                flameData.forEach(([fx,fhBase,i,amp])=>{
-                    const wave=1+amp*0.3*Math.sin(t*7.5+i*1.2+fl*0.5);
-                    const fh=fhBase*wave;
-                    const fg=ctx.createLinearGradient(fx,-35,fx,-35-fh);
-                    fg.addColorStop(0,'#cc0800'); fg.addColorStop(0.35,'#ff5500'); fg.addColorStop(0.65,'#ffaa00'); fg.addColorStop(1,'rgba(255,230,0,0)');
-                    ctx.fillStyle=fg;
-                    ctx.beginPath(); ctx.moveTo(fx-4.5,-35); ctx.bezierCurveTo(fx-7,-37-fh*0.5,fx+4,-39-fh,fx+1,-35); ctx.fill();
-                    // inner bright core
-                    const fc=ctx.createLinearGradient(fx,-35,fx,-35-fh*0.6);
-                    fc.addColorStop(0,'rgba(255,200,0,0.6)'); fc.addColorStop(1,'rgba(255,240,100,0)');
-                    ctx.fillStyle=fc;
-                    ctx.beginPath(); ctx.moveTo(fx-1.5,-35); ctx.bezierCurveTo(fx-2,-36-fh*0.3,fx+2.5,-37-fh*0.6,fx+0.5,-35); ctx.fill();
-                });
-                // hair glow
-                ctx.save(); ctx.shadowColor=`rgba(255,100,0,${0.4+0.3*fl2})`; ctx.shadowBlur=18+10*fl2;
-                ctx.fillStyle='transparent'; ctx.beginPath(); ctx.roundRect(-11,-37,22,5,4); ctx.fill();
+                const hg=ctx.createLinearGradient(0,-33,0,-14); hg.addColorStop(0,'#f7d8b2'); hg.addColorStop(1,'#e8b880');
+                ctx.fillStyle=hg; ctx.strokeStyle='#b07840'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-10,-33,20,19,8); ctx.fill(); ctx.stroke();
+                // dark red hair base
+                ctx.fillStyle='#7a0000'; ctx.strokeStyle='#3a0000'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-11,-37,22,9,6); ctx.fill(); ctx.stroke();
+                // flame hair
+                ctx.save(); ctx.shadowColor=`rgba(255,80,0,${0.5+0.4*fl})`; ctx.shadowBlur=10+8*fl;
+                [[-7,10,0],[-3,13,1],[0,15,2],[3,13,3],[7,10,4]].forEach(([fx,fh,i])=>{
+                  const wave=1+0.25*Math.sin(t*7+i*1.2);
+                  const fg=ctx.createLinearGradient(fx,-37,fx,-37-fh*wave); fg.addColorStop(0,'#cc0800'); fg.addColorStop(0.5,'#ff5500'); fg.addColorStop(1,'rgba(255,220,0,0)');
+                  ctx.fillStyle=fg; ctx.beginPath(); ctx.moveTo(fx-3.5,-37); ctx.bezierCurveTo(fx-6,-42-fh,fx+4,-43-fh*wave,fx+2.5,-37); ctx.fill();
+                }); ctx.shadowBlur=0; ctx.restore();
+                // eyebrows — angry
+                ctx.strokeStyle='#5a0000'; ctx.lineWidth=2.5; ctx.lineCap='round';
+                ctx.beginPath(); ctx.moveTo(-7,-30); ctx.lineTo(0,-28); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(7,-30); ctx.lineTo(0,-28); ctx.stroke();
+                // eyes (two, symmetric)
+                ctx.fillStyle='#fff'; ctx.strokeStyle='#222'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.ellipse(-4,-25,4,5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(4,-25,4,5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.save(); ctx.shadowColor='#ff5500'; ctx.shadowBlur=8;
+                const iG=ctx.createRadialGradient(-4,-25,0,-4,-25,2.5); iG.addColorStop(0,'#ffbb00'); iG.addColorStop(1,'#cc0000');
+                ctx.fillStyle=iG; ctx.beginPath(); ctx.arc(-4,-25,2.5*blink,0,Math.PI*2); ctx.fill();
+                const iG2=ctx.createRadialGradient(4,-25,0,4,-25,2.5); iG2.addColorStop(0,'#ffbb00'); iG2.addColorStop(1,'#cc0000');
+                ctx.fillStyle=iG2; ctx.beginPath(); ctx.arc(4,-25,2.5*blink,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0; ctx.restore();
-
-                // eyebrow — angry angle
-                ctx.strokeStyle='#6a0000'; ctx.lineWidth=2.2; ctx.lineCap='round';
-                ctx.beginPath(); ctx.moveTo(-1,-31); ctx.lineTo(9,-29); ctx.stroke();
-
-                // eye — glowing fire iris
-                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(4,-25,4.5,5,0.12,0,Math.PI*2); ctx.fill();
-                ctx.save();
-                ctx.shadowColor=`rgba(255,40,0,${0.55+0.45*fl})`; ctx.shadowBlur=12+8*fl;
-                const irisG=ctx.createRadialGradient(4.5,-24.5,0,4.5,-24.5,3.2);
-                irisG.addColorStop(0,`hsl(${30+20*fl2},100%,${65+15*fl}%)`);
-                irisG.addColorStop(0.5,`hsl(${10+8*fl},100%,${42+10*fl}%)`);
-                irisG.addColorStop(1,'#1a0000');
-                ctx.fillStyle=irisG; ctx.beginPath(); ctx.arc(4.5,-24.5,3.2,0,Math.PI*2); ctx.fill();
-                ctx.shadowBlur=0; ctx.restore();
-                ctx.fillStyle='#1a0000'; ctx.beginPath(); ctx.arc(4.5,-24.5,1.7,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,210,180,0.9)'; ctx.beginPath(); ctx.arc(6.2,-26,1.1,0,Math.PI*2); ctx.fill();
-
+                ctx.fillStyle='#1a0000'; ctx.beginPath(); ctx.arc(-4,-25,1.2*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-25,1.2*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.arc(-2.5,-26.2,0.9*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5.5,-26.2,0.9*blink,0,Math.PI*2); ctx.fill();
                 // fierce frown
-                ctx.strokeStyle='rgba(100,10,0,0.7)'; ctx.lineWidth=1.5; ctx.lineCap='round';
-                ctx.beginPath(); ctx.arc(1.5,-18,4,Math.PI+0.28,-0.28); ctx.stroke();
-
+                ctx.strokeStyle='#660000'; ctx.lineWidth=1.5; ctx.lineCap='round';
+                ctx.beginPath(); ctx.arc(0,-19,3.5,Math.PI+0.28,-0.28); ctx.stroke();
                 ctx.restore();
               }
             },
             // 2: Shadow
             { name:'Shadow', unlocked:false, price:500, rarity:'epic',
               draw(cx,cy,s) {
-                const t = Date.now()/1000;
-                const p1 = 0.5+0.5*Math.sin(t*2.2);
-                const p2 = 0.5+0.5*Math.sin(t*3.1+1.2);
-                const p3 = 0.5+0.5*Math.sin(t*1.5+2.4);
-                const glitch = Math.random()<0.03 ? (Math.random()*4-2) : 0;
-                ctx.save(); ctx.translate(cx+glitch,cy); ctx.scale(s,s);
-
-                // void ground aura — deep purple ring
-                const groundG=ctx.createRadialGradient(0,20,0,0,20,22);
-                groundG.addColorStop(0,`rgba(120,0,255,${0.22+0.14*p1})`);
-                groundG.addColorStop(0.4,`rgba(60,0,140,${0.1+0.06*p1})`);
-                groundG.addColorStop(1,'transparent');
-                ctx.fillStyle=groundG; ctx.beginPath(); ctx.ellipse(0,20,22,7,0,0,Math.PI*2); ctx.fill();
-
-                // shadow tendrils from ground — rising wisps
-                const tendrilPts=[[-8,19,-6,8,0],[-4,20,-3,5,1.5],[4,20,5,6,3.0],[9,19,7,7,4.5],[-11,18,-9,4,0.7],[11,18,10,5,2.2]];
-                tendrilPts.forEach(([bx,by,tx,ty,ph])=>{
-                    const wp=Math.max(0,Math.sin(t*2.8+ph));
-                    if(wp<0.1)return;
-                    ctx.save(); ctx.globalAlpha=wp*0.55;
-                    ctx.shadowColor='#8800ff'; ctx.shadowBlur=8;
-                    ctx.strokeStyle=`rgba(140,0,255,0.9)`; ctx.lineWidth=1.5; ctx.lineCap='round';
-                    ctx.beginPath(); ctx.moveTo(bx,by); ctx.quadraticCurveTo(bx+1,by-5,bx+tx-bx,by-12*wp); ctx.stroke();
-                    ctx.shadowBlur=0; ctx.restore();
-                });
-
-                // void body — dark dissolving silhouette
-                const bg=ctx.createLinearGradient(0,-38,0,24);
-                bg.addColorStop(0,'#1e1e1e'); bg.addColorStop(0.5,'#111111'); bg.addColorStop(0.8,`rgba(8,8,8,${0.65+0.2*p1})`); bg.addColorStop(1,'rgba(4,0,8,0)');
-                ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(-13,-38,26,62,7); ctx.fill();
-                // purple shimmer left side
-                ctx.fillStyle=`rgba(110,0,240,${0.1+0.08*p2})`; ctx.beginPath(); ctx.roundRect(-13,-38,11,62,7); ctx.fill();
-                // purple shimmer right side
-                ctx.fillStyle=`rgba(80,0,180,${0.06+0.05*p3})`; ctx.beginPath(); ctx.roundRect(2,-38,11,62,7); ctx.fill();
-
+                const t=Date.now()/1000;
+                const p=0.5+0.5*Math.sin(t*2.5);
+                const g2=0.5+0.5*Math.sin(t*1.8+1.0);
+                ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s);
+                // void aura
+                const aG=ctx.createRadialGradient(0,20,0,0,20,18); aG.addColorStop(0,`rgba(110,0,200,${0.2+0.15*p})`); aG.addColorStop(1,'transparent');
+                ctx.fillStyle=aG; ctx.beginPath(); ctx.ellipse(0,20,18,5.5,0,0,Math.PI*2); ctx.fill();
+                // boots
+                ctx.fillStyle='#0d0d0d'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.lineJoin='round';
+                ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle=`rgba(120,0,255,${0.5+0.3*p})`; ctx.fillRect(-12,14,11,2.5); ctx.fillRect(1,14,11,2.5);
                 // legs
-                ctx.fillStyle='rgba(22,22,22,0.96)'; ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill();
-                // void cracks on legs
-                ctx.strokeStyle=`rgba(130,0,255,${0.3+0.25*p2})`; ctx.lineWidth=0.8;
-                ctx.beginPath(); ctx.moveTo(-8,8); ctx.lineTo(-6,12); ctx.lineTo(-8,16); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(4,9); ctx.lineTo(6,13); ctx.lineTo(4,17); ctx.stroke();
-
-                // boots — nearly invisible dark
-                const bootG=ctx.createLinearGradient(-12,14,12,23);
-                bootG.addColorStop(0,'#0e0e0e'); bootG.addColorStop(1,'#050508');
-                ctx.fillStyle=bootG; ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill();
-                ctx.fillStyle=`rgba(120,0,255,${0.22+0.18*p1})`; ctx.fillRect(-12,14,11,2.2); ctx.fillRect(1,14,11,2.2);
-
-                // rising void wisps along body edges — more complex
-                const wispPts=[[-12,-6,0],[-14,-16,1.05],[-11,-26,2.1],[12,-8,3.15],[14,-18,4.2],[11,-28,5.25],[-1,-32,6.3],[0,-10,1.75]];
-                wispPts.forEach(([wx,wy,ph])=>{
-                    const wp=0.5+0.5*Math.sin(t*2.4+ph);
-                    ctx.save();
-                    ctx.shadowColor='#9900ff'; ctx.shadowBlur=10*wp;
-                    ctx.fillStyle=`rgba(${140+40*wp|0},0,${220+30*wp|0},${0.25+0.3*wp})`;
-                    const wsr=1.4+1.0*wp;
-                    ctx.beginPath(); ctx.ellipse(wx,wy-wp*4,wsr,wsr*1.8,0,0,Math.PI*2); ctx.fill();
-                    ctx.shadowBlur=0; ctx.restore();
-                });
-
-                // collar — purple line
-                ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.roundRect(-12,-17,24,5,3); ctx.fill();
-                ctx.save();
-                ctx.shadowColor=`rgba(140,0,255,${0.4+0.3*p1})`; ctx.shadowBlur=8;
-                ctx.fillStyle=`rgba(140,0,255,${0.3+0.25*p1})`; ctx.fillRect(-11,-17,22,2.5);
+                ctx.fillStyle='#181818'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill(); ctx.stroke();
+                // body
+                const bG=ctx.createLinearGradient(0,-15,0,9); bG.addColorStop(0,'#1c1c2c'); bG.addColorStop(1,'#0a0a14');
+                ctx.fillStyle=bG; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-13,-15,26,25,6); ctx.fill(); ctx.stroke();
+                // purple glow outline
+                ctx.save(); ctx.shadowColor=`rgba(120,0,255,${0.5+0.4*g2})`; ctx.shadowBlur=14+8*g2;
+                ctx.strokeStyle=`rgba(140,0,255,${0.4+0.3*g2})`; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-13,-15,26,25,6); ctx.stroke(); ctx.shadowBlur=0; ctx.restore();
+                // void runes on body
+                ctx.save(); ctx.globalAlpha=0.35+0.2*p; ctx.strokeStyle='rgba(160,60,255,0.9)'; ctx.lineWidth=1; ctx.lineCap='round';
+                ctx.beginPath(); ctx.moveTo(-7,-10); ctx.lineTo(-5,-6); ctx.lineTo(-7,-2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(5,-8); ctx.lineTo(7,-4); ctx.lineTo(5,0); ctx.stroke();
+                ctx.globalAlpha=1; ctx.restore();
+                // collar
+                ctx.fillStyle='#111'; ctx.strokeStyle='#000'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.roundRect(-11,-18,22,4,2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle=`rgba(130,0,255,${0.5+0.3*p})`; ctx.fillRect(-10,-18,20,2);
+                // head (dim face under hood)
+                ctx.fillStyle='rgba(160,140,120,0.65)'; ctx.strokeStyle='#0a0a0a'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-9,-32,18,17,7); ctx.fill(); ctx.stroke();
+                // hood
+                const hG=ctx.createRadialGradient(0,-28,3,0,-28,16); hG.addColorStop(0,'#18101e'); hG.addColorStop(1,'#060408');
+                ctx.fillStyle=hG; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-13,-41,26,26,10); ctx.fill(); ctx.stroke();
+                // hood purple edge glow
+                ctx.save(); ctx.shadowColor=`rgba(100,0,220,${0.45+0.3*p})`; ctx.shadowBlur=12+6*p;
+                ctx.strokeStyle=`rgba(120,0,255,${0.35+0.25*p})`; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-13,-41,26,26,10); ctx.stroke(); ctx.shadowBlur=0; ctx.restore();
+                // two glowing eyes (symmetric)
+                ctx.save(); ctx.shadowColor=`rgba(160,0,255,${0.65+0.35*p})`; ctx.shadowBlur=18+10*p;
+                const eG=ctx.createRadialGradient(-4,-26,0,-4,-26,4); eG.addColorStop(0,'rgba(240,180,255,1)'); eG.addColorStop(0.5,'rgba(180,0,255,0.9)'); eG.addColorStop(1,'rgba(80,0,180,0.5)');
+                ctx.fillStyle=eG; ctx.beginPath(); ctx.ellipse(-4,-26,4,5,0,0,Math.PI*2); ctx.fill();
+                const eG2=ctx.createRadialGradient(4,-26,0,4,-26,4); eG2.addColorStop(0,'rgba(240,180,255,1)'); eG2.addColorStop(0.5,'rgba(180,0,255,0.9)'); eG2.addColorStop(1,'rgba(80,0,180,0.5)');
+                ctx.fillStyle=eG2; ctx.beginPath(); ctx.ellipse(4,-26,4,5,0,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0; ctx.restore();
-
-                // face — subtle, partially obscured
-                ctx.fillStyle='rgba(195,170,148,0.7)'; ctx.beginPath(); ctx.roundRect(-7,-32,14,17,6); ctx.fill();
-                ctx.fillStyle=`rgba(60,0,120,${0.12+0.1*p2})`; ctx.beginPath(); ctx.roundRect(-7,-32,14,17,6); ctx.fill();
-
-                // hood — layered deep black
-                const hoodG=ctx.createRadialGradient(0,-30,4,0,-28,16);
-                hoodG.addColorStop(0,'rgba(16,12,24,0.96)'); hoodG.addColorStop(0.6,'rgba(8,6,16,0.94)'); hoodG.addColorStop(1,'rgba(4,2,8,0.9)');
-                ctx.fillStyle=hoodG; ctx.beginPath(); ctx.roundRect(-13,-41,26,26,10); ctx.fill();
-                // hood edge glow
-                ctx.save();
-                ctx.shadowColor=`rgba(100,0,220,${0.35+0.25*p1})`; ctx.shadowBlur=12+6*p1;
-                ctx.strokeStyle=`rgba(120,0,255,${0.2+0.18*p1})`; ctx.lineWidth=1.8;
-                ctx.beginPath(); ctx.roundRect(-13,-41,26,26,10); ctx.stroke();
-                ctx.shadowBlur=0; ctx.restore();
-                // void rune marks on hood
-                ctx.save(); ctx.globalAlpha=0.14+0.1*p3;
-                ctx.strokeStyle='rgba(180,80,255,0.8)'; ctx.lineWidth=0.7;
-                ctx.beginPath(); ctx.moveTo(-8,-38); ctx.lineTo(-6,-34); ctx.lineTo(-8,-30); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-5,-36); ctx.lineTo(-3,-32); ctx.stroke();
-                ctx.restore();
-
-                // glowing main eye — split dual glow
-                ctx.save();
-                ctx.shadowColor='#aa00ff'; ctx.shadowBlur=22+14*p1;
-                ctx.fillStyle=`rgba(${150+80*p1|0},0,255,0.96)`;
-                ctx.beginPath(); ctx.ellipse(3,-26,5,6,0.12,0,Math.PI*2); ctx.fill();
-                ctx.shadowBlur=0;
-                // iris layers
-                const eyeG=ctx.createRadialGradient(3.5,-25,0,3.5,-25,2.8);
-                eyeG.addColorStop(0,'rgba(240,180,255,0.98)');
-                eyeG.addColorStop(0.5,'rgba(200,80,255,0.9)');
-                eyeG.addColorStop(1,'rgba(120,0,200,0.8)');
-                ctx.fillStyle=eyeG; ctx.beginPath(); ctx.arc(3.5,-25.5,2.8,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(3.5,-25.5,1.4,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(5.2,-27,1,0,Math.PI*2); ctx.fill();
-                ctx.restore();
-
-                // ghost second eye (fades in/out, smaller)
-                ctx.save(); ctx.globalAlpha=0.15+0.28*p2;
-                ctx.shadowColor='#7700cc'; ctx.shadowBlur=12;
-                ctx.fillStyle='#8800ee'; ctx.beginPath(); ctx.ellipse(-5,-26,3.2,4,0,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(200,100,255,0.8)'; ctx.beginPath(); ctx.arc(-5,-26,1.5,0,Math.PI*2); ctx.fill();
-                ctx.shadowBlur=0; ctx.restore();
-
-                // void edge shimmer on full body outline
-                ctx.save();
-                ctx.shadowColor=`rgba(100,0,220,${0.2+0.15*p3})`; ctx.shadowBlur=10+6*p3;
-                ctx.strokeStyle=`rgba(110,0,230,${0.12+0.1*p3})`; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.roundRect(-13,-38,26,62,7); ctx.stroke();
-                ctx.shadowBlur=0; ctx.restore();
-
+                ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(-4,-26,1.6,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-26,1.6,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(-2.5,-27.2,0.9,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5.5,-27.2,0.9,0,Math.PI*2); ctx.fill();
                 ctx.restore();
               }
             },
             // 3: Galaxy
             { name:'Galaxy', unlocked:false, price:800, rarity:'epic',
               draw(cx,cy,s) {
-                const t = Date.now()/1000;
-                const nb  = 0.5+0.5*Math.sin(t*1.8);
-                const nb2 = 0.5+0.5*Math.sin(t*2.3+1.4);
-                const nb3 = 0.5+0.5*Math.sin(t*1.2+2.8);
-                const orb = t*0.5; // orbit angle
+                const t=Date.now()/1000;
+                const nb=0.5+0.5*Math.sin(t*1.8);
+                const blink=(Math.sin(t*2.1)>0.9)?Math.max(0.05,Math.abs(Math.sin((t%0.4)*Math.PI*8))):1;
                 ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s);
-
-                // cosmic ground aura
-                const groundG=ctx.createRadialGradient(0,20,0,0,20,20);
-                groundG.addColorStop(0,`rgba(60,0,160,${0.2+0.12*nb})`);
-                groundG.addColorStop(0.4,`rgba(0,100,200,${0.08+0.05*nb})`);
-                groundG.addColorStop(1,'transparent');
-                ctx.fillStyle=groundG; ctx.beginPath(); ctx.ellipse(0,20,20,6,0,0,Math.PI*2); ctx.fill();
-
-                // galaxy body — deep space gradient
-                const gg=ctx.createLinearGradient(-13,-38,13,23);
-                gg.addColorStop(0,'#3a006a'); gg.addColorStop(0.2,'#001870'); gg.addColorStop(0.5,'#220058'); gg.addColorStop(0.8,'#0a0038'); gg.addColorStop(1,'#060020');
-                ctx.fillStyle=gg; ctx.beginPath(); ctx.roundRect(-13,-38,26,61,7); ctx.fill();
-
-                // nebula overlay 1 — cyan-blue
-                ctx.save();
-                const ng1=ctx.createRadialGradient(-4,-12,0,-4,-12,20);
-                ng1.addColorStop(0,`rgba(0,${160+80*nb},255,${0.38+0.22*nb})`);
-                ng1.addColorStop(0.5,`rgba(0,80,200,${0.15+0.1*nb})`);
-                ng1.addColorStop(1,'transparent');
-                ctx.fillStyle=ng1; ctx.globalAlpha=0.6;
-                ctx.beginPath(); ctx.roundRect(-13,-38,26,61,7); ctx.fill();
-                ctx.restore();
-                // nebula overlay 2 — pink-purple
-                ctx.save();
-                const ng2=ctx.createRadialGradient(5,-5,0,5,-5,18);
-                ng2.addColorStop(0,`rgba(${160+80*nb2},0,255,${0.25+0.15*nb2})`);
-                ng2.addColorStop(0.5,`rgba(100,0,180,${0.1+0.08*nb2})`);
-                ng2.addColorStop(1,'transparent');
-                ctx.fillStyle=ng2; ctx.globalAlpha=0.5;
-                ctx.beginPath(); ctx.roundRect(-13,-38,26,61,7); ctx.fill();
-                ctx.restore();
-
-                // twinkling stars — more, brighter, cross-shaped on big ones
-                const starPos=[[-6,-22,1.1],[ 3,-10,0.7],[-8,-2,0.9],[6,4,0.8],[0,-18,1.3],[4,-28,1.5],[-3,8,0.6],[-9,-7,1.0],[5,-14,0.8],[1,13,0.7],[-5,2,0.9],[7,-1,1.1],[2,-25,0.6],[-7,10,0.7],[8,-8,0.9],[-3,-30,1.2],[6,-20,0.8],[-10,5,0.7]];
-                starPos.forEach(([sx,sy,sr],i)=>{
-                    const tw=0.3+0.7*Math.abs(Math.sin(t*(1.3+i*0.22)+i*1.1));
-                    ctx.save(); ctx.globalAlpha=tw;
-                    ctx.shadowColor='rgba(200,230,255,0.9)'; ctx.shadowBlur=sr>1 ? 6 : 3;
-                    ctx.fillStyle=i%5===0?'#aaddff':i%3===0?'#ffeedd':'#ffffff';
-                    ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
-                    if(sr>=1){
-                        ctx.strokeStyle=`rgba(255,255,255,${tw*0.55})`; ctx.lineWidth=0.6; ctx.lineCap='round';
-                        ctx.beginPath(); ctx.moveTo(sx-sr*3,sy); ctx.lineTo(sx+sr*3,sy); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(sx,sy-sr*3); ctx.lineTo(sx,sy+sr*3); ctx.stroke();
-                    }
-                    ctx.shadowBlur=0; ctx.restore();
-                });
-
-                // animated shooting star
-                const shootX = ((t*22+30)%55)-27;
-                const shootY = -38 + ((t*22+30)%55)*0.6;
-                if(shootY>-38 && shootY<23){
-                    ctx.save(); ctx.globalAlpha=0.7;
-                    const sg=ctx.createLinearGradient(shootX-8,shootY-4,shootX,shootY);
-                    sg.addColorStop(0,'transparent'); sg.addColorStop(1,'rgba(200,240,255,0.9)');
-                    ctx.strokeStyle=sg; ctx.lineWidth=1.2; ctx.lineCap='round';
-                    ctx.beginPath(); ctx.moveTo(shootX-8,shootY-4); ctx.lineTo(shootX,shootY); ctx.stroke();
-                    ctx.restore();
-                }
-
-                // legs
-                const legG=ctx.createLinearGradient(-12,6,12,17);
-                legG.addColorStop(0,'#280052'); legG.addColorStop(1,'#160030');
-                ctx.fillStyle=legG; ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill();
-                // star accents on legs
-                ctx.fillStyle=`rgba(0,200,255,${0.25+0.15*nb})`; ctx.beginPath(); ctx.arc(-6,11,2,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle=`rgba(0,200,255,${0.25+0.15*nb})`; ctx.beginPath(); ctx.arc(6,11,2,0,Math.PI*2); ctx.fill();
-
+                // cosmic aura
+                const ag3=ctx.createRadialGradient(0,20,0,0,20,18); ag3.addColorStop(0,`rgba(40,0,140,${0.2+0.12*nb})`); ag3.addColorStop(1,'transparent');
+                ctx.fillStyle=ag3; ctx.beginPath(); ctx.ellipse(0,20,18,5.5,0,0,Math.PI*2); ctx.fill();
                 // boots
-                const bootG=ctx.createLinearGradient(-12,14,12,23);
-                bootG.addColorStop(0,'#1a0038'); bootG.addColorStop(1,'#0c0020');
-                ctx.fillStyle=bootG; ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill();
-                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill();
-                ctx.fillStyle=`rgba(0,200,255,${0.3+0.2*nb})`; ctx.fillRect(-12,14,11,2); ctx.fillRect(1,14,11,2);
-
-                // cosmic belt — dual-color animated glow
-                ctx.save();
-                ctx.shadowColor=`rgba(0,255,255,${0.5+0.45*nb})`; ctx.shadowBlur=14+10*nb;
-                const beltG=ctx.createLinearGradient(-13,-7,13,-7);
-                beltG.addColorStop(0,'#0066aa'); beltG.addColorStop(0.3,'#00ddff'); beltG.addColorStop(0.5,'#ffffff');
-                beltG.addColorStop(0.7,'#00ddff'); beltG.addColorStop(1,'#0066aa');
-                ctx.fillStyle=beltG; ctx.beginPath(); ctx.roundRect(-13,-7,26,7,4); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.fillRect(-12,-7,24,1.8);
-                ctx.shadowBlur=0; ctx.restore();
-
-                // orbiting star around body
-                ctx.save();
-                const ox=Math.cos(orb)*17, oy=Math.sin(orb)*8-10;
-                ctx.shadowColor='rgba(180,220,255,0.9)'; ctx.shadowBlur=10;
-                ctx.fillStyle='rgba(200,240,255,0.85)';
-                ctx.beginPath(); ctx.arc(ox,oy,1.8,0,Math.PI*2); ctx.fill();
-                ctx.strokeStyle='rgba(200,240,255,0.35)'; ctx.lineWidth=0.5;
-                ctx.beginPath(); ctx.ellipse(0,-10,17,8,0,0,Math.PI*2); ctx.stroke();
-                ctx.shadowBlur=0; ctx.restore();
-
-                // head — cosmic dome
-                const hh=ctx.createLinearGradient(-10,-38,10,-17);
-                hh.addColorStop(0,'#220044'); hh.addColorStop(0.4,'#180040'); hh.addColorStop(1,'#100028');
-                ctx.fillStyle=hh; ctx.beginPath(); ctx.roundRect(-11,-38,22,22,10); ctx.fill();
-                // head nebula glow
-                ctx.fillStyle=`rgba(180,150,255,${0.2+0.15*nb3})`; ctx.beginPath(); ctx.roundRect(-9,-36,18,18,8); ctx.fill();
-                // head edge glow
-                ctx.save();
-                ctx.shadowColor=`rgba(80,180,255,${0.35+0.25*nb})`; ctx.shadowBlur=12+6*nb;
-                ctx.strokeStyle=`rgba(100,200,255,${0.2+0.15*nb})`; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.roundRect(-11,-38,22,22,10); ctx.stroke();
-                ctx.shadowBlur=0; ctx.restore();
+                const bootG3=ctx.createLinearGradient(0,14,0,22); bootG3.addColorStop(0,'#1a0038'); bootG3.addColorStop(1,'#0c0020');
+                ctx.fillStyle=bootG3; ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.lineJoin='round';
+                ctx.beginPath(); ctx.roundRect(-12,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(1,14,11,8,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle=`rgba(0,200,255,${0.55+0.3*nb})`; ctx.fillRect(-12,14,11,2.5); ctx.fillRect(1,14,11,2.5);
+                // legs
+                const lg3=ctx.createLinearGradient(0,6,0,17); lg3.addColorStop(0,'#28005a'); lg3.addColorStop(1,'#160032');
+                ctx.fillStyle=lg3; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-10,6,8,11,3); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(2,6,8,11,3); ctx.fill(); ctx.stroke();
+                // body (deep space suit)
+                const bodyG3=ctx.createLinearGradient(0,-15,0,9); bodyG3.addColorStop(0,'#3a006a'); bodyG3.addColorStop(0.5,'#1e0050'); bodyG3.addColorStop(1,'#0a0030');
+                ctx.fillStyle=bodyG3; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-13,-15,26,25,6); ctx.fill(); ctx.stroke();
+                // stars in body
+                [[-8,-10,0.8],[5,-8,1.1],[-4,-2,0.7],[7,2,0.9],[-9,5,0.6],[3,-12,1.0]].forEach(([sx,sy,sr],i)=>{
+                  const tw=0.4+0.6*Math.abs(Math.sin(t*(1.5+i*0.3)+i));
+                  ctx.globalAlpha=tw*0.85; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
+                }); ctx.globalAlpha=1;
+                // glowing cyan belt
+                ctx.save(); ctx.shadowColor=`rgba(0,220,255,${0.65+0.35*nb})`; ctx.shadowBlur=12+6*nb;
+                const beltG3=ctx.createLinearGradient(-13,-5,13,-5); beltG3.addColorStop(0,'#0055aa'); beltG3.addColorStop(0.5,'#00ddff'); beltG3.addColorStop(1,'#0055aa');
+                ctx.fillStyle=beltG3; ctx.beginPath(); ctx.roundRect(-13,-5,26,7,4); ctx.fill(); ctx.shadowBlur=0; ctx.restore();
+                // head (space helmet dome)
+                const hg3=ctx.createLinearGradient(0,-33,0,-14); hg3.addColorStop(0,'#220044'); hg3.addColorStop(1,'#100020');
+                ctx.fillStyle=hg3; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(-11,-33,22,20,10); ctx.fill(); ctx.stroke();
+                ctx.save(); ctx.shadowColor=`rgba(80,160,255,${0.4+0.3*nb})`; ctx.shadowBlur=10+5*nb;
+                ctx.strokeStyle=`rgba(80,180,255,${0.3+0.2*nb})`; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-11,-33,22,20,10); ctx.stroke(); ctx.shadowBlur=0; ctx.restore();
                 // head stars
-                const headStars=[[-5,-34,0.6],[ 5,-30,0.5],[-7,-26,0.4],[7,-25,0.55],[1,-32,0.65]];
-                headStars.forEach(([hsx,hsy,hsr],i)=>{
-                    const htw=0.4+0.6*Math.abs(Math.sin(t*(1.8+i*0.3)+i*0.7));
-                    ctx.globalAlpha=htw*0.7; ctx.fillStyle='#aaddff';
-                    ctx.beginPath(); ctx.arc(hsx,hsy,hsr,0,Math.PI*2); ctx.fill();
-                });
-                ctx.globalAlpha=1;
-
-                // dual glowing eyes
-                ctx.save();
-                ctx.shadowColor=`rgba(0,220,255,${0.55+0.45*nb})`; ctx.shadowBlur=16+10*nb;
-                const eyeG=ctx.createRadialGradient(-2,-26,0,-2,-26,3);
-                eyeG.addColorStop(0,'rgba(200,250,255,1)');
-                eyeG.addColorStop(0.4,'rgba(0,200,255,0.9)');
-                eyeG.addColorStop(1,'rgba(0,60,180,0.8)');
-                ctx.fillStyle='#fff';
-                ctx.beginPath(); ctx.ellipse(-2.5,-26,4.5,5.5,0,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(7.5,-26,4.5,5.5,0,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle=eyeG; ctx.beginPath(); ctx.arc(-1.5,-25.5,3,0,Math.PI*2); ctx.fill();
-                const eyeG2=ctx.createRadialGradient(8,-25.5,0,8,-25.5,3);
-                eyeG2.addColorStop(0,'rgba(200,250,255,1)');
-                eyeG2.addColorStop(0.4,'rgba(0,200,255,0.9)');
-                eyeG2.addColorStop(1,'rgba(0,60,180,0.8)');
-                ctx.fillStyle=eyeG2; ctx.beginPath(); ctx.arc(8.5,-25.5,3,0,Math.PI*2); ctx.fill();
-                ctx.shadowBlur=0;
-                ctx.fillStyle='#000c1a'; ctx.beginPath(); ctx.arc(-1.5,-25.5,1.4,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(8.5,-25.5,1.4,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(0,-27,0.9,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(10,-27,0.9,0,Math.PI*2); ctx.fill();
-                ctx.restore();
-
-                // cosmic smile
-                ctx.strokeStyle=`rgba(0,${180+60*nb|0},255,0.65)`; ctx.lineWidth=1.6; ctx.lineCap='round';
-                ctx.beginPath(); ctx.arc(3,-20,3.5,0.2,Math.PI-0.2); ctx.stroke();
-
-                // body outline nebula rim
-                ctx.save();
-                ctx.shadowColor=`rgba(${80+80*nb2|0},${100+80*nb|0},255,${0.25+0.2*nb})`; ctx.shadowBlur=14+8*nb;
-                ctx.strokeStyle=`rgba(${60+80*nb2|0},${80+100*nb|0},255,${0.18+0.14*nb})`; ctx.lineWidth=2.5;
-                ctx.beginPath(); ctx.roundRect(-13,-38,26,61,7); ctx.stroke();
+                [[-5,-30,0.55],[5,-27,0.5],[-7,-25,0.4],[3,-32,0.6]].forEach(([sx,sy,sr],i)=>{
+                  const tw=0.3+0.7*Math.abs(Math.sin(t*(1.8+i*0.3)+i));
+                  ctx.globalAlpha=tw*0.85; ctx.fillStyle='#aaddff'; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
+                }); ctx.globalAlpha=1;
+                // two glowing cyan eyes (symmetric)
+                ctx.save(); ctx.shadowColor=`rgba(0,220,255,${0.65+0.35*nb})`; ctx.shadowBlur=14+8*nb;
+                ctx.fillStyle='#fff'; ctx.strokeStyle='#226688'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.ellipse(-4,-25,4,5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(4,-25,4,5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                const eG3=ctx.createRadialGradient(-4,-25,0,-4,-25,3); eG3.addColorStop(0,'rgba(200,250,255,1)'); eG3.addColorStop(1,'rgba(0,150,220,0.9)');
+                ctx.fillStyle=eG3; ctx.beginPath(); ctx.arc(-4,-25,3*blink,0,Math.PI*2); ctx.fill();
+                const eG3b=ctx.createRadialGradient(4,-25,0,4,-25,3); eG3b.addColorStop(0,'rgba(200,250,255,1)'); eG3b.addColorStop(1,'rgba(0,150,220,0.9)');
+                ctx.fillStyle=eG3b; ctx.beginPath(); ctx.arc(4,-25,3*blink,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0; ctx.restore();
-
+                ctx.fillStyle='#001830'; ctx.beginPath(); ctx.arc(-4,-25,1.3*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-25,1.3*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(-2.5,-26.2,1*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5.5,-26.2,1*blink,0,Math.PI*2); ctx.fill();
+                // smile
+                ctx.strokeStyle=`rgba(0,${160+60*nb|0},255,0.8)`; ctx.lineWidth=1.5; ctx.lineCap='round';
+                ctx.beginPath(); ctx.arc(0,-19,3.5,0.2,Math.PI-0.2); ctx.stroke();
                 ctx.restore();
               }
             },
@@ -8472,6 +8129,7 @@ await Promise.race([
                 const bbg=ctx.createLinearGradient(-14,-16,14,9);
                 bbg.addColorStop(0,'#7c7c7c'); bbg.addColorStop(0.2,'#686868'); bbg.addColorStop(0.5,'#565656'); bbg.addColorStop(0.8,'#4a4a4a'); bbg.addColorStop(1,'#3e3e3e');
                 ctx.fillStyle=bbg; ctx.beginPath(); ctx.roundRect(-14,-16,28,26,5); ctx.fill();
+                ctx.strokeStyle='#1a1a1a'; ctx.lineWidth=1.5; ctx.stroke();
                 // panel lines
                 ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=0.8;
                 ctx.beginPath(); ctx.moveTo(-14,-6); ctx.lineTo(14,-6); ctx.stroke();
@@ -8552,6 +8210,7 @@ await Promise.race([
                 const hg=ctx.createLinearGradient(-13,-38,13,-15);
                 hg.addColorStop(0,'#787878'); hg.addColorStop(0.3,'#686868'); hg.addColorStop(0.7,'#585858'); hg.addColorStop(1,'#484848');
                 ctx.fillStyle=hg; ctx.beginPath(); ctx.roundRect(-13,-38,26,24,5); ctx.fill();
+                ctx.strokeStyle='#1a1a1a'; ctx.lineWidth=1.5; ctx.stroke();
                 ctx.fillStyle='rgba(255,255,255,0.12)'; ctx.fillRect(-13,-38,26,5);
                 ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(-13,-17,26,3);
                 // head corner bolts
@@ -8684,6 +8343,7 @@ await Promise.race([
                 const bg=ctx.createLinearGradient(-13,-16,13,8);
                 bg.addColorStop(0,'#fafeff'); bg.addColorStop(0.3,'#f0faff'); bg.addColorStop(0.6,'#e4f4fc'); bg.addColorStop(1,'#d0e8f8');
                 ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(-13,-16,26,24,8); ctx.fill();
+                ctx.strokeStyle='#88aac8'; ctx.lineWidth=1.5; ctx.stroke();
                 // fur texture — right side shadow
                 ctx.fillStyle='rgba(170,210,240,0.28)'; ctx.beginPath(); ctx.roundRect(0,-16,13,24,8); ctx.fill();
                 // frost sheen overlay
@@ -8718,6 +8378,7 @@ await Promise.race([
                 const hg=ctx.createLinearGradient(-9,-35,9,-14);
                 hg.addColorStop(0,'#fdf4ea'); hg.addColorStop(0.5,'#f5e4d0'); hg.addColorStop(1,'#ead4b8');
                 ctx.fillStyle=hg; ctx.beginPath(); ctx.roundRect(-11,-33,22,20,9); ctx.fill();
+                ctx.strokeStyle='#c8a888'; ctx.lineWidth=1.5; ctx.stroke();
                 ctx.fillStyle='rgba(255,220,200,0.2)'; ctx.beginPath(); ctx.roundRect(-9,-30,18,12,6); ctx.fill();
 
                 // fox ears — detailed with inner pink, outer shadow
@@ -8765,43 +8426,44 @@ await Promise.race([
                     ctx.shadowBlur=0; ctx.restore();
                 });
 
-                // eyebrows — soft curved
+                // eyebrows — soft curved, symmetric
                 ctx.strokeStyle='rgba(190,150,128,0.75)'; ctx.lineWidth=1.6; ctx.lineCap='round';
-                ctx.beginPath(); ctx.moveTo(-6,-29); ctx.quadraticCurveTo(-3,-32,2,-30); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(3,-30); ctx.quadraticCurveTo(7,-32,11,-29); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-8,-29); ctx.quadraticCurveTo(-4,-32,-1,-30); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(1,-30); ctx.quadraticCurveTo(4,-32,8,-29); ctx.stroke();
 
-                // eyes — bright aqua, with beautiful iris
+                // eyes — bright aqua, symmetric at (-4) and (+4)
                 ctx.fillStyle='#fff';
-                ctx.beginPath(); ctx.ellipse(-2,-24.5,4.5,5.5*blink,0,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(7,-24.5,4.5,5.5*blink,0,0,Math.PI*2); ctx.fill();
-                const irisA=ctx.createRadialGradient(-1,-23.5,0,-1,-23.5,3);
+                ctx.beginPath(); ctx.ellipse(-4,-24.5,4.5,5.5*blink,0,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='#aacce8'; ctx.lineWidth=0.8; ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(4,-24.5,4.5,5.5*blink,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                const irisA=ctx.createRadialGradient(-4,-23.5,0,-4,-23.5,3);
                 irisA.addColorStop(0,'rgba(120,220,255,1)'); irisA.addColorStop(0.5,'rgba(40,150,230,0.9)'); irisA.addColorStop(1,'rgba(0,80,160,0.8)');
-                ctx.fillStyle=irisA; ctx.beginPath(); ctx.arc(-1,-23.5,3*blink,0,Math.PI*2); ctx.fill();
-                const irisB=ctx.createRadialGradient(8,-23.5,0,8,-23.5,3);
+                ctx.fillStyle=irisA; ctx.beginPath(); ctx.arc(-4,-23.5,3*blink,0,Math.PI*2); ctx.fill();
+                const irisB=ctx.createRadialGradient(4,-23.5,0,4,-23.5,3);
                 irisB.addColorStop(0,'rgba(120,220,255,1)'); irisB.addColorStop(0.5,'rgba(40,150,230,0.9)'); irisB.addColorStop(1,'rgba(0,80,160,0.8)');
-                ctx.fillStyle=irisB; ctx.beginPath(); ctx.arc(8,-23.5,3*blink,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='#001830'; ctx.beginPath(); ctx.arc(-1,-23.5,1.6*blink,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(8,-23.5,1.6*blink,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(0,-25,1*blink,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(9,-25,1*blink,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(-2.5,-22.5,0.6*blink,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(6.5,-22.5,0.6*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=irisB; ctx.beginPath(); ctx.arc(4,-23.5,3*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#001830'; ctx.beginPath(); ctx.arc(-4,-23.5,1.6*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-23.5,1.6*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(-5.5,-25,1*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(2.5,-25,1*blink,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(-5,-22.5,0.6*blink,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(3,-22.5,0.6*blink,0,Math.PI*2); ctx.fill();
 
-                // nose — heart-shaped
-                const noseG=ctx.createRadialGradient(2,-18,0,2,-18,3.5);
+                // nose — centered
+                const noseG=ctx.createRadialGradient(0,-18,0,0,-18,3.5);
                 noseG.addColorStop(0,'#ffaaaa'); noseG.addColorStop(0.6,'#ff8888'); noseG.addColorStop(1,'#ff6666');
-                ctx.fillStyle=noseG; ctx.beginPath(); ctx.ellipse(2,-18.5,3.2,2.4,0,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.72)'; ctx.beginPath(); ctx.arc(0.8,-19.2,1.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=noseG; ctx.beginPath(); ctx.ellipse(0,-18.5,3.2,2.4,0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.72)'; ctx.beginPath(); ctx.arc(-1.2,-19.2,1.2,0,Math.PI*2); ctx.fill();
 
-                // whiskers
+                // whiskers — symmetric
                 ctx.strokeStyle='rgba(200,180,160,0.55)'; ctx.lineWidth=0.8; ctx.lineCap='round';
-                [[-3,-17,-12,-15],[-3,-16,-12,-17],[8,-17,17,-15],[8,-16,17,-17]].forEach(([x1,y1,x2,y2])=>{
+                [[-1,-17,-10,-15],[-1,-16,-10,-17],[1,-17,10,-15],[1,-16,10,-17]].forEach(([x1,y1,x2,y2])=>{
                     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
                 });
 
-                // cute smile
+                // cute smile — centered
                 ctx.strokeStyle='rgba(190,80,80,0.6)'; ctx.lineWidth=1.5; ctx.lineCap='round';
-                ctx.beginPath(); ctx.arc(2,-14.5,3,0.28,Math.PI-0.28); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0,-14.5,3,0.28,Math.PI-0.28); ctx.stroke();
 
                 ctx.restore();
               }
@@ -8909,6 +8571,7 @@ await Promise.race([
                 const hoodG=ctx.createRadialGradient(0,-28,4,0,-27,18);
                 hoodG.addColorStop(0,'rgba(50,8,110,0.95)'); hoodG.addColorStop(0.5,'rgba(28,3,70,0.94)'); hoodG.addColorStop(1,'rgba(12,0,32,0.9)');
                 ctx.fillStyle=hoodG; ctx.globalAlpha=0.96; ctx.beginPath(); ctx.roundRect(-13,-40,26,27,11); ctx.fill(); ctx.globalAlpha=1;
+                ctx.strokeStyle='#3a0060'; ctx.lineWidth=1.5; ctx.stroke();
                 // hood edge glow
                 ctx.save();
                 ctx.shadowColor=`rgba(160,40,255,${0.35+0.25*ep})`; ctx.shadowBlur=14+8*ep;
@@ -8925,22 +8588,22 @@ await Promise.race([
                 ctx.beginPath(); ctx.arc(0,-26,3,0,Math.PI); ctx.fill();
                 ctx.restore();
 
-                // glowing eyes — bright pulsing orbs
+                // glowing eyes — bright pulsing orbs, symmetric at (-4) and (+4)
                 ctx.save();
                 ctx.shadowColor=`rgba(220,80,255,${0.6+0.4*ep})`; ctx.shadowBlur=20+16*ep;
-                const eyeGA=ctx.createRadialGradient(-2,-25.5,0,-2,-25.5,5);
+                const eyeGA=ctx.createRadialGradient(-4,-25.5,0,-4,-25.5,5);
                 eyeGA.addColorStop(0,'rgba(255,230,255,1)'); eyeGA.addColorStop(0.3,'rgba(220,80,255,1)');
                 eyeGA.addColorStop(0.7,'rgba(140,0,220,0.9)'); eyeGA.addColorStop(1,'rgba(80,0,160,0.5)');
-                ctx.fillStyle=eyeGA; ctx.beginPath(); ctx.ellipse(-2,-25.5,4.5,5.5,0,0,Math.PI*2); ctx.fill();
-                const eyeGB=ctx.createRadialGradient(7,-25.5,0,7,-25.5,5);
+                ctx.fillStyle=eyeGA; ctx.beginPath(); ctx.ellipse(-4,-25.5,4.5,5.5,0,0,Math.PI*2); ctx.fill();
+                const eyeGB=ctx.createRadialGradient(4,-25.5,0,4,-25.5,5);
                 eyeGB.addColorStop(0,'rgba(255,230,255,1)'); eyeGB.addColorStop(0.3,'rgba(220,80,255,1)');
                 eyeGB.addColorStop(0.7,'rgba(140,0,220,0.9)'); eyeGB.addColorStop(1,'rgba(80,0,160,0.5)');
-                ctx.fillStyle=eyeGB; ctx.beginPath(); ctx.ellipse(7,-25.5,4.5,5.5,0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=eyeGB; ctx.beginPath(); ctx.ellipse(4,-25.5,4.5,5.5,0,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0;
-                ctx.fillStyle='rgba(255,240,255,0.98)'; ctx.beginPath(); ctx.arc(-1,-26,2.2,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(8,-26,2.2,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-0.5,-27.2,1.0,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(8.5,-27.2,1.0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,240,255,0.98)'; ctx.beginPath(); ctx.arc(-4,-26,2.2,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-26,2.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-5,-27.2,1.0,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(3,-27.2,1.0,0,Math.PI*2); ctx.fill();
                 ctx.restore();
 
                 // spectral wisps rising from shoulders
@@ -9017,6 +8680,7 @@ await Promise.race([
                 const bodyG=ctx.createLinearGradient(-13,-16,13,9);
                 bodyG.addColorStop(0,'#0c0c1c'); bodyG.addColorStop(0.3,'#0a0a18'); bodyG.addColorStop(0.7,'#080814'); bodyG.addColorStop(1,'#060610');
                 ctx.fillStyle=bodyG; ctx.beginPath(); ctx.roundRect(-13,-16,26,26,5); ctx.fill();
+                ctx.strokeStyle='#001a12'; ctx.lineWidth=1.5; ctx.stroke();
                 // armor plate lines
                 ctx.strokeStyle='rgba(0,200,160,0.18)'; ctx.lineWidth=0.8;
                 ctx.beginPath(); ctx.moveTo(-13,-6); ctx.lineTo(13,-6); ctx.stroke();
@@ -9071,6 +8735,7 @@ await Promise.race([
                 const headG=ctx.createLinearGradient(-12,-38,12,-15);
                 headG.addColorStop(0,'#0e0e20'); headG.addColorStop(0.5,'#0a0a1a'); headG.addColorStop(1,'#080814');
                 ctx.fillStyle=headG; ctx.beginPath(); ctx.roundRect(-12,-38,24,22,6); ctx.fill();
+                ctx.strokeStyle='#001a12'; ctx.lineWidth=1.5; ctx.stroke();
                 ctx.fillStyle='rgba(255,255,255,0.05)'; ctx.fillRect(-12,-38,6,22);
                 // head vertical seam
                 ctx.strokeStyle='rgba(0,180,140,0.2)'; ctx.lineWidth=0.8;
@@ -9188,6 +8853,7 @@ await Promise.race([
                 const rg=ctx.createLinearGradient(-14,-16,14,23);
                 rg.addColorStop(0,'#3070d8'); rg.addColorStop(0.2,'#2258b8'); rg.addColorStop(0.5,'#1848a0'); rg.addColorStop(0.8,'#103078'); rg.addColorStop(1,'#081c50');
                 ctx.fillStyle=rg; ctx.beginPath(); ctx.roundRect(-14,-16,28,39,8); ctx.fill();
+                ctx.strokeStyle='#0a1840'; ctx.lineWidth=1.5; ctx.stroke();
                 // robe highlight
                 ctx.fillStyle='rgba(180,220,255,0.2)'; ctx.beginPath(); ctx.roundRect(-14,-16,11,39,8); ctx.fill();
                 ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.beginPath(); ctx.roundRect(3,-16,11,39,8); ctx.fill();
@@ -9244,6 +8910,7 @@ await Promise.race([
                 const hg=ctx.createLinearGradient(-8,-35,8,-14);
                 hg.addColorStop(0,'#f0eafc'); hg.addColorStop(0.5,'#e4daf4'); hg.addColorStop(1,'#d0c8e8');
                 ctx.fillStyle=hg; ctx.beginPath(); ctx.roundRect(-10,-33,20,20,8); ctx.fill();
+                ctx.strokeStyle='#7060a8'; ctx.lineWidth=1.5; ctx.stroke();
                 ctx.fillStyle='rgba(180,160,220,0.15)'; ctx.beginPath(); ctx.roundRect(-8,-31,16,14,6); ctx.fill();
 
                 // hat brim — deep ocean blue
@@ -9276,32 +8943,33 @@ await Promise.race([
                 ctx.fillStyle=starG; ctx.beginPath(); ctx.arc(0,-58,4.5,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0; ctx.restore();
 
-                // eyebrows
+                // eyebrows — symmetric
                 ctx.strokeStyle='rgba(110,90,170,0.78)'; ctx.lineWidth=1.6; ctx.lineCap='round';
-                ctx.beginPath(); ctx.moveTo(-6,-30); ctx.quadraticCurveTo(-2,-33,2,-31); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(4,-31); ctx.quadraticCurveTo(8,-33,12,-30); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-8,-30); ctx.quadraticCurveTo(-4,-33,-1,-31); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(1,-31); ctx.quadraticCurveTo(4,-33,8,-30); ctx.stroke();
 
-                // eyes — icy blue
+                // eyes — icy blue, symmetric at (-4) and (+4)
                 ctx.fillStyle='#fff';
-                ctx.beginPath(); ctx.ellipse(-2,-25.5,4,5.2,0.08,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(7,-25.5,4,5.2,0.08,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(-4,-25.5,4,5.2,0.08,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='#aaddff'; ctx.lineWidth=0.8; ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(4,-25.5,4,5.2,0.08,0,Math.PI*2); ctx.fill(); ctx.stroke();
                 ctx.save();
                 ctx.shadowColor=`rgba(100,200,255,${0.45+0.4*cp})`; ctx.shadowBlur=10+8*cp;
-                const irisA=ctx.createRadialGradient(-1,-25,0,-1,-25,2.8);
+                const irisA=ctx.createRadialGradient(-4,-25,0,-4,-25,2.8);
                 irisA.addColorStop(0,'rgba(200,245,255,1)'); irisA.addColorStop(0.5,'rgba(40,170,230,0.95)'); irisA.addColorStop(1,'rgba(0,80,170,0.85)');
-                ctx.fillStyle=irisA; ctx.beginPath(); ctx.arc(-1,-25,2.8,0,Math.PI*2); ctx.fill();
-                const irisB=ctx.createRadialGradient(8,-25,0,8,-25,2.8);
+                ctx.fillStyle=irisA; ctx.beginPath(); ctx.arc(-4,-25,2.8,0,Math.PI*2); ctx.fill();
+                const irisB=ctx.createRadialGradient(4,-25,0,4,-25,2.8);
                 irisB.addColorStop(0,'rgba(200,245,255,1)'); irisB.addColorStop(0.5,'rgba(40,170,230,0.95)'); irisB.addColorStop(1,'rgba(0,80,170,0.85)');
-                ctx.fillStyle=irisB; ctx.beginPath(); ctx.arc(8,-25,2.8,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=irisB; ctx.beginPath(); ctx.arc(4,-25,2.8,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0; ctx.restore();
-                ctx.fillStyle='#001030'; ctx.beginPath(); ctx.arc(-1,-25,1.4,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(8,-25,1.4,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(0.3,-26.5,1.1,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(9.3,-26.5,1.1,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#001030'; ctx.beginPath(); ctx.arc(-4,-25,1.4,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-25,1.4,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(-5.5,-26.5,1.1,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(2.5,-26.5,1.1,0,Math.PI*2); ctx.fill();
 
-                // knowing smile
+                // knowing smile — centered
                 ctx.strokeStyle='rgba(130,110,190,0.65)'; ctx.lineWidth=1.5; ctx.lineCap='round';
-                ctx.beginPath(); ctx.arc(3,-20,3.2,0.2,Math.PI-0.2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0,-20,3.2,0.2,Math.PI-0.2); ctx.stroke();
 
                 ctx.restore();
               }
@@ -9401,6 +9069,7 @@ await Promise.race([
                 const bg=ctx.createLinearGradient(-13,-16,13,9);
                 bg.addColorStop(0,'#360000'); bg.addColorStop(0.3,'#280000'); bg.addColorStop(0.6,'#1e0000'); bg.addColorStop(1,'#150000');
                 ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(-13,-16,26,26,5); ctx.fill();
+                ctx.strokeStyle='#550000'; ctx.lineWidth=1.5; ctx.stroke();
                 // armor left side
                 ctx.fillStyle='rgba(120,0,0,0.32)'; ctx.beginPath(); ctx.roundRect(-13,-16,12,26,5); ctx.fill();
                 // armor plate lines
@@ -9439,6 +9108,7 @@ await Promise.race([
                 const headG=ctx.createLinearGradient(-10,-35,10,-14);
                 headG.addColorStop(0,'#3c0808'); headG.addColorStop(0.4,'#2a0404'); headG.addColorStop(1,'#1c0000');
                 ctx.fillStyle=headG; ctx.beginPath(); ctx.roundRect(-11,-33,22,20,6); ctx.fill();
+                ctx.strokeStyle='#660000'; ctx.lineWidth=1.5; ctx.stroke();
                 // head shadow stripe
                 ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(-11,-33,9,20);
 
@@ -9483,37 +9153,37 @@ await Promise.race([
                     ctx.shadowBlur=0; ctx.restore();
                 });
 
-                // glowing flickering eyes — large and intense
+                // glowing flickering eyes — large and intense, symmetric at (-4) and (+4)
                 ctx.save();
                 ctx.shadowColor=`rgba(255,${20+40*ef|0},0,${0.7+0.3*ef})`; ctx.shadowBlur=22+16*ef;
-                const eyeGA=ctx.createRadialGradient(-2,-25.5,0,-2,-25.5,5);
+                const eyeGA=ctx.createRadialGradient(-4,-25.5,0,-4,-25.5,5);
                 eyeGA.addColorStop(0,`rgba(255,${160+80*ef|0},60,1)`);
                 eyeGA.addColorStop(0.4,`rgba(${200+55*lv|0},${15+25*lv|0},0,0.95)`);
                 eyeGA.addColorStop(0.8,'rgba(100,0,0,0.7)');
                 eyeGA.addColorStop(1,'rgba(50,0,0,0.3)');
-                ctx.fillStyle=eyeGA; ctx.beginPath(); ctx.ellipse(-2,-25.5,5,5.8,0,0,Math.PI*2); ctx.fill();
-                const eyeGB=ctx.createRadialGradient(9,-25.5,0,9,-25.5,5);
+                ctx.fillStyle=eyeGA; ctx.beginPath(); ctx.ellipse(-4,-25.5,5,5.8,0,0,Math.PI*2); ctx.fill();
+                const eyeGB=ctx.createRadialGradient(4,-25.5,0,4,-25.5,5);
                 eyeGB.addColorStop(0,`rgba(255,${160+80*ef|0},60,1)`);
                 eyeGB.addColorStop(0.4,`rgba(${200+55*lv|0},${15+25*lv|0},0,0.95)`);
                 eyeGB.addColorStop(0.8,'rgba(100,0,0,0.7)');
                 eyeGB.addColorStop(1,'rgba(50,0,0,0.3)');
-                ctx.fillStyle=eyeGB; ctx.beginPath(); ctx.ellipse(9,-25.5,5,5.8,0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=eyeGB; ctx.beginPath(); ctx.ellipse(4,-25.5,5,5.8,0,0,Math.PI*2); ctx.fill();
                 ctx.shadowBlur=0;
                 ctx.fillStyle=`rgba(255,${150+80*ef|0},80,0.96)`;
-                ctx.beginPath(); ctx.arc(-1.5,-25.5,2.6,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(10.5,-25.5,2.6,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(-1.5,-25.5,1.2,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(10.5,-25.5,1.2,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.arc(-0.5,-26.8,0.9,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(11.5,-26.8,0.9,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-4,-25.5,2.6,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-25.5,2.6,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(-4,-25.5,1.2,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4,-25.5,1.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.arc(-5,-26.8,0.9,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(3,-26.8,0.9,0,Math.PI*2); ctx.fill();
                 ctx.restore();
 
-                // demonic mouth — fanged snarl
+                // demonic mouth — fanged snarl, centered
                 ctx.strokeStyle='rgba(100,5,0,0.8)'; ctx.lineWidth=1.6; ctx.lineCap='round';
-                ctx.beginPath(); ctx.arc(3.5,-19,4,Math.PI+0.3,-0.3); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0,-19,4,Math.PI+0.3,-0.3); ctx.stroke();
                 ctx.fillStyle='rgba(30,0,0,0.6)';
-                ctx.beginPath(); ctx.moveTo(-0.5,-19); ctx.lineTo(0.5,-21.5); ctx.lineTo(1.5,-19); ctx.closePath(); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(5,-19); ctx.lineTo(6,-21.5); ctx.lineTo(7,-19); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(-3.5,-19); ctx.lineTo(-2.5,-21.5); ctx.lineTo(-1.5,-19); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(1.5,-19); ctx.lineTo(2.5,-21.5); ctx.lineTo(3.5,-19); ctx.closePath(); ctx.fill();
 
                 ctx.restore();
               }
