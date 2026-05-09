@@ -7878,6 +7878,7 @@ await Promise.race([
               draw(cx,cy,s) {
                 const t=Date.now()/1000;
                 const fl=0.5+0.5*Math.sin(t*7);
+                const fl2=0.5+0.5*Math.sin(t*5+1);
                 const bk=(Math.sin(t*2.3)>0.9)?Math.max(0.05,Math.abs(Math.sin((t%0.35)*Math.PI*9))):1;
                 ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s);
                 ctx.lineCap='round'; ctx.lineJoin='round';
