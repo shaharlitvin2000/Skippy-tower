@@ -7846,23 +7846,30 @@ await Promise.race([
                 ctx.strokeStyle='#00e5ff'; ctx.lineWidth=1.3;
                 ctx.beginPath(); ctx.moveTo(-3,-16); ctx.lineTo(-4,-13); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(3,-16); ctx.lineTo(4,-13); ctx.stroke();
-                // eyebrows
+                // right eyebrow only — left covered by visor
                 ctx.strokeStyle='#5a3010'; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.moveTo(-8,-33); ctx.quadraticCurveTo(-4,-35.5,0,-34); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(8,-33); ctx.quadraticCurveTo(4,-35.5,0,-34); ctx.stroke();
-                // eyes — cyan iris
+                ctx.beginPath(); ctx.moveTo(1,-33); ctx.quadraticCurveTo(5,-35.5,9,-33); ctx.stroke();
+                // right eye — cyan iris with blink
                 ctx.fillStyle='#fff'; ctx.strokeStyle='#111'; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.ellipse(-4,-27,5.5,7*bk,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.ellipse(4,-27,5.5,7*bk,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                const iA=ctx.createRadialGradient(-4,-27,0,-4,-27,3.8); iA.addColorStop(0,'#66eeff'); iA.addColorStop(1,'#0077aa');
-                ctx.fillStyle=iA; ctx.beginPath(); ctx.arc(-4,-27,3.8*bk,0,Math.PI*2); ctx.fill();
-                const iB=ctx.createRadialGradient(4,-27,0,4,-27,3.8); iB.addColorStop(0,'#66eeff'); iB.addColorStop(1,'#0077aa');
-                ctx.fillStyle=iB; ctx.beginPath(); ctx.arc(4,-27,3.8*bk,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='#001020'; ctx.beginPath(); ctx.arc(-4,-27,2*bk,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(4,-27,2*bk,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(-5.5,-28.8,1.4*bk,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(2.5,-28.8,1.4*bk,0,Math.PI*2); ctx.fill();
-                // smile
+                ctx.beginPath(); ctx.ellipse(5,-27,5,6.5*bk,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                const iB=ctx.createRadialGradient(5,-27,0,5,-27,3.5); iB.addColorStop(0,'#66eeff'); iB.addColorStop(1,'#0077aa');
+                ctx.fillStyle=iB; ctx.beginPath(); ctx.arc(5,-27,3.5*bk,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#001020'; ctx.beginPath(); ctx.arc(5,-27,1.8*bk,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(3.5,-28.5,1.3*bk,0,Math.PI*2); ctx.fill();
+                // left eye — CYAN TECH HALF-VISOR (unique silhouette feature)
+                const pu=0.5+0.5*Math.sin(t*3.2);
+                ctx.save();
+                ctx.shadowColor=`rgba(0,210,255,${0.65+0.35*pu})`; ctx.shadowBlur=14+8*pu;
+                const vG=ctx.createLinearGradient(-11,-32,-1,-22); vG.addColorStop(0,`rgba(0,155,255,${0.78+0.2*pu})`); vG.addColorStop(0.35,`rgba(0,230,255,${0.65+0.2*pu})`); vG.addColorStop(1,'rgba(0,110,220,0.28)');
+                ctx.fillStyle=vG; ctx.beginPath(); ctx.roundRect(-11,-32,10,11,3); ctx.fill();
+                ctx.strokeStyle=`rgba(0,225,255,0.9)`; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.roundRect(-11,-32,10,11,3); ctx.stroke();
+                // animated scan line inside visor
+                ctx.fillStyle=`rgba(255,255,255,${0.13+0.08*pu})`; ctx.fillRect(-11,-32+((t*4)%11),10,1.5);
+                ctx.shadowBlur=0; ctx.restore();
+                // confident smirk (not full smile — looks cooler)
                 ctx.strokeStyle='#a06030'; ctx.lineWidth=1.8;
-                ctx.beginPath(); ctx.arc(0,-18,3.5,0.2,Math.PI-0.2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-4,-19); ctx.quadraticCurveTo(1,-17,5,-20); ctx.stroke();
                 ctx.restore();
               }
             },
@@ -7874,6 +7881,21 @@ await Promise.race([
                 const bk=(Math.sin(t*2.3)>0.9)?Math.max(0.05,Math.abs(Math.sin((t%0.35)*Math.PI*9))):1;
                 ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s);
                 ctx.lineCap='round'; ctx.lineJoin='round';
+                // PHOENIX WING SHOULDERS — key silhouette, drawn first so body covers base
+                ctx.save(); ctx.shadowColor=`rgba(255,110,0,${0.55+0.35*fl})`; ctx.shadowBlur=14+8*fl;
+                // left wing — sweeping flame feathers
+                const wL=ctx.createLinearGradient(-13,-13,-26,4); wL.addColorStop(0,'#bb1a00'); wL.addColorStop(0.4,`rgba(255,${50+70*fl|0},0,0.85)`); wL.addColorStop(1,'rgba(255,90,0,0)');
+                ctx.fillStyle=wL;
+                ctx.beginPath(); ctx.moveTo(-13,-11); ctx.bezierCurveTo(-19,-7,-27,-1,-23,6); ctx.bezierCurveTo(-20,3,-15,-3,-13,1); ctx.closePath(); ctx.fill();
+                ctx.fillStyle=`rgba(255,${80+70*fl2|0},0,0.45)`;
+                ctx.beginPath(); ctx.moveTo(-13,-9); ctx.bezierCurveTo(-17,-6,-24,1,-21,5); ctx.bezierCurveTo(-19,2,-14,-2,-13,-1); ctx.closePath(); ctx.fill();
+                // right wing
+                const wR=ctx.createLinearGradient(13,-13,26,4); wR.addColorStop(0,'#bb1a00'); wR.addColorStop(0.4,`rgba(255,${50+70*fl|0},0,0.85)`); wR.addColorStop(1,'rgba(255,90,0,0)');
+                ctx.fillStyle=wR;
+                ctx.beginPath(); ctx.moveTo(13,-11); ctx.bezierCurveTo(19,-7,27,-1,23,6); ctx.bezierCurveTo(20,3,15,-3,13,1); ctx.closePath(); ctx.fill();
+                ctx.fillStyle=`rgba(255,${80+70*fl2|0},0,0.45)`;
+                ctx.beginPath(); ctx.moveTo(13,-9); ctx.bezierCurveTo(17,-6,24,1,21,5); ctx.bezierCurveTo(19,2,14,-2,13,-1); ctx.closePath(); ctx.fill();
+                ctx.shadowBlur=0; ctx.restore();
                 // boots — dark with ember cuff
                 const btG=ctx.createLinearGradient(0,14,0,22); btG.addColorStop(0,'#1a0800'); btG.addColorStop(1,'#0d0400');
                 ctx.fillStyle=btG; ctx.strokeStyle='#111'; ctx.lineWidth=2;
@@ -7905,13 +7927,20 @@ await Promise.race([
                 ctx.fillStyle='#7a1800'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
                 ctx.beginPath(); ctx.roundRect(-16,-14,5,8,2); ctx.fill(); ctx.stroke();
                 ctx.beginPath(); ctx.roundRect(11,-14,5,8,2); ctx.fill(); ctx.stroke();
-                // neck
-                ctx.fillStyle='#d8a878'; ctx.strokeStyle='#a07040'; ctx.lineWidth=1;
-                ctx.beginPath(); ctx.roundRect(-4,-17,8,5,2); ctx.fill(); ctx.stroke();
+                // neck wrap — dark scarf
+                ctx.fillStyle='#2a0600'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-5,-18,10,5,2); ctx.fill(); ctx.stroke();
                 // head
                 const hg=ctx.createLinearGradient(0,-36,0,-13); hg.addColorStop(0,'#f7d8b2'); hg.addColorStop(1,'#dda060');
                 ctx.fillStyle=hg; ctx.strokeStyle='#111'; ctx.lineWidth=2;
                 ctx.beginPath(); ctx.roundRect(-12,-35,24,22,10); ctx.fill(); ctx.stroke();
+                // WARRIOR LOWER-FACE MASK — covers nose/mouth, adds battle identity
+                const mkG=ctx.createLinearGradient(0,-24,0,-14); mkG.addColorStop(0,'#5a0e00'); mkG.addColorStop(1,'#380800');
+                ctx.fillStyle=mkG; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-11,-23,22,10,4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle='rgba(255,90,0,0.18)'; ctx.fillRect(-10,-23,22,3);
+                ctx.strokeStyle='rgba(255,80,0,0.35)'; ctx.lineWidth=0.8;
+                ctx.beginPath(); ctx.moveTo(-9,-19); ctx.lineTo(9,-19); ctx.stroke();
                 // hair base — dark crimson
                 ctx.fillStyle='#4a0a00'; ctx.strokeStyle='#111'; ctx.lineWidth=2;
                 ctx.beginPath(); ctx.roundRect(-13,-40,26,9,6); ctx.fill(); ctx.stroke();
@@ -7996,14 +8025,24 @@ await Promise.race([
                 ctx.save(); ctx.shadowColor=`rgba(120,0,255,${0.5+0.35*p})`; ctx.shadowBlur=14+6*p;
                 ctx.strokeStyle=`rgba(140,0,255,${0.4+0.25*p})`; ctx.lineWidth=2;
                 ctx.beginPath(); ctx.roundRect(-13,-42,26,27,11); ctx.stroke(); ctx.shadowBlur=0; ctx.restore();
-                // floating void particles
-                ctx.save(); ctx.shadowColor='rgba(160,0,255,0.9)'; ctx.shadowBlur=8;
-                for(let i=0;i<4;i++){
-                  const a=t*1.4+i*Math.PI*0.5; const r=13+2*Math.sin(t*2+i);
-                  const px=Math.cos(a)*r; const py=Math.sin(a)*r-8;
-                  const ps=0.35+0.25*p; ctx.globalAlpha=0.4+0.4*Math.sin(t*3+i*1.5);
-                  ctx.fillStyle='#c060ff'; ctx.beginPath(); ctx.arc(px,py,1.5*ps,0,Math.PI*2); ctx.fill();
+                // 6 orbiting void particles (larger orbit, more dramatic)
+                ctx.save(); ctx.shadowColor='rgba(180,0,255,0.9)'; ctx.shadowBlur=10;
+                for(let i=0;i<6;i++){
+                  const a=t*1.4+i*Math.PI/3; const r=16+3*Math.sin(t*2.2+i*0.9);
+                  const px=Math.cos(a)*r; const py=Math.sin(a)*r*0.5-7;
+                  const alpha=Math.max(0,0.3+0.55*Math.sin(t*3+i*1.6));
+                  ctx.globalAlpha=alpha;
+                  ctx.fillStyle=i%3===0?'#d070ff':i%3===1?'#8830ee':'#c040ff';
+                  ctx.beginPath(); ctx.arc(px,py,1.4+0.6*(i%2),0,Math.PI*2); ctx.fill();
                 } ctx.globalAlpha=1; ctx.shadowBlur=0; ctx.restore();
+                // void tendrils — wisps rising from cloak bottom
+                ctx.save(); ctx.globalAlpha=0.2+0.15*p2;
+                ctx.shadowColor='rgba(130,0,255,0.7)'; ctx.shadowBlur=6;
+                ctx.strokeStyle='rgba(150,0,255,0.7)'; ctx.lineWidth=1.2;
+                [[-9,10,-11,3],[-4,10,-3,4],[3,10,4,3],[9,10,10,4]].forEach(([x1,y1,x2,y2])=>{
+                  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(x1+Math.sin(t*2.2+x1)*2.5,6,x2,y2); ctx.stroke();
+                });
+                ctx.shadowBlur=0; ctx.restore();
                 // glowing eyes — pure violet, no pupil
                 ctx.save(); ctx.shadowColor=`rgba(180,0,255,${0.8+0.2*p})`; ctx.shadowBlur=20+10*p;
                 const eA=ctx.createRadialGradient(-4,-27,0,-4,-27,5.5); eA.addColorStop(0,'rgba(255,220,255,1)'); eA.addColorStop(0.4,'rgba(200,0,255,0.9)'); eA.addColorStop(1,'rgba(80,0,160,0.3)');
@@ -8063,13 +8102,20 @@ await Promise.race([
                 ctx.fillStyle=`rgba(220,255,0,${0.85+0.15*el})`;
                 ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(3,-8); ctx.lineTo(0,-8); ctx.lineTo(3,-2); ctx.lineTo(-3,-8); ctx.lineTo(0,-8); ctx.lineTo(-3,-14); ctx.closePath(); ctx.fill();
                 ctx.shadowBlur=0; ctx.restore();
-                // neck
-                ctx.fillStyle='#f0c890'; ctx.strokeStyle='#c09050'; ctx.lineWidth=1;
-                ctx.beginPath(); ctx.roundRect(-4,-17,8,5,2); ctx.fill(); ctx.stroke();
-                // head
+                // shoulder armor plates — angular cyborg pads
+                ctx.fillStyle='#081040'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-17,-15,6,9,2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(11,-15,6,9,2); ctx.fill(); ctx.stroke();
+                ctx.save(); ctx.shadowColor=`rgba(200,255,0,${0.4+0.3*el})`; ctx.shadowBlur=5;
+                ctx.fillStyle=`rgba(200,255,0,${0.5+0.3*el})`; ctx.fillRect(-17,-15,6,2.5); ctx.fillRect(11,-15,6,2.5);
+                ctx.shadowBlur=0; ctx.restore();
+                // neck — dark collar (matches cyborg vibe)
+                ctx.fillStyle='#060c22'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.roundRect(-5,-19,10,6,2); ctx.fill(); ctx.stroke();
+                // head — slightly more angular jaw
                 const hg=ctx.createLinearGradient(0,-36,0,-13); hg.addColorStop(0,'#fde0b5'); hg.addColorStop(1,'#e8b870');
                 ctx.fillStyle=hg; ctx.strokeStyle='#111'; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.roundRect(-12,-35,24,22,10); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.roundRect(-12,-35,24,22,8); ctx.fill(); ctx.stroke();
                 // spiky electric hair
                 ctx.fillStyle='#ccee00'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
                 const spikes=[[-10,-37,4,6],[-6,-38,4,8],[-2,-39,4,9],[2,-38,4,8],[6,-37,4,6]];
@@ -8077,23 +8123,31 @@ await Promise.race([
                   const sway=Math.sin(t*5+sx)*1.5;
                   ctx.beginPath(); ctx.moveTo(sx,sy+sh); ctx.lineTo(sx+sw/2+sway,-44+sh*0.3); ctx.lineTo(sx+sw,sy+sh); ctx.closePath(); ctx.fill(); ctx.stroke();
                 });
-                // eyebrows — determined
-                ctx.strokeStyle='#3a2800'; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.moveTo(-8,-33); ctx.quadraticCurveTo(-4,-35,0,-34); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(8,-33); ctx.quadraticCurveTo(4,-35,0,-34); ctx.stroke();
-                // eyes — electric blue
-                ctx.fillStyle='#fff'; ctx.strokeStyle='#111'; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.ellipse(-4,-27,5.5,7*bk,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.ellipse(4,-27,5.5,7*bk,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                ctx.save(); ctx.shadowColor=`rgba(180,255,0,${0.5+0.4*el})`; ctx.shadowBlur=10;
-                const iA=ctx.createRadialGradient(-4,-27,0,-4,-27,3.8); iA.addColorStop(0,'#ccff00'); iA.addColorStop(1,'#0044cc');
-                ctx.fillStyle=iA; ctx.beginPath(); ctx.arc(-4,-27,3.8*bk,0,Math.PI*2); ctx.fill();
-                const iB=ctx.createRadialGradient(4,-27,0,4,-27,3.8); iB.addColorStop(0,'#ccff00'); iB.addColorStop(1,'#0044cc');
-                ctx.fillStyle=iB; ctx.beginPath(); ctx.arc(4,-27,3.8*bk,0,Math.PI*2); ctx.fill();
+                // ELECTRIC VISOR BAND — cyborg identity, replaces regular eyes
+                ctx.fillStyle='#04080e';
+                ctx.beginPath(); ctx.roundRect(-13,-32,26,11,3); ctx.fill();
+                ctx.save(); ctx.shadowColor=`rgba(0,210,255,${0.7+0.3*el})`; ctx.shadowBlur=18+10*el;
+                const visG=ctx.createLinearGradient(-13,-32,13,-21);
+                visG.addColorStop(0,`rgba(0,160,255,${0.6+0.25*el})`);
+                visG.addColorStop(0.2,'rgba(80,255,200,0.88)');
+                visG.addColorStop(0.5,'rgba(210,255,255,1)');
+                visG.addColorStop(0.8,'rgba(80,255,200,0.88)');
+                visG.addColorStop(1,`rgba(0,160,255,${0.6+0.25*el})`);
+                ctx.fillStyle=visG; ctx.fillRect(-13,-32,26,11);
                 ctx.shadowBlur=0; ctx.restore();
-                ctx.fillStyle='#001030'; ctx.beginPath(); ctx.arc(-4,-27,2*bk,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(4,-27,2*bk,0,Math.PI*2); ctx.fill();
-                ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(-5.5,-28.8,1.4*bk,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(2.5,-28.8,1.4*bk,0,Math.PI*2); ctx.fill();
-                // grin
+                // visor reflection + animated scan line
+                ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fillRect(-12,-32,9,3);
+                ctx.fillStyle=`rgba(0,0,0,${0.38+0.22*el})`; ctx.fillRect(-13,-32+((t*6)%11),26,2);
+                // vertical power indicators on visor edges
+                ctx.save(); ctx.shadowColor=`rgba(220,255,0,${0.5+0.4*el})`; ctx.shadowBlur=6;
+                ctx.fillStyle=`rgba(220,255,0,${0.7+0.3*el})`;
+                ctx.beginPath(); ctx.roundRect(-13,-29,2,5,1); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(11,-29,2,5,1); ctx.fill();
+                ctx.shadowBlur=0; ctx.restore();
+                // visor border
+                ctx.strokeStyle=`rgba(0,200,255,0.65)`; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.roundRect(-13,-32,26,11,3); ctx.stroke();
+                // determined grin below visor
                 ctx.strokeStyle='#886600'; ctx.lineWidth=1.8;
                 ctx.beginPath(); ctx.arc(0,-18,3.5,0.15,Math.PI-0.15); ctx.stroke();
                 ctx.restore();
